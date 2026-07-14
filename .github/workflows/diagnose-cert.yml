@@ -1,9 +1,9 @@
 name: Diagnose — cert issuance for a vhost
 
 # One-shot diagnostic: why isn't Caddy serving a cert for a given host?
-# Greps the caddy container's logs for the name, lists on-disk certs, and
-# nudges a config reload so Caddy re-attempts issuance. Read-only except the
-# reload (idempotent). Input `host` defaults to nact.nave.pub.
+# Inspects the caddy container's actual Caddyfile bind-mount, checks whether
+# the file Caddy reads contains the vhost, compares the two deploy roots, and
+# reports the .flipped marker. Read-only. Input `host` defaults to nact.nave.pub.
 on:
   workflow_dispatch:
     inputs:
@@ -30,15 +30,23 @@ jobs:
             H="${{ github.event.inputs.host }}"
             echo "── diagnosing $H ──"
             echo
-            echo "## on-disk certs (caddy_data)"
-            docker exec deploy-caddy-1 sh -c 'ls -R /data/caddy/certificates 2>/dev/null | grep -Ei "nact|directory|acme" | head -40' || echo "(none / no access)"
+            echo "## .flipped marker present?"
+            ls -la /root/nave.pub/deploy/.flipped 2>/dev/null && echo "FLIPPED → deploy root is /root/nave.pub" || echo "no marker → deploy root is /root/noir"
             echo
-            echo "## caddy log lines mentioning $H (last 400 log lines)"
-            docker logs --tail 400 deploy-caddy-1 2>&1 | grep -i "$H" | tail -30 || echo "(no mentions — name may not be triggering issuance)"
+            echo "## which Caddyfile does the caddy CONTAINER actually mount?"
+            docker inspect deploy-caddy-1 --format '{{range .Mounts}}{{if eq .Destination "/etc/caddy/Caddyfile"}}source={{.Source}}{{end}}{{end}}' 2>/dev/null || echo "(inspect failed)"
             echo
-            echo "## any ACME errors / rate-limit mentions in last 400 lines"
-            docker logs --tail 400 deploy-caddy-1 2>&1 | grep -Ei "error|rate|too many|challenge|obtain|failed" | tail -25 || echo "(no error lines)"
+            echo "## does the file the CONTAINER reads contain $H ?"
+            docker exec deploy-caddy-1 grep -c "$H" /etc/caddy/Caddyfile 2>/dev/null | sed "s/^/  matches in container view: /" || echo "  (grep failed)"
             echo
-            echo "## nudge: reload caddy so it re-attempts the order"
-            docker exec deploy-caddy-1 caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile 2>&1 | tail -5 || echo "(reload failed)"
-            echo "reloaded — give it ~30s, then re-run the smoke probe"
+            echo "## does each on-disk Caddyfile contain $H ?"
+            for f in /root/nave.pub/deploy/Caddyfile /root/noir/deploy/Caddyfile; do
+              if [ -f "$f" ]; then
+                echo "  $f : $(grep -c "$H" "$f") match(es)"
+              else
+                echo "  $f : (absent)"
+              fi
+            done
+            echo
+            echo "## container running since / created from"
+            docker inspect deploy-caddy-1 --format 'created={{.Created}}  started={{.State.StartedAt}}' 2>/dev/null || true
