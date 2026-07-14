@@ -48,7 +48,14 @@
 
   /* ---------------------------------------------------------- hero */
   header.hero { padding: 76px 0 54px; text-align: center; position: relative; }
-  .rose { width: 96px; height: 96px; margin: 0 auto 22px; display: block; opacity: 0.9; }
+  .rose { width: 96px; height: 96px; margin: 0 auto 22px; display: block; opacity: 0.9;
+    animation: hero-rose 1.5s cubic-bezier(.16,.8,.2,1) both; }
+  /* A subtle, non-blocking spin-in — the games' gesture in miniature. No gate. */
+  @keyframes hero-rose {
+    0%   { transform: perspective(800px) rotateY(-720deg) rotateX(48deg) scale(.55); opacity: 0; }
+    100% { transform: perspective(800px) rotateY(0) rotateX(0) scale(1); opacity: 0.9; }
+  }
+  @media (prefers-reduced-motion: reduce) { .rose { animation: none; } }
   .wordmark {
     font-family: var(--mono); font-weight: 700; color: var(--cream);
     font-size: clamp(44px, 9vw, 92px); letter-spacing: 0.34em;
