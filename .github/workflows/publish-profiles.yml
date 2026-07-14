@@ -1,0 +1,42 @@
+name: Publish profiles — Luke & Nave (kind-0)
+
+# Publishes the kind-0 profiles + NIP-65 relay lists for Luke and Nave from the
+# luke image (publish-profiles.mjs is baked in). Broadcasts under their keys, so
+# it's dispatch-only and defaults to dry-run — flip mode to "publish" to go live.
+# Requires a recent deploy so luke:latest carries the current bios.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: dry-run (preview) or publish (broadcast)
+        type: choice
+        default: dry-run
+        options:
+          - dry-run
+          - publish
+
+concurrency:
+  group: ops-nave
+  cancel-in-progress: false
+
+jobs:
+  profiles:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          MODE: ${{ github.event.inputs.mode }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: MODE
+          script: |
+            set -e
+            if [ -f /root/nave.pub/deploy/.flipped ]; then DEPLOY=/root/nave.pub/deploy; else DEPLOY=/root/noir/deploy; fi
+            LUKEENV="$DEPLOY/luke.env"
+            [ -f "$LUKEENV" ] || { echo "no luke.env at $LUKEENV — luke secrets not decrypted"; exit 1; }
+            FLAG=""; [ "$MODE" = "dry-run" ] && FLAG="--dry-run"
+            echo "== publish-profiles ($MODE) =="
+            docker run --rm --env-file "$LUKEENV" luke:latest node publish-profiles.mjs $FLAG
