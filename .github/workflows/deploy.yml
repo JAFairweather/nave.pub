@@ -46,4 +46,12 @@ jobs:
               -v "$PWD/Caddyfile":/etc/caddy/Caddyfile:ro \
               caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
             docker compose up -d --build
+            # Caddy runs the default `caddy run` (no --watch), and a
+            # Caddyfile-only change (e.g. adding an app's vhost) doesn't change
+            # the container's config hash, so `compose up` leaves it "Running"
+            # with the OLD routes. Reload the live process against the freshly
+            # validated file so new subdomains actually start serving. Safe to
+            # run even when the container was just recreated (no-op then).
+            docker compose exec -T caddy caddy reload \
+              --config /etc/caddy/Caddyfile --adapter caddyfile
             echo "deploy complete"
