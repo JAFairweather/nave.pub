@@ -1,0 +1,25 @@
+/* ─── The Nave design system — canonical tokens ───────────────────────────
+   The source of truth for the whole family. These no-build static clients
+   VENDOR (inline) this block into each app's <style>; keep them in sync with
+   this file. Each app overrides only --accent / --accent-bright / --accent-ink
+   with its own seal colour (see design/DESIGN.md). Sans-serif throughout:
+   proportional --sans for text/UI, a clean --mono for keys and code. */
+:root {
+  /* surfaces */
+  --ink: #0b0906; --bg: #0b0906; --panel: #14100a; --panel2: #1b1409; --line: #2a2317;
+  /* text */
+  --text: #f4efe4; --dim: #9c927f;
+  /* the Nave brand (gold) — the through-line colour */
+  --gold: #c39a56; --gold-bright: #e2c079;
+  /* per-app accent — OVERRIDE these three per app; default = gold */
+  --accent: #c39a56; --accent-bright: #e2c079; --accent-ink: #0b0906;
+  /* semantics */
+  --ok: #8fae6a; --warn: #d9a648; --danger: #c0705a;
+  /* Alby sign-in (NIP-07) */
+  --alby: #ffdf6f; --alby-bright: #ffe98c; --alby-ink: #1c1400;
+  /* type */
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace;
+  --serif: var(--sans);   /* the family is sans-serif; alias kept for legacy refs */
+  --radius: 6px;
+}
