@@ -1,0 +1,4 @@
+# Box-only, never committed:
+.env            # Director secrets (ANTHROPIC_API_KEY, director nsec, ACME_EMAIL)
+luke.env        # decrypted from the luke repo's secrets.enc.env at deploy time
+sites/          # fresh clones of every repo, synced by sites.sh

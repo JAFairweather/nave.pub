@@ -1,0 +1,87 @@
+# The Nave platform — one shared Caddy front door + the box-run services,
+# for one Hostinger VPS. Lives in the nave.pub repo; ops home on the box is
+# /root/nave.pub/deploy. Each app/service is its own repo, synced into
+# ./sites by sites.sh; Caddy serves the static ones off disk and proxies the
+# dynamic ones.
+#
+#   cd /root/nave.pub/deploy
+#   cp .env.example .env            # director + ACME email (migrated secrets)
+#   # luke.env holds Luke's LUKE_NSEC + LUKE_MASTER_NPUB
+#   bash sites.sh && docker compose up -d --build
+
+services:
+  # The Noir Director (the AI game master) — built from the noir repo, which
+  # sites.sh syncs into ./sites/noir. Its build recipe stays in the noir repo.
+  director:
+    build:
+      context: ./sites/noir
+      dockerfile: deploy/Dockerfile
+    image: noir-director:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - NOIR_GM_PORT=8787
+    expose:
+      - "8787"                    # internal only; Caddy is the public face
+    networks: [nave]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8787/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # Luke — the delegated-agent card + the nostr-signed cockpit gate. Its own
+  # repo (jafairweather/luke), synced into ./sites/luke, built standalone.
+  # Its env lives at ./luke.env on the box (gitignored, never in a repo).
+  luke:
+    build:
+      context: ./sites/luke
+    image: luke:latest
+    restart: unless-stopped
+    env_file:
+      - path: ./luke.env        # optional — a missing file must never break
+        required: false         # the main stack (director/caddy/static)
+    environment:
+      - LUKE_PORT=8790
+    expose:
+      - "8790"
+    networks: [nave]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8790/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"                   # ACME http-01 challenge + http→https redirect
+      - "443:443"
+    env_file: .env                # Caddy reads ACME_EMAIL from here
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data          # certificates persist here — do not delete
+      - caddy_config:/config
+      # Every repo, synced by sites.sh → served at <name>.nave.pub. The hub
+      # (nave.pub) is cloned into ./sites/nave and served at the apex from
+      # /srv/apps/nave — the same read-only mount as every app, so its assets/
+      # and .well-known/ (avatars, NIP-05) are served with no per-file mounts.
+      # It's a FRESH clone, so the box's deploy/.env is never in here.
+      - ./sites:/srv/apps:ro
+    networks: [nave]
+    # Lets Caddy reach services published on the host (Luke/OpenClaw on host
+    # port 57419) via host.docker.internal.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on: [director, luke]
+
+networks:
+  nave:
+    name: nave
+
+volumes:
+  caddy_data:
+  caddy_config:
