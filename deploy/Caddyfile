@@ -83,6 +83,9 @@ nherit.nave.pub {
 nscope.nave.pub {
 	import app nscope
 }
+nact.nave.pub {
+	import app nact
+}
 
 # --- Luke — a delegated agent, cockpit behind a nostr-signed gate ------
 # See the luke repo's LUKE.md. Two planes on one host:

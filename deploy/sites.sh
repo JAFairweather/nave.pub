@@ -22,6 +22,7 @@ apps=(
   "nvoy:nvoy"
   "nherit:nherit"
   "nscope:nostr-scoped-data-grants"
+  "nact:nact"                     # the signature-gated agentic-actions library + landing
   "luke:luke"                     # a service (built + proxied), not file-served
 )
 
