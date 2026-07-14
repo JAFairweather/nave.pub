@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Luke">
+  <rect x="2" y="2" width="96" height="96" rx="20" fill="#0b0906" stroke="#c39a56" stroke-opacity="0.5" stroke-width="2"/>
+  <!-- brim -->
+  <ellipse cx="50" cy="63" rx="35" ry="7.5" fill="#c39a56"/>
+  <!-- crown -->
+  <path d="M34 63 Q33 37 50 37 Q67 37 66 63 Z" fill="#c39a56"/>
+  <!-- pinch (dark dent at the crown top) -->
+  <path d="M43 41 Q50 47 57 41 L57 38.5 Q50 35.5 43 38.5 Z" fill="#0b0906"/>
+  <!-- band -->
+  <path d="M34.5 56 Q50 60.5 65.5 56 L65.5 61 Q50 65.5 34.5 61 Z" fill="#0b0906"/>
+  <!-- brim highlight -->
+  <path d="M20 63 Q50 69 80 63" fill="none" stroke="#e2c079" stroke-width="1.6" stroke-linecap="round" opacity="0.8"/>
+</svg>
