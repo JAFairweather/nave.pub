@@ -1,0 +1,44 @@
+name: Diagnose — cert issuance for a vhost
+
+# One-shot diagnostic: why isn't Caddy serving a cert for a given host?
+# Greps the caddy container's logs for the name, lists on-disk certs, and
+# nudges a config reload so Caddy re-attempts issuance. Read-only except the
+# reload (idempotent). Input `host` defaults to nact.nave.pub.
+on:
+  workflow_dispatch:
+    inputs:
+      host:
+        description: Host to diagnose
+        default: nact.nave.pub
+
+concurrency:
+  group: deploy-nave
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Diagnose over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -u
+            H="${{ github.event.inputs.host }}"
+            echo "── diagnosing $H ──"
+            echo
+            echo "## on-disk certs (caddy_data)"
+            docker exec deploy-caddy-1 sh -c 'ls -R /data/caddy/certificates 2>/dev/null | grep -Ei "nact|directory|acme" | head -40' || echo "(none / no access)"
+            echo
+            echo "## caddy log lines mentioning $H (last 400 log lines)"
+            docker logs --tail 400 deploy-caddy-1 2>&1 | grep -i "$H" | tail -30 || echo "(no mentions — name may not be triggering issuance)"
+            echo
+            echo "## any ACME errors / rate-limit mentions in last 400 lines"
+            docker logs --tail 400 deploy-caddy-1 2>&1 | grep -Ei "error|rate|too many|challenge|obtain|failed" | tail -25 || echo "(no error lines)"
+            echo
+            echo "## nudge: reload caddy so it re-attempts the order"
+            docker exec deploy-caddy-1 caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile 2>&1 | tail -5 || echo "(reload failed)"
+            echo "reloaded — give it ~30s, then re-run the smoke probe"
