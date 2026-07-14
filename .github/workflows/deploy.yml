@@ -1,0 +1,42 @@
+name: Deploy the Nave
+
+# The deploy button for the whole ecosystem. Two triggers:
+#  • the "Run workflow" button (GitHub mobile app → Actions → Deploy the Nave)
+#    — a deploy button you can tap from anywhere;
+#  • automatically on every push to this repo's main.
+# It SSHes to the box and syncs everything: pulls the repos, runs sites.sh
+# (which pulls the hub + luke + every app), validates the Caddyfile before
+# any reload, then compose up. (The compose/Caddy config still lives in the
+# noir repo's deploy/ for now — that's the next thing to lift over here; the
+# script paths below move with it when it does.)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-nave
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            cd /root/noir
+            git pull --ff-only
+            cd deploy
+            bash sites.sh
+            docker run --rm -e ACME_EMAIL=deploy@nave.pub \
+              -v "$PWD/Caddyfile":/etc/caddy/Caddyfile:ro \
+              caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
+            docker compose up -d --build
+            echo "deploy complete"
