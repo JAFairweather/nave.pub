@@ -65,12 +65,11 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data          # certificates persist here — do not delete
       - caddy_config:/config
-      # The hub (this repo). Mount ONLY the two public files — never the repo
-      # root, so deploy/ (with .env) is never web-served.
-      - ../index.html:/srv/nave/index.html:ro
-      - ../favicon.svg:/srv/nave/favicon.svg:ro
-      # Every app/service repo, synced by sites.sh → served at <name>.nave.pub
-      # (noir.nave.pub roots at /srv/apps/noir). deploy/ is never in here.
+      # Every repo, synced by sites.sh → served at <name>.nave.pub. The hub
+      # (nave.pub) is cloned into ./sites/nave and served at the apex from
+      # /srv/apps/nave — the same read-only mount as every app, so its assets/
+      # and .well-known/ (avatars, NIP-05) are served with no per-file mounts.
+      # It's a FRESH clone, so the box's deploy/.env is never in here.
       - ./sites:/srv/apps:ro
     networks: [nave]
     # Lets Caddy reach services published on the host (Luke/OpenClaw on host

@@ -1,80 +1,77 @@
-# Platform move — flipping the box to `nave.pub/deploy`
+# The platform flip — move the deploy from noir to nave.pub
 
-The deploy stack (Caddy + Director + Luke + static serving) is moving out of
-`noir/deploy` into here, `nave.pub/deploy`. This is a **one-time, watched
-migration** — do it at a keyboard, not a phone. Nothing on `main` changes the
-running box until you do these steps.
+The whole stack currently runs from `/root/noir/deploy` on the box. This
+moves it to `/root/nave.pub/deploy` — its proper home — with **no change to
+what visitors see**. Both dirs share the compose project name `deploy`, so
+the `deploy_caddy_data` volume (your Let's Encrypt certs) is the SAME volume
+either way — **certs carry over**, no re-issuance.
 
-**Good news on certs:** both the old (`/root/noir/deploy`) and new
-(`/root/nave.pub/deploy`) stacks use the same Docker Compose project name
-(`deploy`) and the same named volume, so **your Let's Encrypt certs carry
-over** — no re-issuance, no rate-limit risk.
+Do this at a keyboard, unhurried, watching each step. It's a ~2-minute flip
+with seconds of downtime while Caddy hands over ports 80/443.
 
-## 0. Merge the branch
+## Prereqs (do these first)
+1. **`secrets.enc.env` must be committed to the `luke` repo.** The flip does
+   a FRESH clone of every repo, so Luke's encrypted secrets have to be in git
+   (they're ciphertext — safe). From the current box copy:
+   ```bash
+   cd /root/noir/deploy/sites/luke
+   git add secrets.enc.env && git commit -m "Commit encrypted secrets" && git push
+   ```
+   (If the box lacks push auth, commit it from your laptop, or copy the file
+   into the new clone after step 3.)
+2. **age key + sops already on the box** — yes (you set these up). The new
+   `sites.sh` decrypts `sites/luke/secrets.enc.env` → `./luke.env`.
+3. **Merge `platform-move` → `main`** on the nave.pub repo, so `deploy/` is on
+   main. (Open the PR, or merge locally and push.)
 
-Merge `platform-move` → `main` on this repo (I can do it, or via GitHub), so
-`sites.sh` / `docker-compose.yml` / `Caddyfile` are on `main`. Then, on the box:
-
-## 1. Clone the platform repo to its ops home
-
+## The flip (on the box)
 ```bash
+# 1. Clone the hub repo to its ops home
 git clone https://github.com/JAFairweather/nave.pub /root/nave.pub
 cd /root/nave.pub/deploy
-```
 
-## 2. Bring the secrets over
+# 2. Bring over the Director's secrets (.env — ANTHROPIC_API_KEY, director
+#    nsec, ACME_EMAIL). Same file, new home.
+cp /root/noir/deploy/.env .env
 
-The `.env` files stay on the box only (gitignored). Copy them from the old
-location:
+# 3. Sync every repo + decrypt Luke's env
+bash sites.sh                       # clones nave, noir, apps, luke; writes luke.env
 
-```bash
-cp /root/noir/deploy/.env  /root/nave.pub/deploy/.env       # director + ACME email
-cp /root/noir/luke/.env    /root/nave.pub/deploy/luke.env   # Luke's key + master npub
-```
-
-## 3. Sync the app/service repos, then validate the Caddyfile
-
-```bash
-bash sites.sh
+# 4. Validate the Caddyfile BEFORE touching the running stack
 docker run --rm -e ACME_EMAIL=deploy@nave.pub \
   -v "$PWD/Caddyfile":/etc/caddy/Caddyfile:ro \
   caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
+
+# 5. Stop the OLD stack (keeps volumes → certs survive). Ports free up.
+cd /root/noir/deploy && docker compose down          # NO -v — keep the certs
+
+# 6. Start the NEW stack from its new home
+cd /root/nave.pub/deploy && docker compose up -d --build
+docker compose ps
 ```
 
-Only proceed if that prints **`Valid configuration`**.
+## Verify
+- `https://nave.pub`, `https://noir.nave.pub`, an app subdomain, `https://luke.nave.pub/health`
+- `https://nave.pub/.well-known/nostr.json` (NIP-05) and an avatar
+  (`https://nave.pub/assets/avatars/nave.png`)
+- Certs should NOT re-issue (they're in the shared volume). If a name briefly
+  serves a staging/self-signed cert, give Caddy a minute.
 
-## 4. Flip
+## Last step — repoint the deploy button
+Edit `.github/workflows/deploy.yml` on the nave.pub repo: change
+`cd /root/noir` → `cd /root/nave.pub`. Commit. From now on the deploy button
+drives the new home. (Do this AFTER the flip verifies, so a mid-flip auto-run
+can't fight you.)
 
+## Rollback
+If anything's wrong, the old tree is untouched:
 ```bash
-docker compose up -d --build
+cd /root/nave.pub/deploy && docker compose down
+cd /root/noir/deploy && docker compose up -d
 ```
+Certs are shared, so the rollback is clean too.
 
-Because the project name is `deploy` in both locations, this **recreates the
-same containers** with the new config and reuses the cert volume. (If ports
-80/443 look stuck, stop the old stack explicitly first:
-`docker compose -f /root/noir/deploy/docker-compose.yml down`, then re-run the
-`up` above.)
-
-## 5. Verify
-
-```bash
-curl -s https://director.nave.pub/health | head -c 200; echo
-```
-Then load `https://nave.pub`, `https://noir.nave.pub`, an app subdomain, and
-`https://luke.nave.pub`. All should be green.
-
-## 6. The deploy button
-
-Add the three secrets to **this repo** (`nave.pub`) → Settings → Secrets →
-Actions: `VPS_HOST` = `187.77.13.232`, `VPS_USER` = `root`, `VPS_SSH_KEY` =
-your deploy key. From then on, **Actions → Deploy the Nave → Run workflow**
-does everything above in one tap.
-
-## 7. Cleanup (after it's confirmed green)
-
-`noir/deploy` still holds the Director's build recipe (`Dockerfile`), which
-the platform builds from `sites/noir/deploy/Dockerfile` — **keep that**. The
-rest of `noir/deploy` (Caddyfile, docker-compose.yml, sites.sh, DEPLOY.md,
-recon.sh, .env.example) is now dead weight; a follow-up commit removes it,
-leaving `noir` as just the game (plus its one Dockerfile). Don't remove it
-until step 5 is green.
+## After it's proven
+Once the new home is happy for a day, `/root/noir/deploy/` is dead weight —
+you can delete the old compose/Caddy files there (keep the noir repo itself;
+its Dockerfile still builds the Director from `sites/noir`).

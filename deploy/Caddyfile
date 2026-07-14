@@ -6,15 +6,21 @@
 	email {$ACME_EMAIL}
 }
 
-# The hub — the ecosystem front door. This repo's index.html + favicon,
-# mounted read-only at /srv/nave (only those two public files — deploy/ is
-# never web-served). The apex gets its OWN cert block: bundling www in here
-# would make Caddy order ONE cert for both names, and if www fails to
-# validate (only the wildcard, no explicit A record) the whole order fails
-# and the apex goes down with it. Keep them independent.
+# The hub — the ecosystem front door. The nave.pub repo, synced by sites.sh
+# into sites/nave and served from /srv/apps/nave (the same read-only mount as
+# every app), so assets/ and .well-known/ are served too. The apex gets its
+# OWN cert block: bundling www in here would make Caddy order ONE cert for
+# both names, and if www fails to validate (only the wildcard, no explicit A
+# record) the whole order fails and the apex goes down with it. Keep separate.
 nave.pub {
-	root * /srv/nave
+	root * /srv/apps/nave
 	encode gzip zstd
+	# NIP-05: clients resolve luke@nave.pub / nave@nave.pub by fetching
+	# /.well-known/nostr.json cross-origin, so it needs permissive CORS
+	# and a JSON content-type.
+	@nip05 path /.well-known/nostr.json
+	header @nip05 Access-Control-Allow-Origin "*"
+	header @nip05 Content-Type "application/json"
 	file_server
 }
 

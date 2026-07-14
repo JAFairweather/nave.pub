@@ -6,14 +6,14 @@
 #
 #   bash deploy/sites.sh && docker compose up -d --build
 #
-# Re-run any time to update to each repo's latest main. (The hub itself is
-# THIS repo — nave.pub — so it isn't listed here.)
+# Re-run any time to update to each repo's latest main.
 set -euo pipefail
 cd "$(dirname "$0")"
 mkdir -p sites
 
 # name : github repo (default branch = main for all)
 apps=(
+  "nave:nave.pub"                 # the hub — served at the apex (/srv/apps/nave)
   "noir:noir"                     # the game client + the Director build
   "nvelope:nvelope"
   "nontact:nontact"
@@ -36,6 +36,22 @@ for pair in "${apps[@]}"; do
     git clone --depth 1 "https://github.com/JAFairweather/$repo" "$dir"
   fi
 done
+
+# --- Luke's secrets: decrypt SOPS ciphertext → the env the compose reads --
+# Decrypt sites/luke/secrets.enc.env with the box's age key into ./luke.env
+# (gitignored, root-only). Guarded: if SOPS or the encrypted file isn't set
+# up, this is a no-op and the stack still comes up (luke env_file is
+# required:false). See the luke repo's SECRETS.md.
+if [ -f sites/luke/secrets.enc.env ] && command -v sops >/dev/null 2>&1; then
+  if sops --input-type dotenv --output-type dotenv -d sites/luke/secrets.enc.env > luke.env; then
+    chmod 600 luke.env
+    echo "🔓 luke secrets decrypted → luke.env"
+  else
+    echo "⚠ luke secrets present but decrypt FAILED (age key missing?) — luke runs without env"
+  fi
+else
+  echo "· luke secrets: SOPS/enc file not set up yet — skipping (see luke/SECRETS.md)"
+fi
 
 echo
 echo "done. now: docker compose up -d --build"
