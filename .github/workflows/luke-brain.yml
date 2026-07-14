@@ -1,0 +1,47 @@
+name: Luke — brain (draft proposals)
+
+# Runs the brain over the deploy path. Default is a DRY RUN (gathers signals,
+# drafts candidates, prints them — proposes nothing). Set live=true to actually
+# send drafts to Telegram for approval. Also emits the encrypted secrets as a
+# single base64 line so they can be committed for durability.
+on:
+  workflow_dispatch:
+    inputs:
+      live:
+        description: "true = propose to Telegram; blank = dry-run only"
+        required: false
+        default: ""
+
+concurrency:
+  group: deploy-nave
+  cancel-in-progress: false
+
+jobs:
+  brain:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run the brain over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          LIVE: ${{ inputs.live }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: "6m"
+          envs: LIVE
+          script: |
+            set +e
+            cd /root/noir/deploy/sites/luke
+            FLAG="--dry-run"
+            [ "$LIVE" = "true" ] && FLAG=""
+            echo "── running brain ${FLAG:-(LIVE)} ──"
+            docker run --rm --env-file /root/noir/luke/.env \
+              -v "$PWD/luke-brain.mjs:/app/luke-brain.mjs:ro" \
+              -v "$PWD/brief:/app/brief:ro" \
+              luke:latest node luke-brain.mjs $FLAG
+            echo "── brain done ──"
+            echo "── B64-START ──"
+            base64 -w0 /root/noir/deploy/sites/luke/secrets.enc.env
+            echo
+            echo "── B64-END ──"
