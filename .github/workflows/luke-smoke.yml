@@ -1,10 +1,9 @@
 name: Luke — recreate + smoke test
 
-# One-off ops helper. Optionally updates TELEGRAM_APPROVER_ID (passed as an
-# input, never committed), then treats secrets.enc.env as the source of truth:
-# decrypts it into the container env, recreates luke, reports poster status,
-# fires a /propose smoke test, and surfaces any Telegram error. No secret
-# values are printed.
+# Flip-aware ops helper. Decrypts secrets.enc.env into the container env,
+# recreates luke, (re)registers the Telegram webhook for the current bot
+# token, reports poster status, fires a /propose smoke test, and surfaces any
+# Telegram error. Optionally updates TELEGRAM_APPROVER_ID (input, uncommitted).
 on:
   workflow_dispatch:
     inputs:
@@ -21,7 +20,7 @@ jobs:
   luke-smoke:
     runs-on: ubuntu-latest
     steps:
-      - name: Update id + recreate + smoke test over SSH
+      - name: Recreate + webhook + smoke test over SSH
         uses: appleboy/ssh-action@v1.2.0
         env:
           NEWID: ${{ inputs.approver_id }}
@@ -29,54 +28,52 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          command_timeout: "3m"
+          command_timeout: "4m"
           envs: NEWID
           script: |
             set +e
             export SOPS_AGE_KEY_FILE=/root/.config/sops/age/keys.txt
-            LUKEENV=/root/noir/luke/.env
-            cd /root/noir/deploy/sites/luke
+            # Flip-aware paths: after the flip, deploy + env live under /root/nave.pub.
+            if [ -f /root/nave.pub/deploy/.flipped ]; then
+              DEPLOY=/root/nave.pub/deploy; LUKEENV=$DEPLOY/luke.env
+            else
+              DEPLOY=/root/noir/deploy; LUKEENV=/root/noir/luke/.env
+            fi
+            ENC=$DEPLOY/sites/luke/secrets.enc.env
+            echo "using DEPLOY=$DEPLOY"
+            cd "$DEPLOY/sites/luke"
 
             if [ -n "$NEWID" ]; then
               echo "── updating TELEGRAM_APPROVER_ID ──"
-              sops -d --output-type dotenv secrets.enc.env > secrets.env
-              if grep -q '^TELEGRAM_APPROVER_ID=' secrets.env; then
-                sed -i "s/^TELEGRAM_APPROVER_ID=.*/TELEGRAM_APPROVER_ID=$NEWID/" secrets.env
-              else
-                echo "TELEGRAM_APPROVER_ID=$NEWID" >> secrets.env
-              fi
-              sops --input-type dotenv --output-type dotenv -e secrets.env > secrets.enc.env && shred -u secrets.env
-              echo "updated."
+              sops -d --output-type dotenv "$ENC" > secrets.env
+              grep -q '^TELEGRAM_APPROVER_ID=' secrets.env \
+                && sed -i "s/^TELEGRAM_APPROVER_ID=.*/TELEGRAM_APPROVER_ID=$NEWID/" secrets.env \
+                || echo "TELEGRAM_APPROVER_ID=$NEWID" >> secrets.env
+              sops --input-type dotenv --output-type dotenv -e secrets.env > "$ENC" && shred -u secrets.env
             fi
 
-            echo "── decrypting secrets.enc.env → container env ──"
-            if ! sops -d --output-type dotenv secrets.enc.env > "${LUKEENV}.new" 2>/dev/null; then
-              echo "!! secrets.enc.env missing or invalid — aborting"; exit 0
-            fi
-            mv "${LUKEENV}.new" "$LUKEENV" && chmod 600 "$LUKEENV"
+            echo "── decrypt secrets → container env ──"
+            sops -d --output-type dotenv "$ENC" > "$LUKEENV" && chmod 600 "$LUKEENV"
             echo "keys loaded: $(grep -cE '^[A-Z_]+=.' "$LUKEENV")"
 
-            cd /root/noir/deploy
+            cd "$DEPLOY"
             docker compose up -d --force-recreate luke
             sleep 3
             echo "── poster status ──"
             docker logs deploy-luke-1 --tail 10 2>&1 | grep -i poster || echo "(no poster line)"
 
-            echo "── registering webhook for the CURRENT bot token ──"
+            echo "── register webhook for the CURRENT bot token ──"
             BT=$(grep '^TELEGRAM_BOT_TOKEN=' "$LUKEENV" | cut -d= -f2-)
             WS=$(grep '^TELEGRAM_WEBHOOK_SECRET=' "$LUKEENV" | cut -d= -f2-)
             curl -s "https://api.telegram.org/bot${BT}/setWebhook" \
-              -d "url=https://luke.nave.pub/telegram/webhook" \
-              -d "secret_token=${WS}"
+              -d "url=https://luke.nave.pub/telegram/webhook" -d "secret_token=${WS}"
             echo
 
             echo "── smoke test /propose ──"
             PT=$(grep '^PROPOSE_TOKEN=' "$LUKEENV" | cut -d= -f2-)
             curl -s https://luke.nave.pub/propose \
               -H "authorization: Bearer $PT" -H "content-type: application/json" \
-              -d '{"identity":"luke","text":"Testing the loop — first words from Luke.","rationale":"smoke test via the deploy path"}'
+              -d '{"identity":"luke","text":"First words from Luke — the loop is live.","rationale":"dedicated-bot smoke test"}'
             echo
-
-            echo "── telegram error (from container log, if any) ──"
-            docker logs deploy-luke-1 --since 30s 2>&1 | grep -i telegram | tail -3 || echo "(none — delivery ok)"
-            echo "── done ──"
+            echo "── telegram error (if any) ──"
+            docker logs deploy-luke-1 --since 30s 2>&1 | grep -i telegram | tail -3 || echo "(none)"
