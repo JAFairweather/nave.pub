@@ -128,6 +128,17 @@
   .card-links a:hover { color: var(--cream); }
   .card-links a.soon { color: var(--dim); pointer-events: none; }
 
+  /* ------------------------------------------------ app categories */
+  .cat { margin: 44px 0 0; }
+  .cat:first-of-type { margin-top: 26px; }
+  .cat-title { font-family: var(--mono); font-size: 13px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: var(--gold-bright); margin: 0;
+    display: flex; align-items: baseline; gap: 12px; }
+  .cat-num { color: var(--dim); font-size: 12px; }
+  .cat-note { font-family: var(--serif); font-style: italic; margin: 4px 0 0;
+    font-size: 15px; color: color-mix(in srgb, var(--cream) 60%, var(--dim)); }
+  .cat + .grid { margin-top: 16px; }
+
   /* ---------------------------------------------------- the maker */
   .maker { display: grid; grid-template-columns: 1fr; gap: 18px; }
   .maker p { color: color-mix(in srgb, var(--cream) 82%, var(--dim)); max-width: 64ch; }
@@ -200,27 +211,34 @@
       keep the newest, decrypt the current truth — wearing a different job. All shipped,
       all public, and the list keeps growing.</p>
 
+    <div class="cat">
+      <h4 class="cat-title"><span class="cat-num">01</span> Protocols</h4>
+      <p class="cat-note">The primitive everything else is built on.</p>
+    </div>
+
     <div class="grid">
 
-      <!-- Noir — featured -->
-      <div class="card featured" style="--accent:#c39a56">
+      <!-- NIP-DA -->
+      <div class="card" style="--accent:#d8c690">
         <div class="card-head">
-          <span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 18 Q12 22 21 18"/><path d="M7 18 Q6.5 9 12 9 Q17.5 9 17 18"/><path d="M7.5 16.2 Q12 18 16.5 16.2"/></svg></span>
-          <div><h4>Noir</h4><div class="tag">The flagship · everything at once</div></div>
+          <span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="12" cy="12" r="8"/><circle cx="12" cy="10.5" r="1.9"/><path d="M12 12.4 V15.6" stroke-linecap="round"/></svg></span>
+          <div><h4>Nscope</h4><div class="tag">The foundation · NIP-DA</div></div>
         </div>
-        <div class="card-body">
-          <p>A spycraft mystery where information is the board. Documents are grants; discovery is a
-            gift wrap; a burned contact is a key rotated past you. An AI game-master runs your table
-            as a delegated agent you can hire and fire over nostr — and the whole game proves itself
-            fair before it deals a card. The stack, load-bearing and in public.</p>
-          <div class="card-links">
-            <a href="https://noir.nave.pub" target="_blank" rel="noopener">▶ Play</a>
-            <a href="https://github.com/JAFairweather/noir" target="_blank" rel="noopener">Repo</a>
-            <a href="https://github.com/JAFairweather/noir/blob/main/docs/articles/noir-architecture.md" target="_blank" rel="noopener">Architecture</a>
-          </div>
-        </div>
+        <p>Scoped Data Grants — the ~300-line primitive every app above vendors identically. Three event
+          kinds: the encrypted scope, the gift-wrapped grant, the self-encrypted index. A NIP submitted
+          to the nostr protocol, with TS and Go implementations in live interop.</p>
+        <div class="card-links"><a href="https://nscope.nave.pub" target="_blank" rel="noopener">The case ↗</a><a href="https://github.com/JAFairweather/nostr-scoped-data-grants/blob/main/SPEC.md" target="_blank" rel="noopener">Spec</a><a href="https://github.com/JAFairweather/nostr-scoped-data-grants" target="_blank" rel="noopener">Repo</a></div>
       </div>
+
+    </div>
+
+    <div class="cat">
+      <h4 class="cat-title"><span class="cat-num">02</span> Agents &amp; AI</h4>
+      <p class="cat-note">Bounding an agent on both ends — what it may perceive, and what it may do.</p>
+    </div>
+
+    <div class="grid">
 
       <!-- Nvoy -->
       <div class="card" style="--accent:#6fa8a0">
@@ -234,6 +252,28 @@
           the data — and lets you un-see it.</p>
         <div class="card-links"><a href="https://nvoy.nave.pub" target="_blank" rel="noopener">Open ↗</a><a href="https://github.com/JAFairweather/nvoy" target="_blank" rel="noopener">Repo</a></div>
       </div>
+
+      <!-- nact -->
+      <div class="card" style="--accent:#c98f4f">
+        <div class="card-head">
+          <span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3 C7.5 3 6.3 7 7 11 L12 21 L17 11 C17.7 7 16.5 3 12 3 Z"/><path d="M12 12 V20"/><circle cx="12" cy="10.3" r="1.5"/></svg></span>
+          <div><h4>nact</h4><div class="tag">Agentic actions · human-signed</div></div>
+        </div>
+        <p>Give an AI agent a voice on nostr without giving it your keys: it drafts an action, you enact it
+          with a signature, it broadcasts. The action-out half of scoped autonomy — Nvoy governs what an agent
+          may see, nact governs what it may do.</p>
+        <div class="card-links"><a href="https://nact.nave.pub" target="_blank" rel="noopener">Open ↗</a><a href="https://github.com/JAFairweather/nact" target="_blank" rel="noopener">Repo</a></div>
+      </div>
+
+    </div>
+
+    <div class="cat">
+      <h4 class="cat-title"><span class="cat-num">03</span> Apps &amp; Utilities</h4>
+      <p class="cat-note">The same primitive, pointed at a corner of a life you&rsquo;d rather keep.</p>
+    </div>
+
+    <div class="grid">
 
       <!-- Nontact -->
       <div class="card" style="--accent:#8fae6a">
@@ -274,6 +314,48 @@
         <div class="card-links"><a href="https://nherit.nave.pub" target="_blank" rel="noopener">Open ↗</a><a href="https://github.com/JAFairweather/nherit" target="_blank" rel="noopener">Repo</a></div>
       </div>
 
+      <!-- Notegate -->
+      <div class="card" style="--accent:#7f95ad">
+        <div class="card-head">
+          <span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11 V8 a4 4 0 0 1 8 0 V11"/><circle cx="12" cy="15" r="1.2" fill="currentColor" stroke="none"/></svg></span>
+          <div><h4>Notegate</h4><div class="tag">Anonymous intake</div></div>
+        </div>
+        <p>Serverless secure tip intake for newsrooms: a tip line is a keypair, sources are ephemeral
+          browser-minted keys whose only reply channel is a 12-word phrase, proof-of-work is the spam
+          toll — checked before anything is decrypted. The grant index <em>is</em> the case docket.</p>
+        <div class="card-links"><a href="https://notegate.nave.pub" target="_blank" rel="noopener">Open ↗</a><a href="https://github.com/JAFairweather/notegate" target="_blank" rel="noopener">Repo</a></div>
+      </div>
+
+    </div>
+
+    <div class="cat">
+      <h4 class="cat-title"><span class="cat-num">04</span> Games</h4>
+      <p class="cat-note">Where the protocol is the board.</p>
+    </div>
+
+    <div class="grid">
+
+      <!-- Noir — featured -->
+      <div class="card featured" style="--accent:#c39a56">
+        <div class="card-head">
+          <span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 18 Q12 22 21 18"/><path d="M7 18 Q6.5 9 12 9 Q17.5 9 17 18"/><path d="M7.5 16.2 Q12 18 16.5 16.2"/></svg></span>
+          <div><h4>Noir</h4><div class="tag">The flagship · everything at once</div></div>
+        </div>
+        <div class="card-body">
+          <p>A spycraft mystery where information is the board. Documents are grants; discovery is a
+            gift wrap; a burned contact is a key rotated past you. An AI game-master runs your table
+            as a delegated agent you can hire and fire over nostr — and the whole game proves itself
+            fair before it deals a card. The stack, load-bearing and in public.</p>
+          <div class="card-links">
+            <a href="https://noir.nave.pub" target="_blank" rel="noopener">▶ Play</a>
+            <a href="https://github.com/JAFairweather/noir" target="_blank" rel="noopener">Repo</a>
+            <a href="https://github.com/JAFairweather/noir/blob/main/docs/articles/noir-architecture.md" target="_blank" rel="noopener">Architecture</a>
+          </div>
+        </div>
+      </div>
+
       <!-- Ntrigue -->
       <div class="card" style="--accent:#c07a9a">
         <div class="card-head">
@@ -288,45 +370,7 @@
         <div class="card-links"><a href="https://ntrigue.nave.pub" target="_blank" rel="noopener">Open ↗</a><a href="https://github.com/JAFairweather/ntrigue" target="_blank" rel="noopener">Repo</a></div>
       </div>
 
-      <!-- Notegate -->
-      <div class="card" style="--accent:#7f95ad">
-        <div class="card-head">
-          <span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11 V8 a4 4 0 0 1 8 0 V11"/><circle cx="12" cy="15" r="1.2" fill="currentColor" stroke="none"/></svg></span>
-          <div><h4>Notegate</h4><div class="tag">Anonymous intake</div></div>
-        </div>
-        <p>Serverless secure tip intake for newsrooms: a tip line is a keypair, sources are ephemeral
-          browser-minted keys whose only reply channel is a 12-word phrase, proof-of-work is the spam
-          toll — checked before anything is decrypted. The grant index <em>is</em> the case docket.</p>
-        <div class="card-links"><a href="https://notegate.nave.pub" target="_blank" rel="noopener">Open ↗</a><a href="https://github.com/JAFairweather/notegate" target="_blank" rel="noopener">Repo</a></div>
-      </div>
-
-      <!-- NIP-DA -->
-      <div class="card" style="--accent:#d8c690">
-        <div class="card-head">
-          <span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-            <circle cx="12" cy="12" r="8"/><circle cx="12" cy="10.5" r="1.9"/><path d="M12 12.4 V15.6" stroke-linecap="round"/></svg></span>
-          <div><h4>Nscope</h4><div class="tag">The foundation · NIP-DA</div></div>
-        </div>
-        <p>Scoped Data Grants — the ~300-line primitive every app above vendors identically. Three event
-          kinds: the encrypted scope, the gift-wrapped grant, the self-encrypted index. A NIP submitted
-          to the nostr protocol, with TS and Go implementations in live interop.</p>
-        <div class="card-links"><a href="https://nscope.nave.pub" target="_blank" rel="noopener">The case ↗</a><a href="https://github.com/JAFairweather/nostr-scoped-data-grants/blob/main/SPEC.md" target="_blank" rel="noopener">Spec</a><a href="https://github.com/JAFairweather/nostr-scoped-data-grants" target="_blank" rel="noopener">Repo</a></div>
-      </div>
-
-      <!-- nact -->
-      <div class="card" style="--accent:#c98f4f">
-        <div class="card-head">
-          <span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3 C7.5 3 6.3 7 7 11 L12 21 L17 11 C17.7 7 16.5 3 12 3 Z"/><path d="M12 12 V20"/><circle cx="12" cy="10.3" r="1.5"/></svg></span>
-          <div><h4>nact</h4><div class="tag">Agentic actions · human-signed</div></div>
-        </div>
-        <p>Give an AI agent a voice on nostr without giving it your keys: it drafts an action, you enact it
-          with a signature, it broadcasts. The action-out half of scoped autonomy — Nvoy governs what an agent
-          may see, nact governs what it may do.</p>
-        <div class="card-links"><a href="https://nact.nave.pub" target="_blank" rel="noopener">Open ↗</a><a href="https://github.com/JAFairweather/nact" target="_blank" rel="noopener">Repo</a></div>
-      </div>
-
+    </div>
     </div>
   </div>
 </section>
