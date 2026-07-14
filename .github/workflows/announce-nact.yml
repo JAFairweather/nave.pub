@@ -1,0 +1,52 @@
+name: Announce — propose the nact launch note
+
+# One-shot: hands the nact launch announcement to Luke's /propose endpoint as
+# the `nave` identity. It does NOT post — it sends the draft to your Telegram
+# approval card; your tap signs (with nave's key) and broadcasts. Reject and
+# nothing happens. Re-run to re-propose (e.g. after wording tweaks).
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-nave
+  cancel-in-progress: false
+
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Propose over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            if [ -f /root/nave.pub/deploy/.flipped ]; then DEPLOY=/root/nave.pub/deploy; else DEPLOY=/root/noir/deploy; fi
+            LUKEENV="$DEPLOY/luke.env"
+            [ -f "$LUKEENV" ] || { echo "no luke.env at $LUKEENV — luke secrets not decrypted"; exit 1; }
+
+            # The launch note, plain text (kind:1 renders no markdown).
+            cat > /tmp/nact-announce.txt <<'TXT'
+            Shipping nact — give an AI agent a voice on nostr without giving it your keys.
+
+            The agent drafts the action. You enact it by signing. It broadcasts. The key never touches the agent — human-in-the-loop by architecture, not policy.
+
+            Approve from Telegram, or from any nostr client via a NIP-59 gift-wrapped DM. Sign custodially, or with a NIP-46 bunker so your key stays on your phone.
+
+            It's the action-out half of scoped autonomy: nvoy governs what an agent may perceive, nact governs what it may do.
+
+            MIT, docs, and a runnable demo → https://nact.nave.pub
+
+            #nostr #nostrdev
+            TXT
+
+            # POST to /propose using the luke image's node (has global fetch) so
+            # PROPOSE_TOKEN never leaves the box and the JSON is escaped cleanly.
+            docker run --rm --env-file "$LUKEENV" \
+              -v /tmp/nact-announce.txt:/tmp/a.txt:ro luke:latest \
+              node -e 'const fs=require("fs");const text=fs.readFileSync("/tmp/a.txt","utf8").trim();const tok=process.env.PROPOSE_TOKEN;if(!tok){console.error("PROPOSE_TOKEN unset in luke.env");process.exit(1)}fetch("https://luke.nave.pub/propose",{method:"POST",headers:{authorization:"Bearer "+tok,"content-type":"application/json"},body:JSON.stringify({identity:"nave",text,rationale:"nact launch — the pattern announcing itself, from the ecosystem voice"})}).then(async r=>{const b=await r.text();console.log("propose →",r.status,b);if(!r.ok)process.exit(1)}).catch(e=>{console.error("propose failed:",e.message);process.exit(1)})'
+
+            rm -f /tmp/nact-announce.txt
+            echo "── proposed as nave → check your Telegram approval card ──"
