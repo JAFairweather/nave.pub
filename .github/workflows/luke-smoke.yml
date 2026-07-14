@@ -62,6 +62,14 @@ jobs:
             echo "── poster status ──"
             docker logs deploy-luke-1 --tail 10 2>&1 | grep -i poster || echo "(no poster line)"
 
+            echo "── registering webhook for the CURRENT bot token ──"
+            BT=$(grep '^TELEGRAM_BOT_TOKEN=' "$LUKEENV" | cut -d= -f2-)
+            WS=$(grep '^TELEGRAM_WEBHOOK_SECRET=' "$LUKEENV" | cut -d= -f2-)
+            curl -s "https://api.telegram.org/bot${BT}/setWebhook" \
+              -d "url=https://luke.nave.pub/telegram/webhook" \
+              -d "secret_token=${WS}"
+            echo
+
             echo "── smoke test /propose ──"
             PT=$(grep '^PROPOSE_TOKEN=' "$LUKEENV" | cut -d= -f2-)
             curl -s https://luke.nave.pub/propose \
