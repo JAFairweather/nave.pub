@@ -39,7 +39,7 @@ jobs:
 
             MIT, docs, and a runnable demo → https://nact.nave.pub
 
-            #nostr #nostrdev
+            #nostrdev
             TXT
 
             # POST to /propose using the luke image's node (has global fetch) so
