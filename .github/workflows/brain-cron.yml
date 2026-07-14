@@ -1,0 +1,37 @@
+name: Luke — install twice-daily brain schedule
+
+# Installs (idempotently) a root crontab entry that runs the brain LIVE at
+# 08:00 and 17:00 America/New_York — DST-aware via CRON_TZ. The brain drafts
+# from the day's signals and proposes to your approval bot; nothing posts
+# without your tap. Re-run any time to refresh the schedule.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-nave
+  cancel-in-progress: false
+
+jobs:
+  install-cron:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install crontab over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            # Drop any prior managed lines, then re-add. CRON_TZ is appended at
+            # the end so it only scopes our line, not any other cron jobs.
+            crontab -l 2>/dev/null | grep -vE '# luke-brain-schedule|^CRON_TZ=' > /tmp/ct || true
+            {
+              echo 'CRON_TZ=America/New_York'
+              echo '0 8,17 * * * docker run --rm --env-file /root/nave.pub/deploy/luke.env luke:latest node luke-brain.mjs >> /var/log/luke-brain.log 2>&1 # luke-brain-schedule'
+            } >> /tmp/ct
+            crontab /tmp/ct
+            rm -f /tmp/ct
+            echo "── installed schedule ──"
+            crontab -l | grep -A1 'CRON_TZ'
+            echo "brain will propose at 08:00 and 17:00 America/New_York; log: /var/log/luke-brain.log"

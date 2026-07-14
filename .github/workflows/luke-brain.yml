@@ -1,9 +1,9 @@
 name: Luke — brain (draft proposals)
 
-# Runs the brain over the deploy path. Default is a DRY RUN (gathers signals,
-# drafts candidates, prints them — proposes nothing). Set live=true to actually
-# send drafts to Telegram for approval. Also emits the encrypted secrets as a
-# single base64 line so they can be committed for durability.
+# Runs the brain over the deploy path (flip-aware). Default is a DRY RUN
+# (gathers signals, drafts, prints — proposes nothing). Set live=true to
+# actually send drafts to your approval bot on Telegram. fix_anthropic=true
+# syncs the Director's API key into Luke's secrets first.
 on:
   workflow_dispatch:
     inputs:
@@ -38,35 +38,36 @@ jobs:
           script: |
             set +e
             export SOPS_AGE_KEY_FILE=/root/.config/sops/age/keys.txt
-            cd /root/noir/deploy/sites/luke
+            # Flip-aware paths.
+            if [ -f /root/nave.pub/deploy/.flipped ]; then
+              DEPLOY=/root/nave.pub/deploy; LUKEENV=$DEPLOY/luke.env
+            else
+              DEPLOY=/root/noir/deploy; LUKEENV=/root/noir/luke/.env
+            fi
+            ENC=$DEPLOY/sites/luke/secrets.enc.env
+            cd "$DEPLOY/sites/luke"
+            echo "using DEPLOY=$DEPLOY"
 
             if [ "$FIX_ANTHROPIC" = "true" ]; then
-              echo "── copying Director's ANTHROPIC_API_KEY into Luke's secrets ──"
-              DIRKEY=$(grep '^ANTHROPIC_API_KEY=' /root/noir/deploy/.env | cut -d= -f2-)
-              if [ -z "$DIRKEY" ]; then
-                echo "!! Director .env has no ANTHROPIC_API_KEY — cannot fix"
-              else
-                sops -d --output-type dotenv secrets.enc.env > secrets.env
-                if grep -q '^ANTHROPIC_API_KEY=' secrets.env; then
-                  sed -i "s|^ANTHROPIC_API_KEY=.*|ANTHROPIC_API_KEY=$DIRKEY|" secrets.env
-                else
-                  echo "ANTHROPIC_API_KEY=$DIRKEY" >> secrets.env
-                fi
-                sops --input-type dotenv --output-type dotenv -e secrets.env > secrets.enc.env && shred -u secrets.env
-                sops -d --output-type dotenv secrets.enc.env > /root/noir/luke/.env && chmod 600 /root/noir/luke/.env
-                echo "key length now: $(grep '^ANTHROPIC_API_KEY=' /root/noir/luke/.env | cut -d= -f2- | wc -c) chars"
+              echo "── syncing Director's ANTHROPIC_API_KEY ──"
+              DIRKEY=$(grep '^ANTHROPIC_API_KEY=' "$DEPLOY/.env" | cut -d= -f2-)
+              if [ -n "$DIRKEY" ]; then
+                sops -d --output-type dotenv "$ENC" > secrets.env
+                grep -q '^ANTHROPIC_API_KEY=' secrets.env \
+                  && sed -i "s|^ANTHROPIC_API_KEY=.*|ANTHROPIC_API_KEY=$DIRKEY|" secrets.env \
+                  || echo "ANTHROPIC_API_KEY=$DIRKEY" >> secrets.env
+                sops --input-type dotenv --output-type dotenv -e secrets.env > "$ENC" && shred -u secrets.env
               fi
             fi
 
+            # Make sure the container env is current from the encrypted secrets.
+            sops -d --output-type dotenv "$ENC" > "$LUKEENV" && chmod 600 "$LUKEENV"
+
             FLAG="--dry-run"
             [ "$LIVE" = "true" ] && FLAG=""
-            echo "── running brain ${FLAG:-(LIVE)} ──"
-            docker run --rm --env-file /root/noir/luke/.env \
-              -v "$PWD/luke-brain.mjs:/app/luke-brain.mjs:ro" \
-              -v "$PWD/brief:/app/brief:ro" \
+            echo "── running brain ${FLAG:-(LIVE — proposing to Telegram)} ──"
+            docker run --rm --env-file "$LUKEENV" \
+              -v "$DEPLOY/sites/luke/luke-brain.mjs:/app/luke-brain.mjs:ro" \
+              -v "$DEPLOY/sites/luke/brief:/app/brief:ro" \
               luke:latest node luke-brain.mjs $FLAG
             echo "── brain done ──"
-            echo "── B64-START ──"
-            base64 -w0 /root/noir/deploy/sites/luke/secrets.enc.env
-            echo
-            echo "── B64-END ──"
