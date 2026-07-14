@@ -21,6 +21,7 @@ on:
       - '.github/**'
       - '**.md'
       - 'LICENSE'
+      - 'deploy/ops/**'      # ops scripts are pulled on-demand by the Ops workflow
 
 concurrency:
   group: deploy-nave

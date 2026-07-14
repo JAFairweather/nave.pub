@@ -1,13 +1,14 @@
 name: Ops — run a box command (no deploy)
 
-# A lightweight ops button. SSHes to the box and runs ONE operation — no git
-# pull, no sites.sh, no compose build. Pick a curated task, or choose "custom"
-# and type a command in the `command` field. Dispatch-only; never runs on push.
+# A lightweight ops button. SSHes to the box and runs ONE operation — no
+# sites.sh (app-repo pulls), no compose build. Pick a curated task, run a
+# versioned script from deploy/ops/, or choose "custom" and type a command.
+# Dispatch-only; never runs on push.
 #
-# Inputs are forwarded as remote env vars (TASK/CMD) rather than interpolated
-# into the script text. This runner executes arbitrary commands on the host by
-# design — it grants nothing beyond what deploy.yml already can (edit-and-push
-# is root on the box); only repo collaborators can dispatch it.
+# Inputs are forwarded as remote env vars (TASK/CMD/SCRIPT) rather than
+# interpolated into the script text. This runner executes arbitrary commands on
+# the host by design — it grants nothing beyond what deploy.yml already can
+# (edit-and-push is root on the box); only repo collaborators can dispatch it.
 on:
   workflow_dispatch:
     inputs:
@@ -17,6 +18,7 @@ on:
         default: status
         options:
           - status            # containers + disk + uptime
+          - run-script        # run deploy/ops/<script> (see the `script` field)
           - reload-caddy      # reload Caddy config in place (no restart)
           - restart-caddy
           - restart-luke
@@ -26,6 +28,10 @@ on:
           - brain-log         # tail /var/log/luke-brain.log
           - show-cron         # the installed brain schedule
           - custom            # run the `command` field
+      script:
+        description: 'Script under deploy/ops/ (only when task = run-script), e.g. health.sh'
+        required: false
+        default: ''
       command:
         description: Command to run (only when task = custom)
         required: false
@@ -44,16 +50,18 @@ jobs:
         env:
           TASK: ${{ github.event.inputs.task }}
           CMD: ${{ github.event.inputs.command }}
+          SCRIPT: ${{ github.event.inputs.script }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          envs: TASK,CMD
+          envs: TASK,CMD,SCRIPT
           script: |
             set -u
-            # Run from the live deploy dir (flip-aware) so `docker compose` finds
-            # the project and relative paths resolve.
-            if [ -f /root/nave.pub/deploy/.flipped ]; then D=/root/nave.pub/deploy; else D=/root/noir/deploy; fi
+            # Live deploy root (flip-aware): ROOT is the repo, D is the deploy dir
+            # where `docker compose` finds the project.
+            if [ -f /root/nave.pub/deploy/.flipped ]; then ROOT=/root/nave.pub; else ROOT=/root/noir; fi
+            D="$ROOT/deploy"
             cd "$D" 2>/dev/null || true
             run() { echo "▸ $*"; eval "$@"; }
             echo "== ops: ${TASK} @ $D =="
@@ -61,6 +69,21 @@ jobs:
               status)
                 run 'docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
                 echo; run 'df -h / | tail -2'; run 'free -h | head -2'; run 'uptime'
+                ;;
+              run-script)
+                # Only allow a bare filename under deploy/ops/ — no path traversal.
+                case "$SCRIPT" in
+                  ''|*/*|*..*) echo "bad or empty script name: '$SCRIPT' (use a bare filename like health.sh)"; exit 1 ;;
+                esac
+                # Fast refresh of THIS repo only (no app pulls, no build) so the
+                # script is the current version on main — adding a script never
+                # needs a full deploy.
+                echo "▸ git -C $ROOT pull --ff-only (nave.pub repo only)"
+                git -C "$ROOT" pull --ff-only
+                F="$D/ops/$SCRIPT"
+                [ -f "$F" ] || { echo "no such script: deploy/ops/$SCRIPT"; echo "available:"; ls "$D/ops"; exit 1; }
+                echo "▸ bash deploy/ops/$SCRIPT"; echo
+                bash "$F"
                 ;;
               reload-caddy)     run 'docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile && echo reloaded' ;;
               restart-caddy)    run 'docker compose restart caddy' ;;
