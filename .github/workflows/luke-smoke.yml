@@ -1,10 +1,9 @@
 name: Luke — recreate + smoke test
 
-# One-off ops helper. Finds whichever plaintext env has all 8 required keys,
-# rebuilds the encrypted secrets from it, recreates the luke container,
-# reports poster status, fires a /propose smoke test, and prints the
-# ciphertext (safe — only the box's age key can decrypt it) so it can be
-# committed to the repo permanently. No secret VALUES are printed.
+# One-off ops helper. Treats secrets.enc.env as the source of truth: decrypts
+# it into the container env, recreates luke, reports poster status, fires a
+# /propose smoke test, and surfaces any Telegram error from the container log.
+# Prints no secret values.
 on:
   workflow_dispatch:
 
@@ -16,7 +15,7 @@ jobs:
   luke-smoke:
     runs-on: ubuntu-latest
     steps:
-      - name: Rebuild + recreate + smoke test over SSH
+      - name: Decrypt + recreate + smoke test over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -26,30 +25,21 @@ jobs:
           script: |
             set +e
             export SOPS_AGE_KEY_FILE=/root/.config/sops/age/keys.txt
-            RE='^(LUKE_NSEC|NAVE_NSEC|LUKE_MASTER_NPUB|TELEGRAM_BOT_TOKEN|TELEGRAM_APPROVER_ID|PROPOSE_TOKEN|TELEGRAM_WEBHOOK_SECRET|ANTHROPIC_API_KEY)=.'
             LUKEENV=/root/noir/luke/.env
-            PLAIN=/root/noir/deploy/sites/luke/secrets.env
-
-            CP=0; [ -f "$PLAIN" ]   && CP=$(grep -cE "$RE" "$PLAIN")
-            CL=0; [ -f "$LUKEENV" ] && CL=$(grep -cE "$RE" "$LUKEENV")
-            echo "── inventory ──  secrets.env: ${CP}/8   luke/.env: ${CL}/8"
-
-            SRC=""
-            [ "$CP" = "8" ] && SRC="$PLAIN"
-            [ -z "$SRC" ] && [ "$CL" = "8" ] && SRC="$LUKEENV"
-            echo "chosen source: ${SRC:-NONE}"
-            if [ -z "$SRC" ]; then echo "!! no plaintext holds all 8 keys — need manual values"; exit 0; fi
-
             cd /root/noir/deploy/sites/luke
-            [ "$SRC" != "$PLAIN" ] && cp "$SRC" secrets.env
-            sops --input-type dotenv --output-type dotenv -e secrets.env > secrets.enc.env && echo "rebuilt secrets.enc.env"
-            sops -d --output-type dotenv secrets.enc.env > "${LUKEENV}.new" && mv "${LUKEENV}.new" "$LUKEENV" && chmod 600 "$LUKEENV"
+
+            echo "── decrypting secrets.enc.env → container env ──"
+            if ! sops -d --output-type dotenv secrets.enc.env > "${LUKEENV}.new" 2>/dev/null; then
+              echo "!! secrets.enc.env missing or invalid — aborting"; exit 0
+            fi
+            mv "${LUKEENV}.new" "$LUKEENV" && chmod 600 "$LUKEENV"
+            echo "keys loaded: $(grep -cE '^[A-Z_]+=.' "$LUKEENV")"
 
             cd /root/noir/deploy
             docker compose up -d --force-recreate luke
             sleep 3
             echo "── poster status ──"
-            docker logs deploy-luke-1 --tail 10 2>&1 | grep -i poster || echo "(no poster line found)"
+            docker logs deploy-luke-1 --tail 10 2>&1 | grep -i poster || echo "(no poster line)"
 
             echo "── smoke test /propose ──"
             PT=$(grep '^PROPOSE_TOKEN=' "$LUKEENV" | cut -d= -f2-)
@@ -58,6 +48,6 @@ jobs:
               -d '{"identity":"luke","text":"Testing the loop — first words from Luke.","rationale":"smoke test via the deploy path"}'
             echo
 
-            echo "── CIPHERTEXT-START (safe to commit) ──"
-            cat /root/noir/deploy/sites/luke/secrets.enc.env
-            echo "── CIPHERTEXT-END ──"
+            echo "── telegram error (from container log, if any) ──"
+            docker logs deploy-luke-1 --since 30s 2>&1 | grep -i telegram | tail -3 || echo "(none — delivery ok)"
+            echo "── done ──"
