@@ -1,11 +1,17 @@
 name: Luke — recreate + smoke test
 
-# One-off ops helper. Treats secrets.enc.env as the source of truth: decrypts
-# it into the container env, recreates luke, reports poster status, fires a
-# /propose smoke test, and surfaces any Telegram error from the container log.
-# Prints no secret values.
+# One-off ops helper. Optionally updates TELEGRAM_APPROVER_ID (passed as an
+# input, never committed), then treats secrets.enc.env as the source of truth:
+# decrypts it into the container env, recreates luke, reports poster status,
+# fires a /propose smoke test, and surfaces any Telegram error. No secret
+# values are printed.
 on:
   workflow_dispatch:
+    inputs:
+      approver_id:
+        description: "New TELEGRAM_APPROVER_ID (numeric). Blank = leave as-is."
+        required: false
+        default: ""
 
 concurrency:
   group: deploy-nave
@@ -15,18 +21,33 @@ jobs:
   luke-smoke:
     runs-on: ubuntu-latest
     steps:
-      - name: Decrypt + recreate + smoke test over SSH
+      - name: Update id + recreate + smoke test over SSH
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          NEWID: ${{ inputs.approver_id }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: "3m"
+          envs: NEWID
           script: |
             set +e
             export SOPS_AGE_KEY_FILE=/root/.config/sops/age/keys.txt
             LUKEENV=/root/noir/luke/.env
             cd /root/noir/deploy/sites/luke
+
+            if [ -n "$NEWID" ]; then
+              echo "── updating TELEGRAM_APPROVER_ID ──"
+              sops -d --output-type dotenv secrets.enc.env > secrets.env
+              if grep -q '^TELEGRAM_APPROVER_ID=' secrets.env; then
+                sed -i "s/^TELEGRAM_APPROVER_ID=.*/TELEGRAM_APPROVER_ID=$NEWID/" secrets.env
+              else
+                echo "TELEGRAM_APPROVER_ID=$NEWID" >> secrets.env
+              fi
+              sops --input-type dotenv --output-type dotenv -e secrets.env > secrets.enc.env && shred -u secrets.env
+              echo "updated."
+            fi
 
             echo "── decrypting secrets.enc.env → container env ──"
             if ! sops -d --output-type dotenv secrets.enc.env > "${LUKEENV}.new" 2>/dev/null; then
