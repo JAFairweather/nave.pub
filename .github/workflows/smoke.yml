@@ -1,0 +1,50 @@
+name: Smoke — probe every nave vhost
+
+# Read-only health check. SSHes to the box and curls each public subdomain
+# against the local Caddy (--resolve <name>:443:127.0.0.1) so it tests the
+# real TLS + routing without depending on external DNS/network. Prints HTTP
+# status, bytes, and the served cert's subject/expiry per host. Makes no
+# changes. Run from Actions → "Smoke — probe every nave vhost".
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-nave
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -u
+            hosts="nave.pub www.nave.pub noir.nave.pub director.nave.pub \
+              nvelope.nave.pub nontact.nave.pub notegate.nave.pub ntrigue.nave.pub \
+              nvoy.nave.pub nherit.nave.pub nscope.nave.pub nact.nave.pub luke.nave.pub"
+            printf '%-22s %-6s %-9s %s\n' HOST HTTP BYTES CERT
+            for h in $hosts; do
+              code=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 12 \
+                --resolve "$h:443:127.0.0.1" "https://$h/" 2>/dev/null || echo ERR)
+              bytes=$(curl -sk -o /dev/null -w '%{size_download}' --max-time 12 \
+                --resolve "$h:443:127.0.0.1" "https://$h/" 2>/dev/null || echo 0)
+              # Pull the leaf cert's CN/notAfter as served for this SNI.
+              cert=$(echo | openssl s_client -servername "$h" -connect 127.0.0.1:443 2>/dev/null \
+                | openssl x509 -noout -subject -enddate 2>/dev/null \
+                | tr '\n' ' ' | sed 's/subject=//; s/notAfter=/exp /' || echo "no-cert")
+              printf '%-22s %-6s %-9s %s\n' "$h" "$code" "$bytes" "${cert:-no-cert}"
+            done
+            echo
+            echo "note: 200/301/302 = serving; 308 apex-redirect ok; ERR/000 = not routing."
+            # Extra detail on nact specifically — the newest vhost.
+            echo "── nact.nave.pub assets ──"
+            for p in / /assets/nact.png /favicon.svg; do
+              printf '%-22s ' "$p"
+              curl -sk -o /dev/null -w 'HTTP %{http_code} · %{size_download}B · %{content_type}\n' \
+                --max-time 12 --resolve "nact.nave.pub:443:127.0.0.1" "https://nact.nave.pub$p" 2>/dev/null || echo ERR
+            done
