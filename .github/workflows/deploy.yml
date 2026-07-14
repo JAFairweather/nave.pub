@@ -30,7 +30,13 @@ jobs:
           script_stop: true
           script: |
             set -e
-            cd /root/nave.pub
+            # Location-aware: use the flipped home if it exists, else the old
+            # one. This makes deploys work before AND after the platform flip,
+            # and (critically) stops a post-flip deploy from reviving the old
+            # stack — both dirs share the compose project name "deploy".
+            if [ -d /root/nave.pub/deploy ]; then ROOT=/root/nave.pub; else ROOT=/root/noir; fi
+            echo "deploying from $ROOT"
+            cd "$ROOT"
             git pull --ff-only
             cd deploy
             bash sites.sh

@@ -1,0 +1,74 @@
+name: Platform flip — cut over to /root/nave.pub
+
+# One-time cutover: move the running stack from /root/noir/deploy to
+# /root/nave.pub/deploy. Validates BEFORE touching the live stack, carries
+# over Luke's untracked encrypted secrets, and AUTO-ROLLS-BACK if the new
+# stack doesn't serve — so worst case is "exactly where we started".
+# Both dirs share the compose project name "deploy", so the caddy_data
+# volume (certs) carries over with no re-issuance.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-nave
+  cancel-in-progress: false
+
+jobs:
+  flip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cut over the stack over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: "12m"
+          script: |
+            set -e
+            export SOPS_AGE_KEY_FILE=/root/.config/sops/age/keys.txt
+
+            echo "── 1. prep the new tree at /root/nave.pub ──"
+            if [ -d /root/nave.pub/.git ]; then
+              git -C /root/nave.pub fetch origin main
+              git -C /root/nave.pub reset --hard origin/main
+            else
+              git clone https://github.com/JAFairweather/nave.pub /root/nave.pub
+            fi
+            cp /root/noir/deploy/.env /root/nave.pub/deploy/.env
+            cd /root/nave.pub/deploy
+            bash sites.sh
+
+            echo "── 2. carry over Luke's untracked encrypted secrets ──"
+            if [ -f /root/noir/deploy/sites/luke/secrets.enc.env ]; then
+              cp /root/noir/deploy/sites/luke/secrets.enc.env sites/luke/secrets.enc.env
+              sops --input-type dotenv --output-type dotenv -d sites/luke/secrets.enc.env > luke.env && chmod 600 luke.env
+              echo "luke.env keys loaded: $(grep -cE '^[A-Z_]+=.' luke.env)"
+            else
+              echo "⚠ no luke secrets in old tree — luke will come up keyless"
+            fi
+
+            echo "── 3. validate the Caddyfile BEFORE touching the live stack ──"
+            docker run --rm -e ACME_EMAIL=deploy@nave.pub \
+              -v "$PWD/Caddyfile":/etc/caddy/Caddyfile:ro \
+              caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
+
+            echo "── 4. cutover (errors past here trigger rollback) ──"
+            set +e
+            cd /root/noir/deploy && docker compose down
+            cd /root/nave.pub/deploy && docker compose up -d --build
+            UP=$?
+            sleep 12
+            CODE=$(curl -sk -o /dev/null -w "%{http_code}" -H "Host: nave.pub" https://localhost/ 2>/dev/null || echo 000)
+            echo "compose-up=$UP   apex-check=$CODE"
+
+            if [ "$UP" = "0" ] && echo "$CODE" | grep -qE '^(200|301|302)$'; then
+              echo "✅ FLIP OK — the stack now serves from /root/nave.pub"
+              docker compose ps
+            else
+              echo "⚠ new stack unhealthy (up=$UP apex=$CODE) — ROLLING BACK"
+              cd /root/nave.pub/deploy && docker compose down
+              cd /root/noir/deploy && docker compose up -d --build
+              echo "↩ rolled back to /root/noir — site restored, nothing lost"
+              exit 1
+            fi
