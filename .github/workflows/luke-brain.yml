@@ -11,6 +11,10 @@ on:
         description: "true = propose to Telegram; blank = dry-run only"
         required: false
         default: ""
+      fix_anthropic:
+        description: "true = copy the Director's ANTHROPIC_API_KEY into Luke's secrets first"
+        required: false
+        default: ""
 
 concurrency:
   group: deploy-nave
@@ -24,15 +28,36 @@ jobs:
         uses: appleboy/ssh-action@v1.2.0
         env:
           LIVE: ${{ inputs.live }}
+          FIX_ANTHROPIC: ${{ inputs.fix_anthropic }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: "6m"
-          envs: LIVE
+          envs: LIVE,FIX_ANTHROPIC
           script: |
             set +e
+            export SOPS_AGE_KEY_FILE=/root/.config/sops/age/keys.txt
             cd /root/noir/deploy/sites/luke
+
+            if [ "$FIX_ANTHROPIC" = "true" ]; then
+              echo "── copying Director's ANTHROPIC_API_KEY into Luke's secrets ──"
+              DIRKEY=$(grep '^ANTHROPIC_API_KEY=' /root/noir/deploy/.env | cut -d= -f2-)
+              if [ -z "$DIRKEY" ]; then
+                echo "!! Director .env has no ANTHROPIC_API_KEY — cannot fix"
+              else
+                sops -d --output-type dotenv secrets.enc.env > secrets.env
+                if grep -q '^ANTHROPIC_API_KEY=' secrets.env; then
+                  sed -i "s|^ANTHROPIC_API_KEY=.*|ANTHROPIC_API_KEY=$DIRKEY|" secrets.env
+                else
+                  echo "ANTHROPIC_API_KEY=$DIRKEY" >> secrets.env
+                fi
+                sops --input-type dotenv --output-type dotenv -e secrets.env > secrets.enc.env && shred -u secrets.env
+                sops -d --output-type dotenv secrets.enc.env > /root/noir/luke/.env && chmod 600 /root/noir/luke/.env
+                echo "key length now: $(grep '^ANTHROPIC_API_KEY=' /root/noir/luke/.env | cut -d= -f2- | wc -c) chars"
+              fi
+            fi
+
             FLAG="--dry-run"
             [ "$LIVE" = "true" ] && FLAG=""
             echo "── running brain ${FLAG:-(LIVE)} ──"
