@@ -4,11 +4,10 @@ name: Deploy the Nave
 #  • the "Run workflow" button (GitHub mobile app → Actions → Deploy the Nave)
 #    — a deploy button you can tap from anywhere;
 #  • automatically on every push to this repo's main.
-# It SSHes to the box and syncs everything: pulls the repos, runs sites.sh
-# (which pulls the hub + luke + every app), validates the Caddyfile before
-# any reload, then compose up. (The compose/Caddy config still lives in the
-# noir repo's deploy/ for now — that's the next thing to lift over here; the
-# script paths below move with it when it does.)
+# It SSHes to the box and syncs everything: pulls this repo, runs sites.sh
+# (which pulls noir + luke + every app), validates the Caddyfile before any
+# reload, then compose up. The compose/Caddy config lives here now, in
+# nave.pub/deploy — the box's ops home is /root/nave.pub/deploy.
 on:
   workflow_dispatch:
   push:
@@ -31,7 +30,7 @@ jobs:
           script_stop: true
           script: |
             set -e
-            cd /root/noir
+            cd /root/nave.pub
             git pull --ff-only
             cd deploy
             bash sites.sh
