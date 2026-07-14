@@ -62,7 +62,13 @@ services:
       - "443:443"
     env_file: .env                # Caddy reads ACME_EMAIL from here
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Mount the DIRECTORY, not the single Caddyfile. A single-file bind mount
+      # freezes the file's inode at container-creation time, so a `git pull`
+      # that REPLACES the file (new inode) leaves the container reading the old
+      # content forever — new app vhosts silently never load, and `caddy
+      # reload` re-reads the same stale inode. A directory mount resolves the
+      # path live on each open, so the container always sees the current file.
+      - ./caddy:/etc/caddy:ro
       - caddy_data:/data          # certificates persist here — do not delete
       - caddy_config:/config
       # Every repo, synced by sites.sh → served at <name>.nave.pub. The hub

@@ -50,7 +50,7 @@ jobs:
 
             echo "── 3. validate the Caddyfile BEFORE touching the live stack ──"
             docker run --rm -e ACME_EMAIL=deploy@nave.pub \
-              -v "$PWD/Caddyfile":/etc/caddy/Caddyfile:ro \
+              -v "$PWD/caddy/Caddyfile":/etc/caddy/Caddyfile:ro \
               caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
 
             echo "── 3.5 sanity: the hub is present before we touch the live stack ──"

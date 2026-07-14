@@ -38,8 +38,10 @@ cp /root/noir/deploy/.env .env
 bash sites.sh                       # clones nave, noir, apps, luke; writes luke.env
 
 # 4. Validate the Caddyfile BEFORE touching the running stack
+#    (config lives in ./caddy/Caddyfile — mounted as a directory so file
+#     replacements from git pull are always visible to the container)
 docker run --rm -e ACME_EMAIL=deploy@nave.pub \
-  -v "$PWD/Caddyfile":/etc/caddy/Caddyfile:ro \
+  -v "$PWD/caddy/Caddyfile":/etc/caddy/Caddyfile:ro \
   caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
 
 # 5. Stop the OLD stack (keeps volumes → certs survive). Ports free up.
