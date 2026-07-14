@@ -30,11 +30,13 @@ jobs:
           script_stop: true
           script: |
             set -e
-            # Location-aware: use the flipped home if it exists, else the old
-            # one. This makes deploys work before AND after the platform flip,
-            # and (critically) stops a post-flip deploy from reviving the old
-            # stack — both dirs share the compose project name "deploy".
-            if [ -d /root/nave.pub/deploy ]; then ROOT=/root/nave.pub; else ROOT=/root/noir; fi
+            # Location-aware, gated on a marker a SUCCESSFUL flip writes — not
+            # merely the dir existing (a failed/rolled-back flip leaves the dir
+            # behind). So deploys stay on /root/noir until the flip truly cuts
+            # over, then follow it to /root/nave.pub. Both dirs share the compose
+            # project name "deploy", so this is what prevents a stray deploy from
+            # reviving the wrong stack.
+            if [ -f /root/nave.pub/deploy/.flipped ]; then ROOT=/root/nave.pub; else ROOT=/root/noir; fi
             echo "deploying from $ROOT"
             cd "$ROOT"
             git pull --ff-only

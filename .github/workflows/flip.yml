@@ -53,18 +53,32 @@ jobs:
               -v "$PWD/Caddyfile":/etc/caddy/Caddyfile:ro \
               caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
 
+            echo "── 3.5 sanity: the hub is present before we touch the live stack ──"
+            [ -f sites/nave/index.html ] || { echo "!! sites/nave/index.html missing — aborting (old stack untouched)"; exit 1; }
+
             echo "── 4. cutover (errors past here trigger rollback) ──"
             set +e
+            rm -f /root/nave.pub/deploy/.flipped     # clear any stale marker
             cd /root/noir/deploy && docker compose down
             cd /root/nave.pub/deploy && docker compose up -d --build
             UP=$?
-            sleep 12
-            CODE=$(curl -sk -o /dev/null -w "%{http_code}" -H "Host: nave.pub" https://localhost/ 2>/dev/null || echo 000)
-            echo "compose-up=$UP   apex-check=$CODE"
+            # Give the fresh caddy time to actually serve on 443 (retry ~50s).
+            CODE=000
+            for i in $(seq 1 10); do
+              sleep 5
+              CODE=$(curl -sk -o /dev/null -w "%{http_code}" -H "Host: nave.pub" https://localhost/ 2>/dev/null || echo 000)
+              echo "  apex attempt $i → $CODE"
+              echo "$CODE" | grep -qE '^(200|301|302|308)$' && break
+            done
 
-            if [ "$UP" = "0" ] && echo "$CODE" | grep -qE '^(200|301|302)$'; then
+            echo "── diagnostics ──"
+            docker compose ps
+            echo "sites/nave: $(ls sites/nave 2>/dev/null | wc -l) files; luke.env keys: $(grep -cE '^[A-Z_]+=.' luke.env 2>/dev/null)"
+            docker logs deploy-caddy-1 --tail 12 2>&1 | tail -12
+
+            if [ "$UP" = "0" ] && echo "$CODE" | grep -qE '^(200|301|302|308)$'; then
+              touch /root/nave.pub/deploy/.flipped     # deploys now follow the new home
               echo "✅ FLIP OK — the stack now serves from /root/nave.pub"
-              docker compose ps
             else
               echo "⚠ new stack unhealthy (up=$UP apex=$CODE) — ROLLING BACK"
               cd /root/nave.pub/deploy && docker compose down
