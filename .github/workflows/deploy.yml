@@ -12,6 +12,15 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    # Workflow edits and docs never need a box deploy (workflows run on GitHub,
+    # not the box; .md/LICENSE aren't served). Skip the full pull+build for
+    # pushes that touch ONLY these — use the Ops workflow for box commands, or
+    # dispatch this deploy manually. A push that also changes real site/app
+    # files (index.html, assets, deploy/**) still deploys as normal.
+    paths-ignore:
+      - '.github/**'
+      - '**.md'
+      - 'LICENSE'
 
 concurrency:
   group: deploy-nave

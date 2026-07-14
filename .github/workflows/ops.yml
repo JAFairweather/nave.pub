@@ -1,0 +1,79 @@
+name: Ops — run a box command (no deploy)
+
+# A lightweight ops button. SSHes to the box and runs ONE operation — no git
+# pull, no sites.sh, no compose build. Pick a curated task, or choose "custom"
+# and type a command in the `command` field. Dispatch-only; never runs on push.
+#
+# Inputs are forwarded as remote env vars (TASK/CMD) rather than interpolated
+# into the script text. This runner executes arbitrary commands on the host by
+# design — it grants nothing beyond what deploy.yml already can (edit-and-push
+# is root on the box); only repo collaborators can dispatch it.
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: What to run
+        type: choice
+        default: status
+        options:
+          - status            # containers + disk + uptime
+          - reload-caddy      # reload Caddy config in place (no restart)
+          - restart-caddy
+          - restart-luke
+          - restart-director
+          - caddy-logs        # last 80 lines
+          - luke-logs
+          - brain-log         # tail /var/log/luke-brain.log
+          - show-cron         # the installed brain schedule
+          - custom            # run the `command` field
+      command:
+        description: Command to run (only when task = custom)
+        required: false
+        default: ''
+
+concurrency:
+  group: ops-nave           # independent of deploys, so a stuck deploy can't block ops
+  cancel-in-progress: false
+
+jobs:
+  ops:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          TASK: ${{ github.event.inputs.task }}
+          CMD: ${{ github.event.inputs.command }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: TASK,CMD
+          script: |
+            set -u
+            # Run from the live deploy dir (flip-aware) so `docker compose` finds
+            # the project and relative paths resolve.
+            if [ -f /root/nave.pub/deploy/.flipped ]; then D=/root/nave.pub/deploy; else D=/root/noir/deploy; fi
+            cd "$D" 2>/dev/null || true
+            run() { echo "▸ $*"; eval "$@"; }
+            echo "== ops: ${TASK} @ $D =="
+            case "$TASK" in
+              status)
+                run 'docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
+                echo; run 'df -h / | tail -2'; run 'free -h | head -2'; run 'uptime'
+                ;;
+              reload-caddy)     run 'docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile && echo reloaded' ;;
+              restart-caddy)    run 'docker compose restart caddy' ;;
+              restart-luke)     run 'docker compose restart luke' ;;
+              restart-director) run 'docker compose restart director' ;;
+              caddy-logs)       run 'docker logs --tail 80 deploy-caddy-1 2>&1' ;;
+              luke-logs)        run 'docker logs --tail 80 deploy-luke-1 2>&1' ;;
+              brain-log)        run 'tail -n 60 /var/log/luke-brain.log 2>/dev/null || echo "(no brain log yet — cron has not run)"' ;;
+              show-cron)        run 'crontab -l 2>/dev/null | grep -A1 "CRON_TZ" || echo "(no crontab)"' ;;
+              custom)
+                [ -n "${CMD}" ] || { echo "task=custom but the command field is empty"; exit 1; }
+                run "${CMD}"
+                ;;
+              *) echo "unknown task: ${TASK}"; exit 1 ;;
+            esac
+            echo "== done =="
