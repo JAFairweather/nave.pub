@@ -1,0 +1,19 @@
+{
+  "names": {
+    "_": "d8de5184a096e49b3f79730258c05f8ffb56cdf138c08b3c7b0b0685a0fb963e",
+    "nave": "d8de5184a096e49b3f79730258c05f8ffb56cdf138c08b3c7b0b0685a0fb963e",
+    "luke": "f938026f5e12f026f8dc9f032cb672e946fa1b631a197dc06e635d46f014665a"
+  },
+  "relays": {
+    "d8de5184a096e49b3f79730258c05f8ffb56cdf138c08b3c7b0b0685a0fb963e": [
+      "wss://relay.damus.io",
+      "wss://nos.lol",
+      "wss://relay.primal.net"
+    ],
+    "f938026f5e12f026f8dc9f032cb672e946fa1b631a197dc06e635d46f014665a": [
+      "wss://relay.damus.io",
+      "wss://nos.lol",
+      "wss://relay.primal.net"
+    ]
+  }
+}
