@@ -1,21 +1,22 @@
 name: Luke — recreate + smoke test
 
-# A one-off ops helper: rebuild Luke's container env from the encrypted
-# secrets, force-recreate the luke container, report the poster status, and
-# fire a /propose smoke test (which DMs the master a Telegram card). Prints
-# NO secret values — only the poster line, a key count, and the JSON reply.
+# One-off ops helper. Finds whichever plaintext env has all 8 required keys,
+# rebuilds the encrypted secrets from it, recreates the luke container,
+# reports poster status, fires a /propose smoke test, and prints the
+# ciphertext (safe — only the box's age key can decrypt it) so it can be
+# committed to the repo permanently. No secret VALUES are printed.
 on:
   workflow_dispatch:
 
 concurrency:
-  group: deploy-nave          # share the deploy lock so it can't race a deploy
+  group: deploy-nave
   cancel-in-progress: false
 
 jobs:
   luke-smoke:
     runs-on: ubuntu-latest
     steps:
-      - name: Recreate luke + smoke test over SSH
+      - name: Rebuild + recreate + smoke test over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -23,31 +24,40 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: "3m"
           script: |
-            set -e
+            set +e
             export SOPS_AGE_KEY_FILE=/root/.config/sops/age/keys.txt
+            RE='^(LUKE_NSEC|NAVE_NSEC|LUKE_MASTER_NPUB|TELEGRAM_BOT_TOKEN|TELEGRAM_APPROVER_ID|PROPOSE_TOKEN|TELEGRAM_WEBHOOK_SECRET|ANTHROPIC_API_KEY)=.'
+            LUKEENV=/root/noir/luke/.env
+            PLAIN=/root/noir/deploy/sites/luke/secrets.env
+
+            CP=0; [ -f "$PLAIN" ]   && CP=$(grep -cE "$RE" "$PLAIN")
+            CL=0; [ -f "$LUKEENV" ] && CL=$(grep -cE "$RE" "$LUKEENV")
+            echo "── inventory ──  secrets.env: ${CP}/8   luke/.env: ${CL}/8"
+
+            SRC=""
+            [ "$CP" = "8" ] && SRC="$PLAIN"
+            [ -z "$SRC" ] && [ "$CL" = "8" ] && SRC="$LUKEENV"
+            echo "chosen source: ${SRC:-NONE}"
+            if [ -z "$SRC" ]; then echo "!! no plaintext holds all 8 keys — need manual values"; exit 0; fi
+
             cd /root/noir/deploy/sites/luke
+            [ "$SRC" != "$PLAIN" ] && cp "$SRC" secrets.env
+            sops --input-type dotenv --output-type dotenv -e secrets.env > secrets.enc.env && echo "rebuilt secrets.enc.env"
+            sops -d --output-type dotenv secrets.enc.env > "${LUKEENV}.new" && mv "${LUKEENV}.new" "$LUKEENV" && chmod 600 "$LUKEENV"
 
-            echo "── keys present in secrets.enc.env ──"
-            sops -d --output-type dotenv secrets.enc.env \
-              | grep -cE '^(LUKE_NSEC|NAVE_NSEC|LUKE_MASTER_NPUB|TELEGRAM_BOT_TOKEN|TELEGRAM_APPROVER_ID|PROPOSE_TOKEN|TELEGRAM_WEBHOOK_SECRET|ANTHROPIC_API_KEY)=.' \
-              || echo "0 (decrypt failed?)"
-
-            echo "── writing container env + recreating luke ──"
-            sops -d --output-type dotenv secrets.enc.env > /root/noir/luke/.env.new
-            mv /root/noir/luke/.env.new /root/noir/luke/.env
-            chmod 600 /root/noir/luke/.env
             cd /root/noir/deploy
             docker compose up -d --force-recreate luke
             sleep 3
-
             echo "── poster status ──"
-            docker logs deploy-luke-1 --tail 10 2>&1 | grep -i poster || docker logs deploy-luke-1 --tail 10 2>&1
+            docker logs deploy-luke-1 --tail 10 2>&1 | grep -i poster || echo "(no poster line found)"
 
             echo "── smoke test /propose ──"
-            PROPOSE_TOKEN=$(grep '^PROPOSE_TOKEN=' /root/noir/luke/.env | cut -d= -f2-)
+            PT=$(grep '^PROPOSE_TOKEN=' "$LUKEENV" | cut -d= -f2-)
             curl -s https://luke.nave.pub/propose \
-              -H "authorization: Bearer $PROPOSE_TOKEN" \
-              -H "content-type: application/json" \
+              -H "authorization: Bearer $PT" -H "content-type: application/json" \
               -d '{"identity":"luke","text":"Testing the loop — first words from Luke.","rationale":"smoke test via the deploy path"}'
             echo
-            echo "── done ──"
+
+            echo "── CIPHERTEXT-START (safe to commit) ──"
+            cat /root/noir/deploy/sites/luke/secrets.enc.env
+            echo "── CIPHERTEXT-END ──"
