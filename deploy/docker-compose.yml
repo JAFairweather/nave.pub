@@ -65,7 +65,14 @@ services:
     image: nactor:latest
     restart: unless-stopped
     env_file:
+      # luke.env is regenerated from SOPS by sites.sh on every deploy, so it
+      # can't hold Nactor's own key (an append would be wiped). nactor.env is
+      # box-local (gitignored, minted by ops/gen-nactor-key.sh) and untouched by
+      # sites.sh — that's where NACTOR_NSEC lives. luke.env still provides the
+      # bootstrap-fallback role keys + the Director npub during the migration.
       - path: ./luke.env
+        required: false
+      - path: ./nactor.env
         required: false
     environment:
       - NACT_PORT=8791
