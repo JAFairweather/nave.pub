@@ -87,7 +87,12 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"                   # ACME http-01 challenge + http→https redirect
-      - "443:443"
+      - "443:443"                 # HTTP/1.1 + HTTP/2 over TCP
+      - "443:443/udp"             # HTTP/3 (QUIC). Caddy advertises `alt-svc: h3`
+                                  # by default; without UDP 443 published, browsers
+                                  # that cache that hint try QUIC into a black hole
+                                  # and can fail with ERR_CONNECTION_CLOSED. Publish
+                                  # UDP so HTTP/3 actually works instead of stalling.
     env_file: .env                # Caddy reads ACME_EMAIL from here
     volumes:
       # Mount the DIRECTORY, not the single Caddyfile. A single-file bind mount
