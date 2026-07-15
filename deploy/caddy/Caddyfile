@@ -84,9 +84,9 @@ nscope.nave.pub {
 	import app nscope
 }
 nact.nave.pub {
-	# /api/* → the NIP-98-gated Nact runtime; everything else is the static app.
+	# /api/* → Nactor (the NIP-98-gated Nact runtime); else the static app.
 	@api path /api/*
-	reverse_proxy @api nact-runtime:8791
+	reverse_proxy @api nactor:8791
 	root * /srv/apps/nact
 	encode gzip zstd
 	@mjs path *.mjs

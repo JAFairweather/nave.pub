@@ -54,15 +54,15 @@ services:
       retries: 3
       start_period: 10s
 
-  # The Nact runtime — the NIP-98-gated control-plane API behind nact.nave.pub/api.
-  # Built from the nact repo's server/. Reuses luke.env for the master npub +
-  # role signing keys (LUKE_NSEC / NAVE_NSEC). Config persists in nact_data.
-  # See sites/nact/server/README.md.
-  nact-runtime:
+  # Nactor — the Nact runtime, the NIP-98-gated control-plane API behind
+  # nact.nave.pub/api. Built from the nact repo's nactor/. Reuses luke.env for
+  # the master npub + role signing keys (LUKE_NSEC / NAVE_NSEC). Config persists
+  # in nact_data. See sites/nact/nactor/README.md.
+  nactor:
     build:
       context: ./sites/nact
-      dockerfile: server/Dockerfile
-    image: nact-runtime:latest
+      dockerfile: nactor/Dockerfile
+    image: nactor:latest
     restart: unless-stopped
     env_file:
       - path: ./luke.env
