@@ -54,6 +54,34 @@ services:
       retries: 3
       start_period: 10s
 
+  # The Nact runtime — the NIP-98-gated control-plane API behind nact.nave.pub/api.
+  # Built from the nact repo's server/. Reuses luke.env for the master npub +
+  # role signing keys (LUKE_NSEC / NAVE_NSEC). Config persists in nact_data.
+  # See sites/nact/server/README.md.
+  nact-runtime:
+    build:
+      context: ./sites/nact
+      dockerfile: server/Dockerfile
+    image: nact-runtime:latest
+    restart: unless-stopped
+    env_file:
+      - path: ./luke.env
+        required: false
+    environment:
+      - NACT_PORT=8791
+      - NACT_CONFIG=/data/nact-config.json
+    expose:
+      - "8791"
+    volumes:
+      - nact_data:/data
+    networks: [nave]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8791/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
@@ -91,3 +119,4 @@ networks:
 volumes:
   caddy_data:
   caddy_config:
+  nact_data:

@@ -84,7 +84,14 @@ nscope.nave.pub {
 	import app nscope
 }
 nact.nave.pub {
-	import app nact
+	# /api/* → the NIP-98-gated Nact runtime; everything else is the static app.
+	@api path /api/*
+	reverse_proxy @api nact-runtime:8791
+	root * /srv/apps/nact
+	encode gzip zstd
+	@mjs path *.mjs
+	header @mjs Content-Type "text/javascript; charset=utf-8"
+	file_server
 }
 
 # --- Luke — a delegated agent, cockpit behind a nostr-signed gate ------
