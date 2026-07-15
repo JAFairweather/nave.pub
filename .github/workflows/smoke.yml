@@ -43,8 +43,16 @@ jobs:
             echo "note: 200/301/302 = serving; 308 apex-redirect ok; ERR/000 = not routing."
             # Extra detail on nact specifically — the newest vhost.
             echo "── nact.nave.pub assets ──"
-            for p in / /assets/nact.png /favicon.svg; do
+            for p in / /app.html /assets/nact.png /favicon.svg; do
               printf '%-22s ' "$p"
               curl -sk -o /dev/null -w 'HTTP %{http_code} · %{size_download}B · %{content_type}\n' \
                 --max-time 12 --resolve "nact.nave.pub:443:127.0.0.1" "https://nact.nave.pub$p" 2>/dev/null || echo ERR
             done
+            # Nactor runtime health — should report directorsConfigured now.
+            echo "── nactor /api/health ──"
+            curl -sk --max-time 12 --resolve "nact.nave.pub:443:127.0.0.1" \
+              "https://nact.nave.pub/api/health" 2>/dev/null || echo ERR
+            echo
+            echo "── nactor /api/state (expect HTTP 401 unauth) ──"
+            curl -sk -o /dev/null -w 'HTTP %{http_code}\n' --max-time 12 \
+              --resolve "nact.nave.pub:443:127.0.0.1" "https://nact.nave.pub/api/state" 2>/dev/null || echo ERR
