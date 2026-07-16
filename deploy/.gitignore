@@ -4,4 +4,5 @@ luke.env        # decrypted from the luke repo's secrets.enc.env at deploy time 
 luke-consumer.env # luke.env with brokered creds (ANTHROPIC/TELEGRAM) stripped — what the consumers read
 nactor.env      # Nactor's own grantee key (NACTOR_NSEC), minted on the box by ops/gen-nactor-key.sh
 brain.env       # brain identity (BRAIN_NSEC) + NACT_BROKER_URL, minted on the box by ops/gen-brain-key.sh
+brain-state/    # box-local continuity ledger for luke-brain (proposed/approved/passed) — survives redeploys
 sites/          # fresh clones of every repo, synced by sites.sh

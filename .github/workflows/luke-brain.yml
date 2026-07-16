@@ -83,8 +83,15 @@ jobs:
               NET=$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}' deploy-nactor-1 2>/dev/null)
               [ -n "$NET" ] && NETARG="--network $NET"
             fi
+            # P3 continuity ledger: a box-local, writable dir the brain records
+            # its proposals into (and reconciles against what got published).
+            # Survives redeploys (outside sites/, gitignored). BRAIN_LEDGER points
+            # the brain at it; unset → feature simply stays off.
+            mkdir -p "$DEPLOY/brain-state"
             echo "── running brain ${FLAG:-(LIVE — proposing to Telegram)} ${BRAINENV:+(broker on${NET:+ · net=$NET})} ──"
             docker run --rm --env-file "$CONSUMERENV" $BRAINENV $NETARG \
+              -e BRAIN_LEDGER=/state/ledger.json \
+              -v "$DEPLOY/brain-state:/state" \
               -v "$DEPLOY/sites/luke/luke-brain.mjs:/app/luke-brain.mjs:ro" \
               -v "$DEPLOY/sites/luke/brief:/app/brief:ro" \
               luke:latest node luke-brain.mjs $FLAG
