@@ -100,8 +100,16 @@ nact.nave.pub {
 #   /cockpit*    → the real OpenClaw Control UI (host :57419), but ONLY
 #                  after forward_auth to the gate returns 200. The gate
 #                  opens for exactly one key: your NIP-98-signed master npub.
-# OpenClaw's own gateway auth stays on as the inner lock (defense in depth);
-# set its gateway.controlUi.allowedOrigins to include https://luke.nave.pub.
+# Auth model (OpenClaw "trusted-proxy" mode — no gateway token): after the gate
+# passes, we assert the authenticated user to OpenClaw via X-Forwarded-User;
+# OpenClaw trusts this proxy and authorizes without a token. Configure OpenClaw:
+#   gateway.auth.mode = "trusted-proxy"
+#   gateway.trustedProxies = [<this proxy's source IP/CIDR>]   # see ops probe
+#   gateway.auth.trustedProxy.userHeader = "X-Forwarded-User"
+#   gateway.auth.trustedProxy.allowUsers = ["jaf@dequalsf.com"]  # or [] = any
+# A shared token cannot coexist with trusted-proxy mode, so OPENCLAW_GATEWAY_TOKEN
+# is retired. header_up only applies to requests that already cleared the gate
+# (and rides the WebSocket upgrade), so an unauthenticated caller never reaches it.
 luke.nave.pub {
 	encode gzip zstd
 
@@ -111,7 +119,9 @@ luke.nave.pub {
 		forward_auth luke:8790 {
 			uri /gate/verify
 		}
-		reverse_proxy host.docker.internal:57419
+		reverse_proxy host.docker.internal:57419 {
+			header_up X-Forwarded-User jaf@dequalsf.com
+		}
 	}
 
 	# Everything else: Luke's public card + the /gate/* login flow.
