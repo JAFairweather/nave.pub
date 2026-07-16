@@ -65,8 +65,13 @@ jobs:
 
             FLAG="--dry-run"
             [ "$LIVE" = "true" ] && FLAG=""
-            echo "── running brain ${FLAG:-(LIVE — proposing to Telegram)} ──"
-            docker run --rm --env-file "$LUKEENV" \
+            # brain.env (box-local) turns on the credential broker: BRAIN_NSEC +
+            # NACT_BROKER_URL. If absent, the brain falls back to the direct
+            # ANTHROPIC_API_KEY path (non-breaking).
+            BRAINENV=""
+            [ -f "$DEPLOY/brain.env" ] && BRAINENV="--env-file $DEPLOY/brain.env"
+            echo "── running brain ${FLAG:-(LIVE — proposing to Telegram)} ${BRAINENV:+(broker on)} ──"
+            docker run --rm --env-file "$LUKEENV" $BRAINENV \
               -v "$DEPLOY/sites/luke/luke-brain.mjs:/app/luke-brain.mjs:ro" \
               -v "$DEPLOY/sites/luke/brief:/app/brief:ro" \
               luke:latest node luke-brain.mjs $FLAG

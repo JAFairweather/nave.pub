@@ -74,6 +74,11 @@ services:
         required: false
       - path: ./nactor.env
         required: false
+      # brain.env is box-local (gitignored, minted by ops/gen-brain-key.sh) and
+      # untouched by sites.sh — it holds BRAIN_NSEC (the `brain` identity the
+      # broker gates on) + NACT_BROKER_URL. Same durability rule as nactor.env.
+      - path: ./brain.env
+        required: false
     environment:
       - NACT_PORT=8791
       - NACT_CONFIG=/data/nact-config.json
