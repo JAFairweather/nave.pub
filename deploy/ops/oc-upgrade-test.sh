@@ -74,12 +74,15 @@ E=$(docker inspect -f '{{.State.ExitCode}}' oc-upgradetest 2>/dev/null)
 LOG=$(docker logs --tail 60 oc-upgradetest 2>&1)
 
 echo
-if echo "$LOG" | grep -qiE 'http server listening|gateway.*ready'; then
-  VERDICT="✅ PASS — the candidate adopted Luke's state and the gateway came up READY. Safe to upgrade live to this image."
-elif echo "$LOG" | grep -qiE 'refusing|could not be imported|conflict|did not complete cleanly|older than the config'; then
+# Check FAILURE signatures FIRST — the "refusing to report the gateway ready"
+# error itself contains the words "gateway ready", so a naive ready-match would
+# false-positive on a failed boot. Only a definitive listening line is a PASS.
+if echo "$LOG" | grep -qiE 'refusing to report the gateway ready|could not be imported|did not complete cleanly|legacy memory meta rows conflict|migrations did not complete|older than the config|refusing to run'; then
   VERDICT="⛔ FAIL — state-migration conflict. Do NOT upgrade live to this image yet (see log below). Live is untouched."
+elif echo "$LOG" | grep -qiE 'http server listening|\[gateway\] .*listening'; then
+  VERDICT="✅ PASS — the candidate adopted Luke's state and the gateway came up READY. Safe to upgrade live to this image."
 elif [ "$R" = "true" ]; then
-  VERDICT="🟡 LIKELY PASS — still running, but no explicit 'ready' line matched. Skim the log to confirm."
+  VERDICT="🟡 LIKELY PASS — still running, but no explicit 'http server listening' line matched. Skim the log to confirm."
 else
   VERDICT="⛔ FAIL — container exited (code $E) before reporting ready. See log below. Live is untouched."
 fi
