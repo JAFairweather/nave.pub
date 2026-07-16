@@ -49,6 +49,9 @@ services:
       # lives only in Nactor. Falls back to the direct call if the broker errs
       # while TELEGRAM_BOT_TOKEN is still in luke.env, so this is safe to enable.
       - NACT_BROKER_URL=http://nactor:8791/api
+      # Phase 2: authorize the brain's NIP-98 signature on POST /propose, so the
+      # shared PROPOSE_TOKEN can be retired. Public npub — safe to commit.
+      - BRAIN_NPUB=npub16grw57ekvvrudstm6fn7kduc5g0zv350j5057jnnsvat6ct4xr6swjtd6h
     expose:
       - "8790"
     networks: [nave]
