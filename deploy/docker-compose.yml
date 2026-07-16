@@ -107,6 +107,49 @@ services:
       retries: 3
       start_period: 10s
 
+  # OpenClaw — Luke's cockpit runtime, self-hosted on the nave network (no
+  # published port), replacing the Hostinger-managed container that exposes
+  # :57419 to the internet. Runs the gateway DIRECTLY (not the server.mjs token
+  # wrapper) in trusted-proxy mode: Caddy's nostr-signed gate is the outer lock,
+  # and Caddy asserts the operator via X-Forwarded-User (see the Caddyfile luke
+  # block). The Hostinger image (same version as Luke's state, 2026.6.9) carries
+  # every stock plugin the live instance uses, so state + behavior are at parity.
+  #
+  # STAGED — guarded by the "cutover" profile, so a normal `docker compose up`
+  # (every deploy) never starts it. Bring it up only at the live cutover, AFTER
+  # the old instance is retired and its :57419 closed:
+  #   bash deploy/ops/oc-config-patch.sh          # trusted-proxy + channels-off
+  #   docker compose --profile cutover up -d openclaw
+  # See deploy/OPENCLAW-CUTOVER.md for the full runbook.
+  openclaw:
+    image: ghcr.io/hostinger/hvps-openclaw:latest
+    profiles: ["cutover"]
+    restart: unless-stopped
+    entrypoint: ["openclaw"]
+    # --auth trusted-proxy: no shared token; the gateway trusts Caddy's asserted
+    # user. Bind mode + trustedProxies/allowUsers come from the patched config.
+    command: ["gateway", "--auth", "trusted-proxy", "--port", "57419"]
+    environment:
+      - HOME=/data                 # openclaw reads state at /data/.openclaw
+    env_file:
+      # Box-local (gitignored): ANTHROPIC_API_KEY (the agent's model key) + TZ.
+      # NO OPENCLAW_GATEWAY_TOKEN — trusted-proxy mode doesn't use one.
+      - path: ./openclaw.env
+        required: false
+    volumes:
+      # The migrated state (agents, memory, config), refreshed from the live
+      # instance by ops/oc-resync-boot.sh. gitignored, box-local.
+      - ./openclaw-state/.openclaw:/data/.openclaw
+    expose:
+      - "57419"                    # internal to the nave network only — never published
+    networks: [nave]
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(57419,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
