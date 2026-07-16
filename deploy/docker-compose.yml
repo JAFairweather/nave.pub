@@ -40,8 +40,13 @@ services:
     image: luke:latest
     restart: unless-stopped
     env_file:
-      - path: ./luke.env        # optional — a missing file must never break
-        required: false         # the main stack (director/caddy/static)
+      # Consumer env: sites.sh strips the brokered credentials (ANTHROPIC_API_KEY,
+      # TELEGRAM_BOT_TOKEN) from this copy — luke-service reaches those providers
+      # through Nactor's broker, so the tokens live only in Nactor. NOT luke.env
+      # (that keeps the tokens; only nactor reads it). Generated whenever luke.env
+      # is, so both-present-or-both-absent; required:false keeps the stack up.
+      - path: ./luke-consumer.env
+        required: false
     environment:
       - LUKE_PORT=8790
       # Phase 2: route luke-poster's Telegram calls through Nactor's broker

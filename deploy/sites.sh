@@ -47,6 +47,12 @@ if [ -f sites/luke/secrets.enc.env ] && command -v sops >/dev/null 2>&1; then
   if sops --input-type dotenv --output-type dotenv -d sites/luke/secrets.enc.env > luke.env; then
     chmod 600 luke.env
     echo "🔓 luke secrets decrypted → luke.env"
+    # Phase 2 env-split: the CONSUMERS (luke service, brain) get a copy with the
+    # BROKERED credentials stripped — those now live only in Nactor (which reads
+    # the full luke.env). luke-consumer.env is box-local + gitignored.
+    grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN)=' luke.env > luke-consumer.env
+    chmod 600 luke-consumer.env
+    echo "🔓 consumer env (brokered creds stripped) → luke-consumer.env"
   else
     echo "⚠ luke secrets present but decrypt FAILED (age key missing?) — luke runs without env"
   fi

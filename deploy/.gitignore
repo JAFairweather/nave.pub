@@ -1,6 +1,7 @@
 # Box-only, never committed:
 .env            # Director secrets (ANTHROPIC_API_KEY, director nsec, ACME_EMAIL)
-luke.env        # decrypted from the luke repo's secrets.enc.env at deploy time
+luke.env        # decrypted from the luke repo's secrets.enc.env at deploy time (nactor reads this — has the brokered creds)
+luke-consumer.env # luke.env with brokered creds (ANTHROPIC/TELEGRAM) stripped — what the consumers read
 nactor.env      # Nactor's own grantee key (NACTOR_NSEC), minted on the box by ops/gen-nactor-key.sh
 brain.env       # brain identity (BRAIN_NSEC) + NACT_BROKER_URL, minted on the box by ops/gen-brain-key.sh
 sites/          # fresh clones of every repo, synced by sites.sh

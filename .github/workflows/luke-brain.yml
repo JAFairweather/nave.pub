@@ -62,6 +62,11 @@ jobs:
 
             # Make sure the container env is current from the encrypted secrets.
             sops -d --output-type dotenv "$ENC" > "$LUKEENV" && chmod 600 "$LUKEENV"
+            # Phase 2 env-split: strip the brokered credentials from the brain's
+            # env — it reaches Anthropic through Nactor's broker, so the key never
+            # lives here. brain.env supplies BRAIN_NSEC + NACT_BROKER_URL.
+            CONSUMERENV="$DEPLOY/luke-consumer.env"
+            grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN)=' "$LUKEENV" > "$CONSUMERENV" && chmod 600 "$CONSUMERENV"
 
             FLAG="--dry-run"
             [ "$LIVE" = "true" ] && FLAG=""
@@ -79,7 +84,7 @@ jobs:
               [ -n "$NET" ] && NETARG="--network $NET"
             fi
             echo "── running brain ${FLAG:-(LIVE — proposing to Telegram)} ${BRAINENV:+(broker on${NET:+ · net=$NET})} ──"
-            docker run --rm --env-file "$LUKEENV" $BRAINENV $NETARG \
+            docker run --rm --env-file "$CONSUMERENV" $BRAINENV $NETARG \
               -v "$DEPLOY/sites/luke/luke-brain.mjs:/app/luke-brain.mjs:ro" \
               -v "$DEPLOY/sites/luke/brief:/app/brief:ro" \
               luke:latest node luke-brain.mjs $FLAG
