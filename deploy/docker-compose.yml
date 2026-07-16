@@ -44,6 +44,11 @@ services:
         required: false         # the main stack (director/caddy/static)
     environment:
       - LUKE_PORT=8790
+      # Phase 2: route luke-poster's Telegram calls through Nactor's broker
+      # (same nave network). luke signs NIP-98 with its own key; the bot token
+      # lives only in Nactor. Falls back to the direct call if the broker errs
+      # while TELEGRAM_BOT_TOKEN is still in luke.env, so this is safe to enable.
+      - NACT_BROKER_URL=http://nactor:8791/api
     expose:
       - "8790"
     networks: [nave]
