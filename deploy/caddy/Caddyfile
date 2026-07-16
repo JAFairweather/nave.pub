@@ -84,14 +84,28 @@ nscope.nave.pub {
 	import app nscope
 }
 nact.nave.pub {
-	# /api/* → Nactor (the NIP-98-gated Nact runtime); else the static app.
-	@api path /api/*
-	reverse_proxy @api nactor:8791
-	root * /srv/apps/nact
-	encode gzip zstd
-	@mjs path *.mjs
-	header @mjs Content-Type "text/javascript; charset=utf-8"
-	file_server
+	# /api/proxy/* is Nactor's INTERNAL credential-injecting egress proxy. It must
+	# NEVER be reachable from the internet — the only public path to Nactor is
+	# through this vhost, so we refuse it here. Internal callers (OpenClaw et al.)
+	# reach it directly over the nave network at http://nactor:8791/api/proxy/…,
+	# never through Caddy. handle blocks are mutually exclusive + source-ordered,
+	# so this match wins over the /api/* handler below. (Defense in depth: Nactor
+	# also token-gates the route and is never published.)
+	handle /api/proxy/* {
+		respond "not found" 404
+	}
+	# /api/* → Nactor (the NIP-98-gated Nact runtime).
+	handle /api/* {
+		reverse_proxy nactor:8791
+	}
+	# Everything else → the static app.
+	handle {
+		root * /srv/apps/nact
+		encode gzip zstd
+		@mjs path *.mjs
+		header @mjs Content-Type "text/javascript; charset=utf-8"
+		file_server
+	}
 }
 
 # --- Luke — a delegated agent, cockpit behind a nostr-signed gate ------
