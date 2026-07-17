@@ -69,7 +69,11 @@ echo "  wrote mail/config.toml (account: $ADDR)"
 
 echo
 echo "── 3. app password ──"
-PW="$(grep -E '^GMAIL_APP_PASSWORD=' luke-mail.env 2>/dev/null | cut -d= -f2- | tr -d ' \r')"
+# Google shows the password as 4 groups ("xxxx xxxx xxxx xxxx"); pastes arrive
+# with spaces/dashes/NBSPs/quotes. The real password is strictly alphanumeric,
+# so strip everything else — this exact class of paste artifact cost us an hour
+# on the OAuth refresh token earlier.
+PW="$(grep -E '^GMAIL_APP_PASSWORD=' luke-mail.env 2>/dev/null | cut -d= -f2- | tr -cd 'a-zA-Z0-9')"
 if [ -n "$PW" ]; then
   umask 077; printf '%s' "$PW" > "$MAILDIR/app-passwd"; unset PW
   echo "  ✓ app-passwd written from luke-mail.env (never printed)"
