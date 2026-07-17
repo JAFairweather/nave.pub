@@ -13,7 +13,11 @@ cd "$D"
 # (luke.env). Layer both, exactly as the brain cron does. Image is luke:latest.
 ARGS="--dry-run"; [ "${SEND:-0}" = "1" ] && ARGS=""
 echo "▸ luke-calendar ${ARGS:-<live send>} (via broker; token/creds never printed)"
+# PRIVACY: this log is public. Keep only status lines — never the briefing body
+# (your event titles). The real briefing goes to Telegram (SEND=1) or is read
+# box-side. Status lines all start with two spaces + a known prefix.
 docker run --rm --network nave \
   --env-file "$D/luke.env" --env-file "$D/brain.env" \
-  luke:latest node luke-calendar.mjs $ARGS
+  luke:latest node luke-calendar.mjs $ARGS 2>&1 \
+  | grep -E '^  (luke-calendar|[0-9]+ event|→|✗|⚠)' || echo "  ✗ beat produced no status lines (see box)"
 echo "== gcal-brief done =="
