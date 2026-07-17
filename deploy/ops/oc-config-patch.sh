@@ -23,6 +23,8 @@ jq '
   | .gateway.trustedProxies = ["172.19.0.0/16"]
   | .gateway.auth.trustedProxy = ((.gateway.auth.trustedProxy // {})
       + { userHeader: "X-Forwarded-User", allowUsers: ["jaf@dequalsf.com"] })
+  # trusted-proxy and a shared token are mutually exclusive — drop the leftover token.
+  | del(.gateway.auth.token) | del(.gateway.token)
   | .gateway.bind = "lan"
   | (if (.channels | type) == "object" and (.channels.telegram | type) == "object"
        then .channels.telegram.enabled = false else . end)
@@ -30,6 +32,8 @@ jq '
       + { allowInsecureAuth: false,
           dangerouslyAllowHostHeaderOriginFallback: false,
           dangerouslyDisableDeviceAuth: false })
+  # The cockpit is reached via Caddy at luke.nave.pub — allow that origin.
+  | .gateway.controlUi.allowedOrigins = (((.gateway.controlUi.allowedOrigins // []) + ["https://luke.nave.pub"]) | unique)
 ' "$CFG" > "$tmp" && mv "$tmp" "$CFG" || { echo "jq patch failed"; exit 1; }
 
 echo "patched OK. summary:"
