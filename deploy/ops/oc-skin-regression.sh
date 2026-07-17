@@ -52,6 +52,13 @@ echo "$DOC" | grep -q 'Luke · Nave' && pass "document: title rebranded" || fail
 echo "$DOC" | grep -q 'avatars/luke.png' && pass "document: favicon set to Luke" || fail "document: favicon not set"
 echo
 
+echo "=== 5. shadow-DOM-piercing mascot swap injected ==="
+# The JS swap is the durable fix for mascots CSS can't reach (shadow DOM). If an
+# upgrade or refactor drops it, the chat/brand pig can resurface silently.
+echo "$DOC" | grep -q 'el.shadowRoot' && pass "document: shadow-DOM walker injected" || fail "document: mascot-swap script missing"
+echo "$DOC" | grep -q 'MutationObserver' && pass "document: re-apply observer injected" || fail "document: MutationObserver missing"
+echo
+
 if [ "$FAIL" = 0 ]; then
   echo "== ✅ SKIN REGRESSION PASS — cockpit rebrand intact =="
 else
