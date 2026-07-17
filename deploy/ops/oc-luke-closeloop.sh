@@ -10,6 +10,12 @@ set -u
 WS=/root/nave.pub/deploy/openclaw-state/.openclaw/workspace
 cd "$WS" 2>/dev/null || { echo "no workspace at $WS"; exit 1; }
 
+# The workspace is a bind mount owned by the container's openclaw user, but this
+# ops step runs as root over SSH — so git refuses ("detected dubious ownership").
+# Whitelist the path so the workspace commit below actually lands. Idempotent:
+# git dedups safe.directory entries.
+git config --global --add safe.directory "$WS" 2>/dev/null || true
+
 MARK="Closing the loop — keep the punchlist true"
 if grep -qF "$MARK" AGENTS.md 2>/dev/null; then
   echo "· AGENTS.md already has the directive — skipping"
