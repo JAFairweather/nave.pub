@@ -13,3 +13,5 @@ luke-brain-deploy.key # box-local SSH deploy key for the private luke-brain back
 luke-brain-deploy.key.pub # its public half (printed by setup to add as the repo's write deploy key)
 luke-brain-repo/ # box-local clone of the private luke-brain repo (encrypted brain snapshots pushed from here)
 sites/          # fresh clones of every repo, synced by sites.sh
+luke-mail.env   # Gmail app password for himalaya (box-local; ops/mail-setup.sh reads it)
+openclaw-tools/ # pinned static binaries mounted into the openclaw container (himalaya etc.)
