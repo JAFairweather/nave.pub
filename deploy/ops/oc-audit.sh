@@ -56,6 +56,11 @@ echo
 echo "===== 10. does THIS build know 'dreaming'? (source grep, counts only) ====="
 docker compose exec -T openclaw sh -lc 'timeout 25 grep -rioE "dream(ing|s)?" /app/dist /app/src /app/*.js 2>/dev/null | cut -d: -f2- | tr "[:upper:]" "[:lower:]" | sort | uniq -c | sort -rn | head -6; echo "(heartbeat refs: $(timeout 20 grep -rio "heartbeat" /app/dist 2>/dev/null | wc -l))"' 2>/dev/null || echo "(grep unavailable)"
 echo
+echo "===== 12. engine inventory — skills/tools/browser/commands/models/plugins config ====="
+jq -r "$RED | {skills: (.skills // \"(none)\"), tools: (.tools // \"(none)\"), browser: (.browser // \"(none)\"), commands: (.commands // \"(none)\"), models: (.models | if type==\"object\" then keys else (. // \"(none)\") end), plugins: (.plugins | if type==\"object\" then (to_entries | map({(.key): (if (.value|type)==\"object\" then (.value|keys) else .value end)})) else (. // \"(none)\") end)}" "$J" 2>/dev/null | head -100
+echo "--- engine CLI inventory (skills + cron, if the CLI exists) ---"
+docker compose exec -T openclaw sh -lc 'command -v openclaw >/dev/null 2>&1 && { echo "[skills list]"; timeout 20 openclaw skills list 2>&1 | head -50; echo; echo "[cron list]"; timeout 15 openclaw cron list 2>&1 | head -20; } || echo "(no openclaw CLI in PATH)"' 2>/dev/null || echo "(exec failed)"
+echo
 echo "===== 11. box resources (for the Hostinger question) ====="
 echo "cores: $(nproc)"; free -h | head -2; df -h / | tail -1; uptime
 docker stats --no-stream --format 'table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}' 2>/dev/null | head -12
