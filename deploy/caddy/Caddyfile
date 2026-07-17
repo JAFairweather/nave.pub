@@ -156,7 +156,30 @@ cockpit.nave.pub {
 		reverse_proxy luke:8790
 	}
 
-	# Everything else is the cockpit itself: gate first, then OpenClaw at root.
+	# The Nave skin: luke serves the override stylesheet that re-tints the
+	# OpenClaw UI's CSS tokens. Gated like everything else.
+	@skin path /__nave-skin.css
+	handle @skin {
+		forward_auth luke:8790 {
+			uri /gate/verify
+		}
+		reverse_proxy luke:8790
+	}
+
+	# The SPA document (browser navigations send Accept: text/html): route through
+	# luke, which fetches the shell from OpenClaw and injects the skin <link>.
+	# Assets (text/css, */*, image/*) and the gateway WebSocket (Upgrade, Accept
+	# */*) DON'T match this and fall through to OpenClaw untouched below.
+	@doc header Accept *text/html*
+	handle @doc {
+		forward_auth luke:8790 {
+			uri /gate/verify
+		}
+		reverse_proxy luke:8790
+	}
+
+	# Everything else — assets, api, the gateway WebSocket — gate first, then
+	# straight to OpenClaw at root (asserting the operator via X-Forwarded-User).
 	handle {
 		forward_auth luke:8790 {
 			uri /gate/verify
