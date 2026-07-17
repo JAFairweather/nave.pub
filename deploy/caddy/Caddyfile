@@ -133,7 +133,7 @@ luke.nave.pub {
 		forward_auth luke:8790 {
 			uri /gate/verify
 		}
-		reverse_proxy host.docker.internal:57419 {
+		reverse_proxy openclaw:57419 {
 			header_up X-Forwarded-User jaf@dequalsf.com
 		}
 	}
