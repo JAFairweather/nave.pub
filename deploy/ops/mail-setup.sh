@@ -17,7 +17,7 @@
 set -u
 if [ -f /root/nave.pub/deploy/.flipped ]; then D=/root/nave.pub/deploy; else D=/root/noir/deploy; fi
 cd "$D"
-HV="v1.1.0"   # pinned; bump deliberately
+HV="v1.2.0"   # pinned; bump deliberately
 TOOLS="$D/openclaw-tools"
 MAILDIR="$D/openclaw-state/.openclaw/mail"
 mkdir -p "$TOOLS" "$MAILDIR"
@@ -27,10 +27,10 @@ if [ -x "$TOOLS/himalaya" ]; then
   echo "  already present: $("$TOOLS/himalaya" --version 2>/dev/null || echo '(version check needs container)')"
 else
   ok=0
+  # Asset name verified against the v1.2.0 release page: himalaya.x86_64-linux.tgz
   for url in \
-    "https://github.com/pimalaya/himalaya/releases/download/$HV/himalaya.x86_64-unknown-linux-musl.tar.gz" \
-    "https://github.com/pimalaya/himalaya/releases/download/$HV/himalaya-x86_64-unknown-linux-musl.tar.gz" \
-    "https://github.com/pimalaya/himalaya/releases/latest/download/himalaya.x86_64-unknown-linux-musl.tar.gz"; do
+    "https://github.com/pimalaya/himalaya/releases/download/$HV/himalaya.x86_64-linux.tgz" \
+    "https://github.com/pimalaya/himalaya/releases/latest/download/himalaya.x86_64-linux.tgz"; do
     echo "  trying: $url"
     if curl -fsSL "$url" -o /tmp/himalaya.tgz 2>/dev/null; then ok=1; break; fi
   done
