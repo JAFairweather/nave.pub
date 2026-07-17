@@ -147,14 +147,23 @@ services:
   # proxy, bind=lan, channels) is patched by ops/oc-config-patch.sh; see
   # deploy/OPENCLAW-CUTOVER.md for the history and rollback.
   openclaw:
-    image: ghcr.io/hostinger/hvps-openclaw:latest
+    # UPSTREAM image (pinned) — we left the Hostinger build (2026.6.9) for the
+    # project's own release channel so upgrades are deliberate: bump this tag,
+    # read the changelog, deploy, then run ops/oc-skin-regression.sh. The
+    # -browser variant bundles Chromium+Xvfb (Luke's browser tool needs it).
+    # Upstream's entrypoint IS the openclaw CLI (node dist/index.js) and it runs
+    # as user `node` (uid 1000) — openclaw-state/.openclaw is chowned 1000:1000.
+    image: ghcr.io/openclaw/openclaw:2026.7.1-browser
     restart: unless-stopped
-    entrypoint: ["openclaw"]
     # --auth trusted-proxy: no shared token; the gateway trusts Caddy's asserted
     # user. Bind mode + trustedProxies/allowUsers come from the patched config.
-    command: ["gateway", "--auth", "trusted-proxy", "--port", "57419"]
+    # Port stays 57419 (our flag, not a wrapper default) so Caddy + every ops
+    # script keep working unchanged. Upstream's ENTRYPOINT is tini (an init, not
+    # the CLI), so command must carry the full `node openclaw.mjs …` invocation —
+    # a bare ["gateway", …] would make tini exec a nonexistent binary.
+    command: ["node", "openclaw.mjs", "gateway", "--auth", "trusted-proxy", "--port", "57419"]
     environment:
-      - HOME=/data                 # openclaw reads state at /data/.openclaw
+      - HOME=/data                 # openclaw reads state at /data/.openclaw (os.homedir honors $HOME)
     env_file:
       # Box-local (gitignored): ANTHROPIC_API_KEY (the agent's model key) + TZ.
       # NO OPENCLAW_GATEWAY_TOKEN — trusted-proxy mode doesn't use one.
