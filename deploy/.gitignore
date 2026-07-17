@@ -9,4 +9,7 @@ luke-state/     # box-local pending-proposal store (pending.json) for luke-poste
 openclaw.env    # the self-hosted openclaw service's env (ANTHROPIC_API_KEY, TZ) — box-local, no gateway token
 openclaw-state/ # migrated OpenClaw state (agents/memory/config), refreshed from live by ops/oc-resync-boot.sh
 openclaw-upgradetest/ # throwaway state copy for ops/oc-upgrade-test.sh (auto-removed; ignored in case a run is interrupted)
+luke-brain-deploy.key # box-local SSH deploy key for the private luke-brain backup repo (minted by ops/brain-backup-setup.sh)
+luke-brain-deploy.key.pub # its public half (printed by setup to add as the repo's write deploy key)
+luke-brain-repo/ # box-local clone of the private luke-brain repo (encrypted brain snapshots pushed from here)
 sites/          # fresh clones of every repo, synced by sites.sh
