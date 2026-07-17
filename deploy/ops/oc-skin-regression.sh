@@ -25,7 +25,9 @@ CSS="$(oc "http://openclaw:57419/${CSSPATH#./}")"
 echo "bundle css: ${CSSPATH:-<none>} (${#CSS} bytes)"; echo
 
 echo "=== 1. rebrand-critical CLASSES still in the bundle ==="
-for c in sidebar-brand__logo sidebar-brand__eyebrow sidebar-brand__title update-banner agent-chat__avatar--logo btn login-gate__logo; do
+# (v2026.7.1 removed sidebar-brand__eyebrow — the NAVE kicker now rides
+#  sidebar-brand__title::before; __identity is the new wrapper we also watch.)
+for c in sidebar-brand__logo sidebar-brand__identity sidebar-brand__title update-banner agent-chat__avatar--logo btn login-gate__logo; do
   echo "$CSS" | grep -q "\.$c" && pass "class .$c" || fail "class .$c MISSING — rebrand selector drifted"
 done
 echo
