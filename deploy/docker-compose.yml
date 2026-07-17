@@ -67,9 +67,22 @@ services:
       # it can't be approved under trusted-proxy auth), so a tighter TTL is the
       # cheap hygiene win. luke-service reads GATE_SESSION_TTL.
       - GATE_SESSION_TTL=10800
+      # The Luke Console (console.nave.pub) reads/writes Luke's config from the
+      # mounted OpenClaw workspace, and shows a sanitized view of the engine
+      # config. Same nostr gate as the cockpit.
+      - BRAIN_DIR=/brain/workspace
+      - OC_JSON=/brain/openclaw.json
     volumes:
       # Box-local, gitignored, survives redeploys. Holds the pending-proposal store.
       - ./luke-state:/state
+      # Luke's OpenClaw workspace (his .md config + the workspace git), mounted rw
+      # so the Console can edit + commit. Same box-local dir OpenClaw itself uses.
+      - ./openclaw-state/.openclaw/workspace:/brain/workspace
+      # The engine config, read-only, for the Console's sanitized runtime view.
+      # Single-file mount: ops edits rewrite it in place (inode preserved), so the
+      # view stays live; if the gateway ever replaces the inode, a luke restart
+      # re-syncs. Never parsed for secrets — luke-console masks before serving.
+      - ./openclaw-state/.openclaw/openclaw.json:/brain/openclaw.json:ro
     expose:
       - "8790"
     networks: [nave]

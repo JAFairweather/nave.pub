@@ -166,3 +166,25 @@ cockpit.nave.pub {
 		}
 	}
 }
+
+# The Luke Console — the gated "total configuration" editor. Unlike the cockpit,
+# the page + API are served by luke-service ITSELF (not OpenClaw), so after the
+# gate we proxy back to luke:8790. Its /gate/* endpoints are served here too, so
+# the session cookie is scoped to THIS host. luke-console also re-checks the
+# cookie on every /console/api/* call, so the editor is never reachable
+# unauthenticated even from inside the network.
+console.nave.pub {
+	encode gzip zstd
+
+	@gate path /gate/*
+	handle @gate {
+		reverse_proxy luke:8790
+	}
+
+	handle {
+		forward_auth luke:8790 {
+			uri /gate/verify
+		}
+		reverse_proxy luke:8790
+	}
+}
