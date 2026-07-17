@@ -5,6 +5,7 @@ luke-consumer.env # luke.env with brokered creds (ANTHROPIC/TELEGRAM) stripped �
 nactor.env      # Nactor's own grantee key (NACTOR_NSEC), minted on the box by ops/gen-nactor-key.sh
 brain.env       # brain identity (BRAIN_NSEC) + NACT_BROKER_URL, minted on the box by ops/gen-brain-key.sh
 brain-state/    # box-local continuity ledger for luke-brain (proposed/approved/passed) — survives redeploys
+luke-state/     # box-local pending-proposal store (pending.json) for luke-poster — survives redeploys
 openclaw.env    # the self-hosted openclaw service's env (ANTHROPIC_API_KEY, TZ) — box-local, no gateway token
 openclaw-state/ # migrated OpenClaw state (agents/memory/config), refreshed from live by ops/oc-resync-boot.sh
 openclaw-upgradetest/ # throwaway state copy for ops/oc-upgrade-test.sh (auto-removed; ignored in case a run is interrupted)

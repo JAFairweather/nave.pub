@@ -57,6 +57,12 @@ services:
       # Phase 2: authorize the brain's NIP-98 signature on POST /propose, so the
       # shared PROPOSE_TOKEN can be retired. Public npub — safe to commit.
       - BRAIN_NPUB=npub16grw57ekvvrudstm6fn7kduc5g0zv350j5057jnnsvat6ct4xr6swjtd6h
+      # Persist pending proposals to a box-local file so a restart/deploy never
+      # drops a draft you haven't tapped yet (they used to live only in RAM).
+      - PENDING_FILE=/state/pending.json
+    volumes:
+      # Box-local, gitignored, survives redeploys. Holds the pending-proposal store.
+      - ./luke-state:/state
     expose:
       - "8790"
     networks: [nave]
