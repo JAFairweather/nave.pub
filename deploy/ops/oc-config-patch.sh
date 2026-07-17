@@ -23,7 +23,7 @@ jq '
   | .gateway.trustedProxies = ["172.19.0.0/16"]
   | .gateway.auth.trustedProxy = ((.gateway.auth.trustedProxy // {})
       + { userHeader: "X-Forwarded-User", allowUsers: ["jaf@dequalsf.com"] })
-  | .gateway.bind = "all"
+  | .gateway.bind = "lan"
   | (if (.channels | type) == "object" and (.channels.telegram | type) == "object"
        then .channels.telegram.enabled = false else . end)
   | .gateway.controlUi = ((.gateway.controlUi // {})
