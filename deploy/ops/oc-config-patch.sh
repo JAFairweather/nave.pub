@@ -32,8 +32,8 @@ jq '
       + { allowInsecureAuth: false,
           dangerouslyAllowHostHeaderOriginFallback: false,
           dangerouslyDisableDeviceAuth: false })
-  # The cockpit is reached via Caddy at luke.nave.pub — allow that origin.
-  | .gateway.controlUi.allowedOrigins = (((.gateway.controlUi.allowedOrigins // []) + ["https://luke.nave.pub"]) | unique)
+  # The cockpit is served at cockpit.nave.pub (root, behind the gate) — allow it.
+  | .gateway.controlUi.allowedOrigins = (((.gateway.controlUi.allowedOrigins // []) + ["https://cockpit.nave.pub","https://luke.nave.pub"]) | unique)
 ' "$CFG" > "$tmp" && mv "$tmp" "$CFG" || { echo "jq patch failed"; exit 1; }
 
 echo "patched OK. summary:"

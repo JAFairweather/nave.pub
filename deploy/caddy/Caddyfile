@@ -127,19 +127,42 @@ nact.nave.pub {
 luke.nave.pub {
 	encode gzip zstd
 
-	# The cockpit: OpenClaw, gated by the nostr-signed session.
-	@cockpit path /cockpit /cockpit/*
-	handle @cockpit {
+	# The cockpit moved to its own subdomain (cockpit.nave.pub). OpenClaw's
+	# Control UI is a single-page app that assumes it lives at a server ROOT —
+	# its assets are relative (./assets/…) with no <base> tag, so serving it under
+	# a /cockpit sub-path breaks asset + WebSocket resolution. Redirect the old
+	# path so bookmarks still work.
+	redir /cockpit /cockpit/ 308
+	redir /cockpit/* https://cockpit.nave.pub 308
+
+	# Everything else: Luke's public card + the /gate/* login flow.
+	handle {
+		reverse_proxy luke:8790
+	}
+}
+
+# The cockpit — OpenClaw's Control UI served at ROOT (so its relative assets +
+# gateway WebSocket resolve), behind the SAME nostr-signed gate. The gate's
+# /gate/* endpoints are served here too, so the session cookie is scoped to THIS
+# host (cookies don't cross subdomains). After the gate passes, Caddy asserts the
+# operator to OpenClaw via X-Forwarded-User (trusted-proxy — no gateway token).
+cockpit.nave.pub {
+	encode gzip zstd
+
+	# The login/verify/auth flow → luke-service, so the cookie is set for
+	# cockpit.nave.pub and forward_auth below can read it.
+	@gate path /gate/*
+	handle @gate {
+		reverse_proxy luke:8790
+	}
+
+	# Everything else is the cockpit itself: gate first, then OpenClaw at root.
+	handle {
 		forward_auth luke:8790 {
 			uri /gate/verify
 		}
 		reverse_proxy openclaw:57419 {
 			header_up X-Forwarded-User jaf@dequalsf.com
 		}
-	}
-
-	# Everything else: Luke's public card + the /gate/* login flow.
-	handle {
-		reverse_proxy luke:8790
 	}
 }
