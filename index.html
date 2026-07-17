@@ -138,6 +138,15 @@
   .cat-note { font-family: var(--serif); font-style: italic; margin: 4px 0 0;
     font-size: 15px; color: color-mix(in srgb, var(--cream) 60%, var(--dim)); }
   .cat + .grid { margin-top: 16px; }
+  /* a sub-section within a category (e.g. Luke, under Agents & AI) */
+  .subcat { margin: 34px 0 0; padding-left: 2px; }
+  .subcat-title { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--gold-bright); margin: 0;
+    display: flex; align-items: baseline; gap: 10px; }
+  .subcat-title::before { content: ""; width: 18px; height: 1px; background: color-mix(in srgb, var(--gold-bright) 60%, transparent); align-self: center; }
+  .subcat-note { font-family: var(--serif); font-style: italic; margin: 5px 0 0;
+    font-size: 14px; color: color-mix(in srgb, var(--cream) 58%, var(--dim)); max-width: 74ch; }
+  .subcat + .grid { margin-top: 14px; }
 
   /* ---------------------------------------------------- the maker */
   .maker { display: grid; grid-template-columns: 1fr; gap: 18px; }
@@ -262,8 +271,68 @@
         </div>
         <p>Give an AI agent a voice on nostr without giving it your keys: it drafts an action, you enact it
           with a signature, it broadcasts. The action-out half of scoped autonomy — Nvoy governs what an agent
-          may see, Nact governs what it may do.</p>
+          may see, Nact governs what it may do. Its runtime, <strong>Nactor</strong>, brokers each credential as
+          a capability the agent invokes but never holds.</p>
         <div class="card-links"><a href="https://nact.nave.pub" target="_blank" rel="noopener">Open ↗</a><a href="https://github.com/JAFairweather/nact" target="_blank" rel="noopener">Repo</a></div>
+      </div>
+
+      <!-- Nsecret -->
+      <div class="card" style="--accent:#c39a56">
+        <div class="card-head">
+          <span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="9" r="4"/><path d="M11 12l8 8"/><path d="M17 18l2-2"/><path d="M15 16l2-2"/></svg></span>
+          <div><h4>Nsecret</h4><div class="tag">One-time secret handoff</div></div>
+        </div>
+        <p>Hand a person a secret — a recovery key, a token — with no email, no chat, no plaintext log. The server
+          mints a one-time, nostr-gated URL; you sign, the value shows exactly once, then it's burned. What a
+          password-reset link should have been.</p>
+        <div class="card-links"><a href="https://console.nave.pub" target="_blank" rel="noopener">In the Console ↗</a><a class="soon">nostr-gated · single-use</a></div>
+      </div>
+
+    </div>
+
+    <div class="subcat">
+      <h4 class="subcat-title">Luke — a delegated OpenClaw agent</h4>
+      <p class="subcat-note">The stack, run for real. A branded OpenClaw instance only you can reach — gated by your nostr signature, every token and credential brokered through Nact / Nactor so the agent never holds a key.</p>
+    </div>
+    <div class="grid">
+
+      <!-- Cockpit -->
+      <div class="card" style="--accent:#c39a56">
+        <div class="card-head">
+          <span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M6 7h.01"/><path d="M8.5 7h.01"/></svg></span>
+          <div><h4>Cockpit</h4><div class="tag">Luke's control room · nostr-gated</div></div>
+        </div>
+        <p>The OpenClaw Control UI, re-skinned as Luke and reachable only behind a nostr signature — no password,
+          no token. Chat with him, watch his activity, tune his beats. Every credential he uses is brokered through
+          Nactor, so the cockpit itself holds none.</p>
+        <div class="card-links"><a href="https://cockpit.nave.pub" target="_blank" rel="noopener">Enter ↗</a><a class="soon">Alby sign-in</a></div>
+      </div>
+
+      <!-- Console -->
+      <div class="card" style="--accent:#c39a56">
+        <div class="card-head">
+          <span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 6h16"/><path d="M4 12h11"/><path d="M4 18h7"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg></span>
+          <div><h4>Console</h4><div class="tag">His configuration, made legible</div></div>
+        </div>
+        <p>One gated page over everything that shapes Luke — the files each session loads, in order, wired to what
+          he does. Edit his manual, author new sessions, see your additions apart from the stock template.
+          Git-versioned, same nostr gate.</p>
+        <div class="card-links"><a href="https://console.nave.pub" target="_blank" rel="noopener">Open ↗</a><a class="soon">nostr-gated</a></div>
+      </div>
+
+      <!-- Nops — vision -->
+      <div class="card" style="--accent:#8897a8">
+        <div class="card-head">
+          <span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="6" rx="1"/><rect x="3" y="14" width="18" height="6" rx="1"/><path d="M7 7h.01"/><path d="M7 17h.01"/></svg></span>
+          <div><h4>Nops</h4><div class="tag">Ops, the Nave way · vision</div></div>
+        </div>
+        <p>The same idea turned on the box itself: a gated UI + runtime for server administration and ops — deploys,
+          secrets, health — authorized by signature, brokered not bearer-token'd. In design.</p>
+        <div class="card-links"><a class="soon">In design</a></div>
       </div>
 
     </div>
