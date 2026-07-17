@@ -20,7 +20,7 @@ find "$TEST" \( -name '*.sqlite' -o -name '*.db' -o -name '*.sqlite3' \) 2>/dev/
 
 echo
 echo "== schema + row counts (SCHEMA ONLY — no row contents) =="
-docker run --rm -v "$TEST:/s:ro" python:3-alpine python3 - <<'PY'
+docker run --rm -i -v "$TEST:/s:ro" python:3-alpine python3 - <<'PY'
 import sqlite3, glob
 dbs = sorted(set(glob.glob('/s/**/*.sqlite', recursive=True)
                  + glob.glob('/s/**/*.db', recursive=True)
