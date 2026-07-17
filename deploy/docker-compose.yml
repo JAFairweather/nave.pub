@@ -173,6 +173,13 @@ services:
       # The migrated state (agents, memory, config), refreshed from the live
       # instance by ops/oc-resync-boot.sh. gitignored, box-local.
       - ./openclaw-state/.openclaw:/data/.openclaw
+      # Pinned static himalaya binary (ops/mail-setup.sh) — the upstream image
+      # doesn't bundle it; single-file mount so the rest of /usr/local/bin is
+      # untouched and the tool survives container recreation.
+      - ./openclaw-tools/himalaya:/usr/local/bin/himalaya:ro
+      # himalaya's config at its default lookup path ($HOME/.config/…). IMAP-only
+      # — no SMTP backend exists, so mail can be read + drafted but NEVER sent.
+      - ./openclaw-state/.openclaw/mail/config.toml:/data/.config/himalaya/config.toml:ro
     expose:
       - "57419"                    # internal to the nave network only — never published
     networks: [nave]
