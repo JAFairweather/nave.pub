@@ -60,6 +60,13 @@ services:
       # Persist pending proposals to a box-local file so a restart/deploy never
       # drops a draft you haven't tapped yet (they used to live only in RAM).
       - PENDING_FILE=/state/pending.json
+      # Cockpit gate session lifetime, in seconds. Shortened from the 12h default
+      # to 3h so a lingering signed-in window (e.g. an incognito tab left open)
+      # doesn't stay open-access as long — re-auth is one Alby signature. The
+      # nostr gate is the cockpit's sole lock (OpenClaw device pairing is off, as
+      # it can't be approved under trusted-proxy auth), so a tighter TTL is the
+      # cheap hygiene win. luke-service reads GATE_SESSION_TTL.
+      - GATE_SESSION_TTL=10800
     volumes:
       # Box-local, gitignored, survives redeploys. Holds the pending-proposal store.
       - ./luke-state:/state
