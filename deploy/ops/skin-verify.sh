@@ -4,7 +4,7 @@
 set -u
 echo "=== served /__nave-skin.css (via luke) ==="
 docker compose exec -T luke node -e '
-fetch("http://localhost:8790/__nave-skin.css").then(r=>r.text()).then(t=>{
+fetch("http://localhost:8790/__nave-skin.css",{headers:{"x-forwarded-host":"cockpit.nave.pub"}}).then(r=>r.text()).then(t=>{
   console.log("bytes:", t.length);
   console.log("has --tool-shell (new surface token):", t.includes("--tool-shell"));
   console.log("has --font-display serif:", t.includes("--font-display:Georgia"));
