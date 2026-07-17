@@ -44,7 +44,18 @@ jq -n --arg id "$ID" --arg label "$LABEL" --arg value "$VALUE" --argjson exp "$E
 chmod 600 "$F"
 unset VALUE
 
+# Confirm luke is actually serving the reveal route (old code would 404). An
+# ungated probe should 302 to the gate — proving the route exists AND is gated.
+PROBE="$(docker compose exec -T luke node -e "fetch('http://localhost:8790/reveal/$ID',{redirect:'manual',headers:{'x-forwarded-host':'console.nave.pub'}}).then(r=>process.stdout.write(String(r.status))).catch(e=>process.stdout.write('ERR '+e.message))" 2>/dev/null || echo '??')"
+case "$PROBE" in
+  302) ROUTE="✓ live + gated (302→login for an unauthenticated probe)";;
+  200) ROUTE="✓ live (200 — already authenticated on this box? unexpected but fine)";;
+  404) ROUTE="✗ 404 — luke has NOT picked up the reveal route; redeploy luke";;
+  *)   ROUTE="? probe returned '$PROBE'";;
+esac
+
 echo "── one-time reveal armed ──"
+echo "  route: $ROUTE"
 echo "  URL : https://console.nave.pub/reveal/$ID"
 echo "  what: $LABEL"
 echo "  TTL : ${TTL_MIN} min (expires $(date -u -d "@$EXP" +%FT%TZ 2>/dev/null || echo "$EXP epoch"))"
