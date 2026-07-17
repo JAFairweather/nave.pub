@@ -72,3 +72,36 @@ The migration also clears three break-glass flags the boot warns about
 `dangerouslyDisableDeviceAuth`). Caddy's nostr gate + trusted-proxy are the
 replacement controls. If the cockpit misbehaves after cutover, re-enable them
 one at a time via the config and re-audit with `openclaw security audit`.
+
+## Upgrade playbook (learned 2026-07-17, 2026.6.9 → upstream 2026.7.1)
+
+The service now runs the UPSTREAM image, version-pinned in compose
+(`ghcr.io/openclaw/openclaw:<version>-browser`). Upgrades are deliberate: bump
+the tag, read the changelog first, then follow this order — it turns a
+migration fight into a routine.
+
+1. **Pre-flight** (Ops → custom): `docker pull` the new tag and inspect its
+   entrypoint/user; run `ops/brain-backup.sh`; `chown -R 1000:1000
+   openclaw-state/.openclaw` (upstream runs as `node`, uid 1000).
+2. **Push the tag bump** → auto-deploy recreates the service.
+3. **If it crash-loops on migrations** (the engine refuses ready until they
+   complete cleanly), work the errors in order, ALWAYS stop-first so the loop
+   can't fight you for the migration lock:
+   - `docker compose stop openclaw` before every repair attempt.
+   - Memory-index conflict ("legacy memory meta rows conflict"): move
+     `openclaw-state/.openclaw/memory/main.sqlite` aside — it is a rebuildable
+     search index, NOT the memory itself (that's the workspace markdown).
+     Rebuild later with `openclaw memory index --force`.
+   - Plugin payload missing ("post-core payload smoke check"): run
+     `docker compose run --rm --no-deps -T -e npm_config_cache=/tmp/npm-cache
+     openclaw node openclaw.mjs update repair` — the cache override matters
+     (`/data/.npm` is root-owned and uid 1000 can't create it).
+   - A stale migration lock names its own expiry time; wait it out or ensure
+     nothing else is starting.
+4. **Verify**: health + nave-net reachability, `ops/oc-skin-regression.sh`
+   (fix any drifted selectors in luke-skin.mjs — 7.1 removed
+   `sidebar-brand__eyebrow`, for instance), `openclaw security audit`
+   (expect only the known trusted-proxy findings), and a Telegram smoke test.
+
+Total cost when it goes wrong: ~21 min downtime (2026-07-17). When it goes
+right: minutes.
