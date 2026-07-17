@@ -9,8 +9,14 @@
 #   • gateway.trustedProxies = the nave bridge subnet
 #   • gateway.auth.trustedProxy.userHeader/allowUsers  (Caddy asserts the operator)
 #   • gateway.bind = all                  (reachable from Caddy on the nave net)
-#   • channels.telegram.enabled = false   (STAGED: off until the real cutover)
 #   • clears the break-glass controlUi flags the boot warned about
+#
+# Post-cutover hardening: this script NO LONGER touches channels.telegram
+# (that's oc-telegram-on.sh's job) and NO LONGER force-resets
+# dangerouslyDisableDeviceAuth — it PRESERVES whichever value is live. Both used
+# to be forced to cutover-staging defaults (telegram off, device-auth on), and a
+# stray re-run silently took Luke's Telegram down and re-broke the cockpit login.
+# A migration-prep tool must never clobber steady-state operating toggles.
 set -u
 CFG=/root/nave.pub/deploy/openclaw-state/.openclaw/openclaw.json
 [ -f "$CFG" ] || { echo "no config at $CFG — run oc-resync-boot.sh first"; exit 1; }
@@ -26,12 +32,15 @@ jq '
   # trusted-proxy and a shared token are mutually exclusive — drop the leftover token.
   | del(.gateway.auth.token) | del(.gateway.token)
   | .gateway.bind = "lan"
-  | (if (.channels | type) == "object" and (.channels.telegram | type) == "object"
-       then .channels.telegram.enabled = false else . end)
+  # channels.telegram is deliberately NOT touched here — oc-telegram-on.sh owns
+  # that toggle. Forcing it off here silently killed Luke's interactive replies.
+  # dangerouslyDisableDeviceAuth is PRESERVED (defaults false only if unset), so a
+  # re-run can't re-enable device pairing and re-break the cockpit login.
   | .gateway.controlUi = ((.gateway.controlUi // {})
       + { allowInsecureAuth: false,
-          dangerouslyAllowHostHeaderOriginFallback: false,
-          dangerouslyDisableDeviceAuth: false })
+          dangerouslyAllowHostHeaderOriginFallback: false })
+  | .gateway.controlUi.dangerouslyDisableDeviceAuth =
+      (.gateway.controlUi.dangerouslyDisableDeviceAuth // false)
   # The cockpit is served at cockpit.nave.pub (root, behind the gate) — allow it.
   | .gateway.controlUi.allowedOrigins = (((.gateway.controlUi.allowedOrigins // []) + ["https://cockpit.nave.pub","https://luke.nave.pub"]) | unique)
 ' "$CFG" > "$tmp" && mv "$tmp" "$CFG" || { echo "jq patch failed"; exit 1; }
