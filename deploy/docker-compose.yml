@@ -42,10 +42,10 @@ services:
     env_file:
       # Consumer env: sites.sh strips the brokered credentials (ANTHROPIC_API_KEY,
       # TELEGRAM_BOT_TOKEN) from this copy — luke-service reaches those providers
-      # through Nactor's broker, so the tokens live only in Nactor. NOT luke.env
-      # (that keeps the tokens; only nactor reads it). Generated whenever luke.env
+      # through Nactor's broker, so the tokens live only in Nactor. NOT nave.env
+      # (that keeps the tokens; only nactor reads it). Generated whenever nave.env
       # is, so both-present-or-both-absent; required:false keeps the stack up.
-      - path: ./luke-consumer.env
+      - path: ./nave-consumer.env
         required: false
     environment:
       - LUKE_PORT=8790
@@ -104,12 +104,12 @@ services:
     image: nactor:latest
     restart: unless-stopped
     env_file:
-      # luke.env is regenerated from SOPS by sites.sh on every deploy, so it
-      # can't hold Nactor's own key (an append would be wiped). nactor.env is
-      # box-local (gitignored, minted by ops/gen-nactor-key.sh) and untouched by
-      # sites.sh — that's where NACTOR_NSEC lives. luke.env still provides the
-      # bootstrap-fallback role keys + the Director npub during the migration.
-      - path: ./luke.env
+      # nave.env is the full platform bundle (regenerated from SOPS by sites.sh on
+      # every deploy). It carries every identity key — including NACTOR_NSEC, now
+      # SOPS-sealed rather than plaintext — plus the brokered provider creds only
+      # Nactor holds. nactor.env is box-local (gitignored) and untouched by
+      # sites.sh; it survives as an override slot but no longer holds NACTOR_NSEC.
+      - path: ./nave.env
         required: false
       - path: ./nactor.env
         required: false
