@@ -153,9 +153,10 @@ paper) · **SPEC** (complete draft) · **CONCEPT** (design/name only).
 3. **"Noir: An Architecture"** (~1,348 words) — how a mystery game became the
    proving ground for an entire protocol stack.
 
-The set is **written and publication-ready**; per James, one is published to the
-Substack (`jafairweather.substack.com`). `ECOSYSTEM-HUB.md`: *"The three articles
-and eight figures are written. Publish them on the Substack, cross-post to nostr."*
+**"Protocol as Fuel" is published** to the Substack (`jafairweather.substack.com`);
+the other two are written and publication-ready. `ECOSYSTEM-HUB.md`: *"The three
+articles and eight figures are written. Publish them on the Substack, cross-post
+to nostr."*
 
 ### Key design records
 
@@ -221,12 +222,11 @@ The *how* is as distinctive as the *what*, and repeats across every repo:
 mystery-meat.*
 
 **Protocol**
-- **@hodlbod's reply** to the NIP-DA announcement — flagged in the founding
-  handoff, **never assessed** (the assistant declined to adjudicate a reply it
-  couldn't see). The live one.
 - Shepherd **PR #2411**: concede bikesheds, defend invariants; consider
   commenting on the complementary PR #2258; attach the Nvoy demo when the thread
-  warms.
+  warms. *(The announcement drew no reply worth chasing.)*
+- **"Protocol as Fuel" is live** on the Substack; publish the remaining two
+  essays + cross-post to nostr.
 
 **Apps**
 - **Nherit** — six autonomous design decisions (§5 of its handoff) await review;
