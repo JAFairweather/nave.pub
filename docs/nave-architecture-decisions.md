@@ -13,6 +13,42 @@ Companion docs: `nact/docs/credential-sovereignty.md` (the credential model),
 
 ---
 
+## AD-7 — Two channel kinds: **approval** (shared) vs **communications** (per-agent)
+*(SHIPPED 2026-07-18)*
+
+**Context.** An agent needs two different telegram surfaces and they were
+conflated: the channel that **gates** its proposals vs. the channel it uses for
+**normal messaging** (Luke's assistant bot).
+
+**Decision.** Channels carry a `purpose`:
+- **`approval`** — where an agent's proposals go to be gated. **Shared** across
+  all agents (the web queue + Nact_jaf's telegram bot), reaching every identity.
+  Consumed by Nact (it receives the approve/reject taps).
+- **`comms`** — an agent's **own** line for normal, non-approval messaging.
+  **Per-agent**, covering only its owner; consumed by that agent's own runtime
+  (Luke's by the OpenClaw engine).
+
+**The hard constraint that forces the split (verified true):** a Telegram bot
+token allows **exactly one update consumer** — `getUpdates` *or* a webhook, and
+two pollers on one token get `409 Conflict`. Luke's comms bot is consumed by
+OpenClaw; approvals must be consumed by Nact. Same token, two consumers →
+conflict. So comms and approval are **separate bots** whenever they are separate
+consumers. **Sending is unlimited**, so the shared approvals bot may still send
+its own messages, and one bot may carry multiple purposes only when they share a
+single consumer.
+
+**Consequences.** Each agent that wants two-way chat needs its **own** comms bot
+(its own consumer, like Luke's). The shared approvals bot is one consumer (Nact)
+for everyone's gating. Agents without their own bot show "no comms channel yet"
+in Nact until one is provisioned and granted to them.
+
+**Status.** **SHIPPED.** `nactor` derives `telegram-luke` as Luke's comms channel
+and keeps `telegram-nactjaf`/web as shared approval channels; Nact's Channels tab
+splits into Approval vs Communications, Routing lists only approval channels, and
+each agent shows its approval route + comms channel (or the gap).
+
+---
+
 ## AD-1 — Nact **History** becomes the runtime audit, not just enactment outcomes
 *(closes #52)*
 
