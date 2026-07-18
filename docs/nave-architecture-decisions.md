@@ -33,8 +33,8 @@ entitlements from the grant readers, enactment history). Surfacing it turns a
 blank, misleading tab into the runtime's honest record. Keeping the grant
 *lifecycle* in Nvoy avoids duplicating the Ledger.
 
-**Status.** Decided · implementation queued (Nact `app.html` History view +
-`/api/state` history payload).
+**Status.** Decided (confirmed by James, 2026-07-18) · implementation queued
+(Nact `app.html` History view + `/api/state` history payload).
 
 ---
 
@@ -57,11 +57,13 @@ republishing an endpoint event, not editing config — the same decoupling as
 email. Keeps the runtime addressable across boxes, consistent with credential
 sovereignty.
 
-**Open sub-choice (James).** Domain for the runtime handle: **`nactor@nave.pub`**
-(ecosystem, recommended) vs a `…@dequalsf.com` (your sovereign domain). Recorded
-as `nave.pub` unless you say otherwise.
+**Domain — RESOLVED (James, 2026-07-18): `nactor@nave.pub`.** The runtime is
+shared box infrastructure, kept cleanly separate from the sovereign root
+(`jaf@dequalsf.com`). The handle already resolves in
+`nave.pub/.well-known/nostr.json`, so it's nip05-verifiable today; only the
+endpoint-advertisement event remains to build.
 
-**Status.** Decided (pattern) · one sub-choice open · implementation queued.
+**Status.** Decided · handle resolves · endpoint-event implementation queued.
 
 ---
 
@@ -143,7 +145,39 @@ queued (Nact `config.channels` + the Channels/Routing views in `app.html`).
 
 ---
 
+## AD-6 — Credential consumption is **hybrid by sensitivity** (broker + grant-to-app)
+*(confirms the credential model; new policy doc)*
+
+**Context.** With grant-to-app blessed for warm.contact (see the review), the
+question was how far to push Nave's *own* on-box agents (Luke, Brain) toward
+holding their own credentials.
+
+**Decision (James, 2026-07-18): hybrid by sensitivity**, written down as an
+understandable policy: `nact/docs/credential-consumption-policy.md`. Two tests
+decide every `credential × consumer`: (1) is the request content sensitive to
+Nave? (2) is the consumer off-box? **Either yes → grant-to-app; both no →
+broker.** Both modes are sovereign — the authority is the grant, not the custody
+location. On-box Nave agents stay brokered (tight custody, non-sensitive content);
+off-box / ZK consumers (warm.contact) use grant-to-app.
+
+**Rationale.** Sovereign where it matters, tight custody where it's free. Avoids
+dogma in both directions: not "broker everything" (would break ZK and off-box),
+not "grant-to-app everything" (would needlessly scatter keys the broker can hold
+safely). Migrating a credential between modes is just re-addressing the grant — no
+secret re-entered.
+
+**Status.** Decided · policy documented · already the de-facto rule (Luke=broker,
+warm.contact=grant-to-app).
+
+---
+
 ## Not decisions — just queued builds (for completeness, not dangling)
+
+**Nvoy sign-in (confirmed, James 2026-07-18):** Nvoy **keeps** its local-key /
+new-key onboarding (gated "advanced"); Nact stays signer-only. Nvoy is the front
+door — signer-only there would wall out newcomers. This is the #56 `nave-connect`
+build direction.
+
 
 These are *unstarted future work*, not undecided architecture, so they carry no
 "loose thread" risk — listed so the map is complete:
