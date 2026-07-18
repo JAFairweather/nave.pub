@@ -33,8 +33,11 @@ entitlements from the grant readers, enactment history). Surfacing it turns a
 blank, misleading tab into the runtime's honest record. Keeping the grant
 *lifecycle* in Nvoy avoids duplicating the Ledger.
 
-**Status.** Decided (confirmed by James, 2026-07-18) · implementation queued
-(Nact `app.html` History view + `/api/state` history payload).
+**Status.** **SHIPPED** (2026-07-18). `nactor.runtimeAudit()` merges Director
+activations + enactments (newest first); `/api/state` also carries standing
+`entitlements`. Nact's History now shows a "Standing credential grants" section
+plus the time-ordered activation/enactment audit — no longer blank — clearly
+scoped as the runtime log, distinct from Nvoy's Ledger.
 
 ---
 
