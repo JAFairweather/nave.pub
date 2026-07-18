@@ -53,6 +53,15 @@ if [ -f sites/luke/secrets.enc.env ] && command -v sops >/dev/null 2>&1; then
     grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN|TELEGRAM_LUKE_BOT_TOKEN|GOOGLE_OAUTH_[A-Z_]+|GMAIL_APP_PASSWORD|OPENCLAW_GATEWAY_PASSWORD)=' luke.env > luke-consumer.env
     chmod 600 luke-consumer.env
     echo "🔓 consumer env (brokered creds stripped) → luke-consumer.env"
+    # The engine's internal-client password: its env_file is openclaw.env (the
+    # engine must NOT read luke.env — env-split), so sync just this one var
+    # across from the freshly decrypted root. SOPS stays the source of truth.
+    if grep -q '^OPENCLAW_GATEWAY_PASSWORD=' luke.env; then
+      touch openclaw.env
+      { grep -vE '^OPENCLAW_GATEWAY_PASSWORD=' openclaw.env || true; grep '^OPENCLAW_GATEWAY_PASSWORD=' luke.env; } > openclaw.env.tmp
+      mv openclaw.env.tmp openclaw.env && chmod 600 openclaw.env
+      echo "🔓 engine gateway password synced → openclaw.env"
+    fi
   else
     echo "⚠ luke secrets present but decrypt FAILED (age key missing?) — luke runs without env"
   fi
