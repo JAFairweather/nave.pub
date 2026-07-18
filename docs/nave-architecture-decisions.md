@@ -99,10 +99,16 @@ sovereignty.
 **Domain — RESOLVED (James, 2026-07-18): `nactor@nave.pub`.** The runtime is
 shared box infrastructure, kept cleanly separate from the sovereign root
 (`jaf@dequalsf.com`). The handle already resolves in
-`nave.pub/.well-known/nostr.json`, so it's nip05-verifiable today; only the
-endpoint-advertisement event remains to build.
+`nave.pub/.well-known/nostr.json`, so it's nip05-verifiable today.
 
-**Status.** Decided · handle resolves · endpoint-event implementation queued.
+**Status.** **SHIPPED** (2026-07-18). On boot the Nactor publishes, under its
+own key, a **kind 10002** (NIP-65) relay list and a **kind 31990** (NIP-89)
+handler advertisement naming its NIP-98 API endpoint as a `web` target
+(`nactor/endpoint-advert.mjs`, wired into the boot sequence). Both are
+replaceable, so relocating the box is a republish — clients discover transport
+from the identity, not a typed URL. Endpoint from `NACT_ADDRESS` (fallback
+`https://nact.nave.pub/api`). The HTTP field in Nact's Deployment tab remains as
+a manual override/fallback.
 
 ---
 
