@@ -50,7 +50,7 @@ if [ -f sites/luke/secrets.enc.env ] && command -v sops >/dev/null 2>&1; then
     # Phase 2 env-split: the CONSUMERS (luke service, brain) get a copy with the
     # BROKERED credentials stripped — those now live only in Nactor (which reads
     # the full luke.env). luke-consumer.env is box-local + gitignored.
-    grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN)=' luke.env > luke-consumer.env
+    grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN|TELEGRAM_LUKE_BOT_TOKEN|GOOGLE_OAUTH_[A-Z_]+|GMAIL_APP_PASSWORD|OPENCLAW_GATEWAY_PASSWORD)=' luke.env > luke-consumer.env
     chmod 600 luke-consumer.env
     echo "🔓 consumer env (brokered creds stripped) → luke-consumer.env"
   else
