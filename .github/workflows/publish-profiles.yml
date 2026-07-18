@@ -1,9 +1,10 @@
-name: Publish profiles — Luke & Nave (kind-0)
+name: Publish profiles — Nave identities (kind-0)
 
-# Publishes the kind-0 profiles + NIP-65 relay lists for Luke and Nave from the
-# luke image (publish-profiles.mjs is baked in). Broadcasts under their keys, so
-# it's dispatch-only and defaults to dry-run — flip mode to "publish" to go live.
-# Requires a recent deploy so luke:latest carries the current bios.
+# Publishes the kind-0 profiles + NIP-65 relay lists for every Nave identity —
+# Nave, Luke, Brain, Nactor — from the luke image (publish-profiles.mjs is baked
+# in). Broadcasts under their keys, so it's dispatch-only and defaults to dry-run
+# — flip mode to "publish" to go live. Requires a recent deploy so luke:latest
+# carries the current bios; brain.env / nactor.env are included when present.
 on:
   workflow_dispatch:
     inputs:
@@ -38,5 +39,10 @@ jobs:
             LUKEENV="$DEPLOY/luke.env"
             [ -f "$LUKEENV" ] || { echo "no luke.env at $LUKEENV — luke secrets not decrypted"; exit 1; }
             FLAG=""; [ "$MODE" = "dry-run" ] && FLAG="--dry-run"
+            # Brain/Nactor keys live in box-local env files; include them when
+            # present so all four identities publish. Missing ones just skip.
+            EXTRA=""
+            [ -f "$DEPLOY/brain.env" ]  && EXTRA="$EXTRA --env-file $DEPLOY/brain.env"
+            [ -f "$DEPLOY/nactor.env" ] && EXTRA="$EXTRA --env-file $DEPLOY/nactor.env"
             echo "== publish-profiles ($MODE) =="
-            docker run --rm --env-file "$LUKEENV" luke:latest node publish-profiles.mjs $FLAG
+            docker run --rm --env-file "$LUKEENV" $EXTRA luke:latest node publish-profiles.mjs $FLAG

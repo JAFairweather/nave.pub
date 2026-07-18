@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Brain">
+  <rect x="2" y="2" width="96" height="96" rx="20" fill="#0b0906" stroke="#c39a56" stroke-opacity="0.5" stroke-width="2"/>
+  <!-- synapse links -->
+  <g stroke="#c39a56" stroke-width="1.6" stroke-opacity="0.55" fill="none" stroke-linecap="round">
+    <path d="M32 38 L50 29 L68 40"/>
+    <path d="M30 58 L48 50 L70 60"/>
+    <path d="M32 38 L30 58"/>
+    <path d="M50 29 L48 50"/>
+    <path d="M68 40 L70 60"/>
+    <path d="M48 50 L58 73"/>
+    <path d="M50 29 L70 60"/>
+  </g>
+  <!-- nodes -->
+  <g fill="#e2c079">
+    <circle cx="32" cy="38" r="4.4"/>
+    <circle cx="50" cy="29" r="5"/>
+    <circle cx="68" cy="40" r="4.4"/>
+    <circle cx="48" cy="50" r="5.6"/>
+    <circle cx="70" cy="60" r="4.4"/>
+    <circle cx="30" cy="58" r="3.8"/>
+    <circle cx="58" cy="73" r="4.4"/>
+  </g>
+</svg>
