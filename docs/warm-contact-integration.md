@@ -130,6 +130,20 @@ The box's flat-secrets era is over. The target: **`warm.contact` is an identity;
 its IMAP password is a credential granted to *that identity*, held in Nactor's RAM,
 and used only through a verb-scoped broker adapter — the app never holds it.**
 
+> **Two consumption modes — this spec's broker path is not the only one.** A
+> credential can be consumed either by the **broker** (Nactor holds it, makes the
+> call — this whole section) *or* by **grant-to-app** (the owning instance
+> decrypts its own grant and calls the provider directly, Nactor not in the path).
+> Broker fits **on-box, non-sensitive** requests; **grant-to-app** is required
+> when the request content must not transit shared Nave (e.g. an AI prompt
+> carrying contact plaintext) or when the instance is **off-box** (a native client
+> can't reach `nactor:8791` on the private net at all). Both are sovereign — the
+> authority is the grant. See
+> [`warm-contact-nave-review.md`](./warm-contact-nave-review.md) for the full
+> decision rule, the per-instance/hierarchical-re-grant model, and the
+> secret-at-rest tradeoff. The sections below detail the **broker** path; a ZK,
+> off-box product like warm.contact will lean **grant-to-app**.
+
 **Two different keys — do not conflate them (this is the key chain):**
 
 | | `WARM_NSEC` — the **identity key** | the **IMAP app-password** — a *brokered credential* |
