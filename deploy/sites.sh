@@ -38,35 +38,43 @@ for pair in "${apps[@]}"; do
   fi
 done
 
-# --- Luke's secrets: decrypt SOPS ciphertext → the env the compose reads --
-# Decrypt sites/luke/secrets.enc.env with the box's age key into ./luke.env
-# (gitignored, root-only). Guarded: if SOPS or the encrypted file isn't set
-# up, this is a no-op and the stack still comes up (luke env_file is
-# required:false). See the luke repo's SECRETS.md.
-if [ -f sites/luke/secrets.enc.env ] && command -v sops >/dev/null 2>&1; then
-  if sops --input-type dotenv --output-type dotenv -d sites/luke/secrets.enc.env > luke.env; then
-    chmod 600 luke.env
-    echo "🔓 luke secrets decrypted → luke.env"
-    # Phase 2 env-split: the CONSUMERS (luke service, brain) get a copy with the
-    # BROKERED credentials stripped — those now live only in Nactor (which reads
-    # the full luke.env). luke-consumer.env is box-local + gitignored.
-    grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN|TELEGRAM_LUKE_BOT_TOKEN|GOOGLE_OAUTH_[A-Z_]+|GMAIL_APP_PASSWORD|OPENCLAW_GATEWAY_PASSWORD|NACTOR_NSEC)=' luke.env > luke-consumer.env
-    chmod 600 luke-consumer.env
-    echo "🔓 consumer env (brokered creds stripped) → luke-consumer.env"
+# --- Platform secrets: decrypt SOPS ciphertext → the env the compose reads --
+# The nave-owned secret bundle lives in THIS repo at deploy/secrets/nave.enc.env
+# (SOPS/age; the private key is box-only). It decrypts to ./nave.env — the full
+# platform env only Nactor reads. During the luke.env→nave.env migration we keep
+# a fallback to the old luke-repo location and write luke.env as an alias so any
+# consumer still referencing it is unaffected. Guarded: if SOPS or the file isn't
+# set up this is a no-op and the stack still comes up (env_files are
+# required:false). See deploy/secrets/.sops.yaml.
+SECRETS_SRC=""
+if [ -f secrets/nave.enc.env ]; then SECRETS_SRC=secrets/nave.enc.env
+elif [ -f sites/luke/secrets.enc.env ]; then SECRETS_SRC=sites/luke/secrets.enc.env; fi  # migration fallback
+if [ -n "$SECRETS_SRC" ] && command -v sops >/dev/null 2>&1; then
+  if sops --input-type dotenv --output-type dotenv -d "$SECRETS_SRC" > nave.env; then
+    chmod 600 nave.env
+    cp nave.env luke.env; chmod 600 luke.env          # transition alias — consumers still ref luke.env
+    echo "🔓 platform secrets decrypted → nave.env (+ luke.env alias) from $SECRETS_SRC"
+    # env-split: the CONSUMERS (luke service, brain) get a copy with the BROKERED
+    # credentials stripped — those live only in Nactor (which reads the full
+    # nave.env). Box-local + gitignored.
+    grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN|TELEGRAM_LUKE_BOT_TOKEN|GOOGLE_OAUTH_[A-Z_]+|GMAIL_APP_PASSWORD|OPENCLAW_GATEWAY_PASSWORD|NACTOR_NSEC|NACT_CHANNEL_NSEC)=' nave.env > nave-consumer.env
+    chmod 600 nave-consumer.env
+    cp nave-consumer.env luke-consumer.env; chmod 600 luke-consumer.env   # transition alias
+    echo "🔓 consumer env (brokered creds stripped) → nave-consumer.env (+ luke-consumer.env alias)"
     # The engine's internal-client password: its env_file is openclaw.env (the
-    # engine must NOT read luke.env — env-split), so sync just this one var
+    # engine must NOT read the full env — env-split), so sync just this one var
     # across from the freshly decrypted root. SOPS stays the source of truth.
-    if grep -q '^OPENCLAW_GATEWAY_PASSWORD=' luke.env; then
+    if grep -q '^OPENCLAW_GATEWAY_PASSWORD=' nave.env; then
       touch openclaw.env
-      { grep -vE '^OPENCLAW_GATEWAY_PASSWORD=' openclaw.env || true; grep '^OPENCLAW_GATEWAY_PASSWORD=' luke.env; } > openclaw.env.tmp
+      { grep -vE '^OPENCLAW_GATEWAY_PASSWORD=' openclaw.env || true; grep '^OPENCLAW_GATEWAY_PASSWORD=' nave.env; } > openclaw.env.tmp
       mv openclaw.env.tmp openclaw.env && chmod 600 openclaw.env
       echo "🔓 engine gateway password synced → openclaw.env"
     fi
   else
-    echo "⚠ luke secrets present but decrypt FAILED (age key missing?) — luke runs without env"
+    echo "⚠ platform secrets present but decrypt FAILED (age key missing?) — services run without env"
   fi
 else
-  echo "· luke secrets: SOPS/enc file not set up yet — skipping (see luke/SECRETS.md)"
+  echo "· platform secrets: SOPS/enc file not set up yet — skipping (see deploy/secrets/.sops.yaml)"
 fi
 
 echo

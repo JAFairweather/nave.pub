@@ -1,7 +1,9 @@
 # Box-only, never committed:
 .env            # Director secrets (ANTHROPIC_API_KEY, director nsec, ACME_EMAIL)
-luke.env        # decrypted from the luke repo's secrets.enc.env at deploy time (nactor reads this — has the brokered creds)
-luke-consumer.env # luke.env with brokered creds (ANTHROPIC/TELEGRAM) stripped — what the consumers read
+nave.env        # the platform secret bundle, decrypted from secrets/nave.enc.env at deploy time (nactor reads this — has the brokered creds)
+nave-consumer.env # nave.env with brokered creds stripped — what the consumers read
+luke.env        # transition alias of nave.env (kept while consumers still reference it)
+luke-consumer.env # transition alias of nave-consumer.env
 nactor.env      # Nactor's own grantee key (NACTOR_NSEC), minted on the box by ops/gen-nactor-key.sh
 brain.env       # brain identity (BRAIN_NSEC) + NACT_BROKER_URL, minted on the box by ops/gen-brain-key.sh
 brain-state/    # box-local continuity ledger for luke-brain (proposed/approved/passed) — survives redeploys
@@ -15,3 +17,8 @@ luke-brain-repo/ # box-local clone of the private luke-brain repo (encrypted bra
 sites/          # fresh clones of every repo, synced by sites.sh
 luke-mail.env   # Gmail app password for himalaya (box-local; ops/mail-setup.sh reads it)
 openclaw-tools/ # pinned static binaries mounted into the openclaw container (himalaya etc.)
+
+# The nave-owned SOPS bundle: the ENCRYPTED file is committed (only the box can
+# decrypt it); any PLAINTEXT temp created for a re-encrypt must never be.
+secrets/*.env
+!secrets/*.enc.env
