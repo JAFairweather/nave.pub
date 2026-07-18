@@ -121,6 +121,11 @@ services:
     environment:
       - NACT_PORT=8791
       - NACT_CONFIG=/data/nact-config.json
+      # A1/A2 — ownership enforcement ON. Blanket trust dies: a non-Director caller
+      # may use only the credentials a Director-signed grant names it for (graduated
+      # per-credential, so a not-yet-migrated credential like telegram stays open
+      # until its owner exists). Grant-derived, not an ACL. Flip to 0 to revert.
+      - NACT_ENFORCE_CREDENTIAL_OWNERSHIP=1
     expose:
       - "8791"
     volumes:
