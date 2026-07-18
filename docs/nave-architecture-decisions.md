@@ -140,8 +140,14 @@ approval goes) instead of leaving telegram invisible to routing. Fixes the
 "brain: no channel" dead-end by making the routing surface reflect the credentials
 that actually deliver approvals.
 
-**Status.** nip05 fix shipped · channels/routing surfacing decided · implementation
-queued (Nact `config.channels` + the Channels/Routing views in `app.html`).
+**Status.** **SHIPPED & verified live** (2026-07-18). nip05 fix + the "credential
+that is also a channel" reconciliation: `nactor` idempotently derives an approvals
+channel from `telegram-nactjaf` (`ensureCredentialChannels`), the channel card in
+`app.html` shows its credential-backed nature, and it appears as a Routing column.
+Verified on-box: the derived channel covers `luke,brain,nave,nactjaf`, so brain's
+"no channel — cannot be approved" dead-end is gone. The two models are now one
+source of truth. (The key insight was James's: telegram-nactjaf is *both* a broker
+credential *and* a channel — not a pick-one.)
 
 ---
 
