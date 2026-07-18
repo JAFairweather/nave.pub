@@ -52,6 +52,17 @@ elif [ -f sites/luke/secrets.enc.env ]; then SECRETS_SRC=sites/luke/secrets.enc.
 if [ -n "$SECRETS_SRC" ] && command -v sops >/dev/null 2>&1; then
   if sops --input-type dotenv --output-type dotenv -d "$SECRETS_SRC" > nave.env; then
     chmod 600 nave.env
+    # Nact_jaf's carrier key (the Nact-Approvals identity) rides in a SEPARATE age
+    # file, sealed workspace-side to the box's age PUBLIC key (no sops needed to
+    # add it, no fragile transit). Decrypt with the same box age key and append to
+    # nave.env BEFORE the consumer split, so nactor AND the beats (consumer copy)
+    # can sign as it. Guarded: absent/failed → skipped, stack still comes up.
+    if [ -f secrets/nactjaf.age ] && command -v age >/dev/null 2>&1; then
+      AGEKEY="${SOPS_AGE_KEY_FILE:-/root/.config/sops/age/keys.txt}"
+      if age -d -i "$AGEKEY" secrets/nactjaf.age >> nave.env 2>/dev/null; then
+        echo "🔓 Nact_jaf carrier key (NACTJAF_NSEC) → nave.env"
+      else echo "⚠ nactjaf.age present but age-decrypt failed (age key?)"; fi
+    fi
     cp nave.env luke.env; chmod 600 luke.env          # transition alias — consumers still ref luke.env
     echo "🔓 platform secrets decrypted → nave.env (+ luke.env alias) from $SECRETS_SRC"
     # env-split: the CONSUMERS (luke service, brain) get a copy with the BROKERED
