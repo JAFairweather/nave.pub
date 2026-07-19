@@ -19,6 +19,10 @@ services:
   caddy:
     image: caddy:2
     restart: unless-stopped
+    # --watch hot-reloads the bind-mounted Caddyfile, so a vhost/cert change
+    # applies without a manual restart (the auto-deploy's `up -d` won't recreate
+    # Caddy for a mounted-file-only change).
+    command: ["run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile", "--watch"]
     depends_on: [strfry]
     ports:
       - "80:80"
