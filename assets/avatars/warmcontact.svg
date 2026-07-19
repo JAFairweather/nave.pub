@@ -1,15 +1,25 @@
 <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="warm.contact">
-  <defs>
-    <linearGradient id="wc" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ff8a5b"/>
-      <stop offset="1" stop-color="#e0a04a"/>
-    </linearGradient>
-  </defs>
-  <rect x="2" y="2" width="60" height="60" rx="14" fill="#140d08" stroke="url(#wc)" stroke-opacity=".55" stroke-width="2"/>
-  <g fill="none" stroke="url(#wc)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-    <!-- a warm link: two nodes joined by a heart-arc -->
-    <circle cx="21" cy="24" r="5.5"/>
-    <circle cx="43" cy="24" r="5.5"/>
-    <path d="M21 33 C21 43 32 47 32 47 C32 47 43 43 43 33"/>
+  <!-- warm.contact brand: a wood-burning stove, fire in the window — "keep warm" -->
+  <rect width="64" height="64" rx="14" fill="#ece4d6"/>
+  <g fill="#2b2018">
+    <!-- stovepipe (tucks behind the body) + smoke collar -->
+    <rect x="37" y="10" width="6.6" height="18" rx="2.6"/>
+    <rect x="35.6" y="10" width="9.4" height="4.2" rx="2.1"/>
+    <!-- legs (tops hidden behind the body) -->
+    <rect x="18" y="43" width="5.4" height="8.5" rx="2.2" transform="rotate(-9 20.7 47)"/>
+    <rect x="40.6" y="43" width="5.4" height="8.5" rx="2.2" transform="rotate(9 43.3 47)"/>
+    <!-- body + lid rim -->
+    <rect x="14" y="24" width="32" height="22" rx="9"/>
+    <rect x="12" y="20.5" width="36" height="7" rx="3.5"/>
+  </g>
+  <!-- fire window -->
+  <rect x="21" y="29" width="18" height="13" rx="4" fill="#e3a94a"/>
+  <!-- flame -->
+  <path d="M30 30.2 C33 34 34 36.2 34 38.4 A4 4 0 0 1 26 38.4 C26 36.4 27 35.3 28.1 34.4
+           C28.3 35.9 29 36.5 29.6 36.5 C29 34 28.8 32.2 30 30.2 Z" fill="#a8402a"/>
+  <!-- smoke -->
+  <g fill="#9a938a" opacity=".5">
+    <circle cx="42.5" cy="9.5" r="3"/>
+    <circle cx="46.3" cy="7.6" r="2.1"/>
   </g>
 </svg>
