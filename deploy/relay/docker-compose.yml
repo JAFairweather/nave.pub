@@ -22,9 +22,8 @@ services:
     # --watch hot-reloads the bind-mounted Caddyfile, so a vhost/cert change
     # applies without a manual restart (the auto-deploy's `up -d` won't recreate
     # Caddy for a mounted-file-only change).
-    command: ["run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile", "--watch"]
-    # bump to force the auto-deploy to recreate Caddy (reload vhosts + retry certs)
-    labels: ["nave.recreate=1"]
+    # image default command (known-good). A clean recreate re-reads the mounted
+    # Caddyfile — loading the bunker vhost — without --watch churn.
     depends_on: [strfry]
     ports:
       - "80:80"
