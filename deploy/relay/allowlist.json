@@ -8,7 +8,7 @@
     "nact_jaf":  "bb4ff7defbcdb189ae36ea2dad8e2402b81f00ee5c478e834606dcf4e6b6f97f",
     "noir":      "61c360eff984c56adce1c4a0735326b2a67e7f6dd65c17cd9dcdb9e18afbfc6a",
     "sovereign": "REPLACE_WITH_JAF_DEQUALSF_HEX",
-    "operator":  "1c8a9d61d2a5674b3777483e67ba1a821f7b8d90002edc5653f801db290e9d88"
+    "operator":  "a7744c7e53490dcbccd20a9cd63cfcd8474f4536841e87dcf9e985f2059bbbe9"
   },
   "allowKinds": [24133]
 }
