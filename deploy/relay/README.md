@@ -57,8 +57,8 @@ nak event -c 'nope' relay.nave.pub                                          # re
 
 ## Notes
 
-- **Base image:** `dockurr/strfry` (Debian). If you switch to an Alpine-based
-  strfry image, change the `Dockerfile` install line to `apk add --no-cache python3`.
+- **Base image:** `dockurr/strfry` (Alpine). The `Dockerfile` installs python3
+  via `apk`, with an `apt` fallback if you swap to a Debian-based strfry image.
 - **Point the fleet at it:** add `wss://relay.nave.pub` to the relay lists the
   agents publish/read on (and the bunker's relay set) once it's verified — keep
   1–2 public relays alongside so a single relay failing never locks out signing.
