@@ -6,3 +6,11 @@
 relay.nave.pub {
 	reverse_proxy strfry:7777
 }
+
+# The bunker (Bunker46 NIP-46 signer) runs in its own compose, publishing :8080
+# on the host; Caddy reaches it via the host-gateway mapping on this service.
+# Returns 502 until `deploy/bunker/setup.sh` has been run — the cert still issues
+# (DNS resolves), so it's ready the moment the bunker comes up.
+bunker.nave.pub {
+	reverse_proxy host.docker.internal:8080
+}
