@@ -35,6 +35,11 @@
       "wss://relay.damus.io",
       "wss://nos.lol",
       "wss://relay.primal.net"
+    ],
+    "f27075ff31ada8f433e5243622932424a42ef663cc6e321577413320746043d6": [
+      "wss://relay.damus.io",
+      "wss://nos.lol",
+      "wss://relay.primal.net"
     ]
   }
 }
