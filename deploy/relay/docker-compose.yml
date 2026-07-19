@@ -1,0 +1,40 @@
+# Nave relay — its own small VPS. strfry behind Caddy (auto-TLS for relay.nave.pub).
+# Bring up:  ACME_EMAIL=you@example.com docker compose up -d --build
+services:
+  strfry:
+    build: .
+    restart: unless-stopped
+    # strfry.conf + the LMDB live on the host so config edits and the event DB
+    # survive image rebuilds. The plugin + allowlist are baked into the image
+    # (rebuild to change the allow-list), or bind-mount allowlist.json to edit live.
+    volumes:
+      - ./strfry.conf:/etc/strfry.conf:ro
+      - ./allowlist.json:/app/allowlist.json:ro
+      - strfry-db:/app/strfry-db
+    command: ["strfry", "--config=/etc/strfry.conf", "relay"]
+    expose:
+      - "7777"
+    networks: [relaynet]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [strfry]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks: [relaynet]
+
+networks:
+  relaynet:
+
+volumes:
+  strfry-db:
+  caddy-data:
+  caddy-config:

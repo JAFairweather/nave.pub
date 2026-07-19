@@ -1,0 +1,9 @@
+# Caddy for the relay box — auto-TLS, WSS to strfry. Caddy upgrades WebSocket
+# connections transparently, so no special config beyond the reverse_proxy.
+{
+	email {$ACME_EMAIL}
+}
+
+relay.nave.pub {
+	reverse_proxy strfry:7777
+}
