@@ -23,6 +23,8 @@ services:
     # applies without a manual restart (the auto-deploy's `up -d` won't recreate
     # Caddy for a mounted-file-only change).
     command: ["run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile", "--watch"]
+    # bump to force the auto-deploy to recreate Caddy (reload vhosts + retry certs)
+    labels: ["nave.recreate=1"]
     depends_on: [strfry]
     ports:
       - "80:80"
