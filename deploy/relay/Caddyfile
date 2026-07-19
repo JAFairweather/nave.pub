@@ -1,9 +1,8 @@
 # Caddy for the relay box — auto-TLS, WSS to strfry. Caddy upgrades WebSocket
 # connections transparently, so no special config beyond the reverse_proxy.
-{
-	email {$ACME_EMAIL}
-}
-
+# No global email block: Let's Encrypt email is optional, and requiring an env
+# var here just crash-loops Caddy when it's unset. Add `tls you@example.com`
+# inside the site block if you want expiry notices.
 relay.nave.pub {
 	reverse_proxy strfry:7777
 }
