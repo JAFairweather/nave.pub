@@ -23,6 +23,10 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    # Lets a future bunker.nave.pub vhost reach Bunker46's :8080 on the host
+    # (Bunker46 runs in its own compose). Harmless until that vhost is added.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
