@@ -11,7 +11,7 @@ services:
       - ./strfry.conf:/etc/strfry.conf:ro
       - ./allowlist.json:/app/allowlist.json:ro
       - strfry-db:/app/strfry-db
-    command: ["strfry", "--config=/etc/strfry.conf", "relay"]
+    command: ["/app/strfry", "--config=/etc/strfry.conf", "relay"]
     expose:
       - "7777"
     networks: [relaynet]
