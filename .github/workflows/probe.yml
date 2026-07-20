@@ -10,8 +10,8 @@ jobs:
         run: |
           echo "===== DNS ====="
           getent hosts bunker.nave.pub relay.nave.pub || true
-          echo "===== BUNKER: verbose handshake + response head ====="
-          curl -sSv --max-time 25 https://bunker.nave.pub/ 2>&1 | head -50 || true
+          echo "===== BUNKER: headers only (safe — no body dumped) ====="
+          curl -sSI --max-time 25 https://bunker.nave.pub/ 2>&1 | head -20 || true
           echo "===== BUNKER: status line ====="
           curl -sS -o /dev/null -w "http=%{http_code} ssl_verify=%{ssl_verify_result} time=%{time_total}s\n" --max-time 25 https://bunker.nave.pub/ 2>&1 || echo "(bunker request failed entirely)"
           echo "===== BUNKER: cert ====="
