@@ -1,0 +1,35 @@
+# Ops channel for the relay/bunker VPS. Manual/API dispatch only — never on push.
+# Lets the assistant run a command on the box and read the result from the run
+# log (the "you run it, pull the response back" channel). Same pattern as the
+# main box's ops workflow.
+#
+# One-time setup (repo → Settings → Secrets and variables → Actions):
+#   RELAY_SSH_HOST  = 145.79.6.80
+#   RELAY_SSH_USER  = root
+#   RELAY_SSH_KEY   = a PRIVATE ssh key whose PUBLIC half is in the box's
+#                     ~/.ssh/authorized_keys (paste the key body into the secret)
+name: relay-ops
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: Command to run on the relay box
+        required: true
+        default: sh /root/nave.pub/deploy/relay/diag.sh
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and run
+        env:
+          KEY: ${{ secrets.RELAY_SSH_KEY }}
+          HOST: ${{ secrets.RELAY_SSH_HOST }}
+          SSH_USER: ${{ secrets.RELAY_SSH_USER }}
+          CMD: ${{ inputs.command }}
+        run: |
+          test -n "$KEY" && test -n "$HOST" && test -n "$SSH_USER" || { echo "missing RELAY_SSH_* secrets"; exit 1; }
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id && chmod 600 ~/.ssh/id
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          echo "----- relay-ops: $CMD -----"
+          ssh -i ~/.ssh/id -o StrictHostKeyChecking=accept-new "$SSH_USER@$HOST" "$CMD"
