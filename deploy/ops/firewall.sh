@@ -87,11 +87,12 @@ set -u
 command -v iptables >/dev/null 2>&1 || exit 0
 EXT=$(ip route show default 2>/dev/null | awk '{print $5; exit}')
 [ -n "$EXT" ] || exit 0
-iptables -C DOCKER-USER -j RETURN 2>/dev/null || exit 0   # chain must exist (docker up)
-iptables -F DOCKER-USER
+iptables -n -L DOCKER-USER >/dev/null 2>&1 || exit 1      # chain must exist (docker up)
+iptables -F DOCKER-USER 2>/dev/null || exit 1
 iptables -A DOCKER-USER -i "$EXT" -p tcp -m conntrack --ctstate NEW -m multiport --dports 80,443 -j RETURN
 iptables -A DOCKER-USER -i "$EXT" -p tcp -m conntrack --ctstate NEW -j DROP
 iptables -A DOCKER-USER -j RETURN
+echo "  DOCKER-USER rules on $EXT: $(iptables -S DOCKER-USER | grep -c '^-A')"
 DFW
   chmod +x /usr/local/sbin/nave-docker-fw.sh
   cat > /etc/systemd/system/nave-docker-fw.service <<'UNIT'
