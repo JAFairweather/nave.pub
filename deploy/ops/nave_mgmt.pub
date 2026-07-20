@@ -1,0 +1,11 @@
+# Nave management public key — the ONE key that opens every box in the fleet.
+#
+# Replace the placeholder line below with the output of:
+#     cat ~/.ssh/nave_mgmt.pub
+# on your Mac (make it once with the commands in ssh-standard.md), then commit.
+# Public keys are safe to commit; the private half never leaves your Keychain.
+#
+# newbox.sh and rekey.sh read the FIRST valid key line from this file, so keep
+# exactly one real key line uncommented.
+#
+# ssh-ed25519 AAAA...REPLACE_WITH_YOUR_NAVE_MGMT_PUBLIC_KEY... nave-mgmt
