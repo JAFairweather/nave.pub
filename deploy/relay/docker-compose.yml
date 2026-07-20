@@ -36,15 +36,10 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
-    # relaynet → strfry; naveedge → the Bunker46 web container (shared external
-    # network, so bunker.nave.pub proxies container-to-container, not via the
-    # host port). fix-bunker-proxy.sh creates naveedge + attaches the bunker web.
-    networks: [relaynet, naveedge]
+    networks: [relaynet]
 
 networks:
   relaynet:
-  naveedge:
-    external: true
 
 volumes:
   strfry-db:

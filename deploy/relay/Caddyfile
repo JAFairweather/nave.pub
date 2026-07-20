@@ -7,12 +7,12 @@ relay.nave.pub {
 	reverse_proxy strfry:7777
 }
 
-# The bunker (Bunker46 NIP-46 signer) runs in its own compose. Caddy reaches its
-# web container DIRECTLY over the shared `naveedge` docker network (container-to-
-# container) instead of through the host's published :8080 — routing through the
-# host port ran into the box's docker/nftables firewall and flapped (intermittent
-# 502 / plain-text error bodies the browser tried to download as document.txt).
-# The bunker web container is attached to `naveedge` by deploy/relay/fix-bunker-proxy.sh.
+# The bunker (Bunker46 NIP-46 signer) runs in its own compose, publishing :8080
+# on the host; Caddy reaches it via the host-gateway mapping on this service.
+# NOTE: this path depends on Docker's iptables chains being intact. If bunker.nave.pub
+# returns 502 / a plain-text body the browser saves as "document.txt", check that
+# Docker's chains exist (`iptables -L DOCKER-FORWARD` or `docker network create test`);
+# a firewalld reload can flush them — `systemctl restart docker` rebuilds them.
 bunker.nave.pub {
-	reverse_proxy bunker46-web-1:8080
+	reverse_proxy host.docker.internal:8080
 }
