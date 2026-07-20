@@ -22,39 +22,13 @@ firewall-cmd --permanent --add-service=ssh --add-service=http --add-service=http
 firewall-cmd --reload >/dev/null
 echo "  inbound allowed: $(firewall-cmd --list-services)"
 
-# 2) Seal port 8080 (the bunker web/API). Docker publishes ports straight into
-#    iptables, BYPASSING firewalld zones (and firewalld --direct fails on
-#    AlmaLinux 10's nft backend), so apply the rule at runtime into Docker's own
-#    DOCKER-USER chain and persist it with a boot unit. Allow docker-internal +
-#    localhost (Caddy's path); drop everyone else.
-echo "-- seal :8080 (bunker app — force it through Caddy TLS) --"
-cat > /usr/local/sbin/nave-seal-8080.sh <<'SEAL'
-#!/bin/sh
-# Idempotent: clear any prior copies, then insert in the order:
-#   RETURN docker-net · RETURN localhost · DROP  (above Docker's default RETURN)
-while iptables -D DOCKER-USER -p tcp --dport 8080 -s 172.16.0.0/12 -j RETURN 2>/dev/null; do :; done
-while iptables -D DOCKER-USER -p tcp --dport 8080 -s 127.0.0.1 -j RETURN 2>/dev/null; do :; done
-while iptables -D DOCKER-USER -p tcp --dport 8080 -j DROP 2>/dev/null; do :; done
-iptables -I DOCKER-USER 1 -p tcp --dport 8080 -j DROP
-iptables -I DOCKER-USER 1 -p tcp --dport 8080 -s 127.0.0.1 -j RETURN
-iptables -I DOCKER-USER 1 -p tcp --dport 8080 -s 172.16.0.0/12 -j RETURN
-SEAL
-chmod +x /usr/local/sbin/nave-seal-8080.sh
-if /usr/local/sbin/nave-seal-8080.sh 2>/dev/null; then echo "  :8080 sealed (docker+localhost allowed, external dropped)"
-else echo "  (on-box seal failed — use the Hostinger panel firewall; see notes below)"; fi
-cat > /etc/systemd/system/nave-seal-8080.service <<'UNIT'
-[Unit]
-Description=Seal bunker :8080 to docker-internal only
-After=docker.service
-Requires=docker.service
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStart=/usr/local/sbin/nave-seal-8080.sh
-[Install]
-WantedBy=multi-user.target
-UNIT
-systemctl daemon-reload >/dev/null 2>&1; systemctl enable nave-seal-8080.service >/dev/null 2>&1
+# 2) Port 8080 (bunker web/API) is published by Docker on 0.0.0.0. On this box
+#    (AlmaLinux 10 / nftables) Docker's chains aren't reachable via iptables or
+#    firewalld, so the on-box seal doesn't work — the RELIABLE seal is the
+#    Hostinger VPS panel firewall (allow only 22/80/443 inbound). See the note
+#    at the end. Nothing to apply here.
+echo "-- :8080 --"
+echo "  NOTE: seal :8080 at the edge via the Hostinger panel firewall (22/80/443 only)."
 
 # 3) fail2ban — throttle/ban SSH brute force.
 echo "-- fail2ban --"
