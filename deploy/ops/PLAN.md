@@ -40,9 +40,16 @@ manager.
 - [ ] **`harden.sh` on the relay/bunker box** — MANUAL via `nave_mgmt` (the
       restricted CI channel deliberately can't run mutating scripts). firewalld
       already removed; run for fail2ban.
-- [ ] **Confirm the provider edge firewall on all 3 boxes** = 22/80/443 only.
-      Seal the bunker's `:8080` AND warm.contact's `:8484` (Node app listens on
-      all interfaces). Provider-panel action (Hostinger/DO).
+- [x] **On-box Docker-safe firewall** (`firewall.sh`, called by harden.sh):
+      nftables INPUT (allow lo/established/docker-subnet/icmp + 22/80/443, drop
+      rest — seals host-bound ports) + DOCKER-USER seal (published ports except
+      80/443). Applied on main (DOCKER-USER 3 rules) + warm.contact (`:8484`
+      sealed, node still local-reachable). Main sites verified 200 externally.
+      **Relay/bunker: run `firewall.sh` there** to seal `:8080` (currently OPEN —
+      probe shows :8080=200; the earlier "sealed" reading was just the container
+      being down, never a real firewall).
+- [ ] Provider edge firewall (22/80/443) is still worthwhile as belt-and-
+      suspenders, but the on-box firewall is now the primary — no panel required.
 - [x] **Reboot survival: main + relay** — Docker enabled on boot, all containers
       `restart: unless-stopped`. warm.contact: Caddy confirmed enabled-on-boot;
       still verify the Node app (`:8484`) is a boot-enabled systemd unit.
