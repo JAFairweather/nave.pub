@@ -41,7 +41,13 @@ if [ "$LOCK" = "--lock" ]; then
 set -e
 sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
 sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
-sshd -t && { systemctl reload sshd 2>/dev/null || systemctl reload ssh; }
+# cloud images (Ubuntu/DO/Hostinger) hide "PasswordAuthentication yes" in a
+# drop-in that overrides the main file — force it off there too, or the lock
+# silently does nothing.
+for f in /etc/ssh/sshd_config.d/*.conf; do [ -e "$f" ] && sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' "$f"; done
+sshd -t
+echo "  effective config:"; sshd -T | grep -Ei 'passwordauthentication|permitrootlogin' | sed 's/^/    /'
+systemctl reload sshd 2>/dev/null || systemctl reload ssh   # service is 'ssh' on Ubuntu
 echo "  password auth OFF; root is key-only"
 EOF
   echo "  ✓ locked. Open a FRESH 'ssh -i $KEYFILE $HOST' to confirm before closing your current session."
