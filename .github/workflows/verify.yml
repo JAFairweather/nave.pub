@@ -1,0 +1,39 @@
+name: Verify — fleet health harness
+
+# On-demand run of the post-deploy verification harness (deploy/ops/verify.sh):
+# containers up, every vhost 200, nactor health + credentials, luke approval
+# webhook registered, and a brain dry-run (import + broker + model + parse).
+# Goes RED if any critical check fails. The same script runs automatically at
+# the end of every deploy; this is the manual button. Dispatch-only.
+on:
+  workflow_dispatch:
+    inputs:
+      skip_brain:
+        description: "true = skip the (Anthropic-calling) brain dry-run"
+        required: false
+        default: ""
+
+concurrency:
+  group: ops-nave
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run verify.sh over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          SKIP_BRAIN: ${{ inputs.skip_brain }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          envs: SKIP_BRAIN
+          script: |
+            set -e
+            if [ -f /root/nave.pub/deploy/.flipped ]; then ROOT=/root/nave.pub; else ROOT=/root/noir; fi
+            git -C "$ROOT" pull --ff-only
+            [ "$SKIP_BRAIN" = "true" ] && export VERIFY_BRAIN=0
+            bash "$ROOT/deploy/ops/verify.sh"

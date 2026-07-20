@@ -66,3 +66,9 @@ jobs:
             docker compose exec -T caddy caddy reload \
               --config /etc/caddy/Caddyfile --adapter caddyfile
             echo "deploy complete"
+            # Post-deploy verification — exercises the real paths (containers,
+            # vhosts, nactor health, luke webhook, brain dry-run). A non-zero
+            # exit fails this step, so a broken deploy goes RED instead of
+            # silently shipping. See deploy/ops/verify.sh.
+            echo "── verify ──"
+            bash ops/verify.sh
