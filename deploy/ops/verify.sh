@@ -39,9 +39,20 @@ echo "$HJ" | grep -qE '"credentials":[1-9]' && pass "credentials loaded" || fail
 for id in luke brain nave nactjaf; do echo "$HJ" | grep -q "\"$id\"" && pass "identity $id" || warn "identity $id absent from health"; done
 
 echo "-- luke telegram webhook --"
-if docker logs deploy-luke-1 2>&1 | grep -q 'webhook: registered'; then pass "approval webhook registered"
-elif docker logs deploy-luke-1 2>&1 | grep -q 'webhook: skipped'; then warn "webhook skipped (telegram not configured)"
-else fail "webhook NOT registered — approval taps will drop"; fi
+# Poll: luke registers its webhook on boot with a retry loop (up to ~30s to
+# catch the broker after a co-deploy), so check for up to ~48s before failing —
+# otherwise we'd race luke's own startup and false-alarm right after a deploy.
+wh=""
+for _ in $(seq 1 24); do
+  L=$(docker logs deploy-luke-1 2>&1 | grep -E 'webhook: (registered|skipped)' | tail -1)
+  case "$L" in *registered*) wh=ok; break ;; *skipped*) wh=skip; break ;; esac
+  sleep 2
+done
+case "$wh" in
+  ok)   pass "approval webhook registered" ;;
+  skip) warn "webhook skipped (telegram not configured)" ;;
+  *)    fail "webhook NOT registered after ~48s — approval taps will drop" ;;
+esac
 
 if [ "${VERIFY_BRAIN:-1}" = 1 ]; then
   echo "-- brain dry-run (import + broker + model + parse) --"
