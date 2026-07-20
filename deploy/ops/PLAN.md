@@ -33,16 +33,19 @@ manager.
       `newbox.sh` (rewritten), `deploy/relay/harden.sh` (now a thin wrapper —
       landmine defused).
 
-### ⬜ Tier 1 — stability / could bite on reboot
-- [ ] **Run `deploy/ops/harden.sh` on each box** — removes firewalld, installs a
-      gentle fail2ban, auto-updates, enables Docker on boot. (relay box: firewalld
-      already removed by hand; still run it for fail2ban + updates.)
+### 🟡 Tier 1 — stability / could bite on reboot
+- [x] **`harden.sh` on main + warm.contact** (via CI) — fail2ban active,
+      auto-updates on, Docker-on-boot confirmed (main), `.env` → 600. Stale
+      `openclaw-kajk` container pruned on main.
+- [ ] **`harden.sh` on the relay/bunker box** — MANUAL via `nave_mgmt` (the
+      restricted CI channel deliberately can't run mutating scripts). firewalld
+      already removed; run for fail2ban.
 - [ ] **Confirm the provider edge firewall on all 3 boxes** = 22/80/443 only.
-      Especially: the bunker's `:8080` must stay blocked (probe already shows it
-      sealed on the relay box — verify main + warm.contact).
-- [ ] **Reboot survival check** — every compose service is `restart: unless-stopped`
-      and `systemctl is-enabled docker` = enabled, so a reboot brings the whole
-      fleet back unattended. (Today, after the daemon crash, nothing auto-started.)
+      Seal the bunker's `:8080` AND warm.contact's `:8484` (Node app listens on
+      all interfaces). Provider-panel action (Hostinger/DO).
+- [x] **Reboot survival: main + relay** — Docker enabled on boot, all containers
+      `restart: unless-stopped`. warm.contact: Caddy confirmed enabled-on-boot;
+      still verify the Node app (`:8484`) is a boot-enabled systemd unit.
 
 ### ⬜ Tier 2 — bunker sovereignty
 - [ ] **Off-box backup of `/root/bunker46/.env`** — it holds the `ENCRYPTION_KEY`
@@ -54,13 +57,13 @@ manager.
 - [ ] Confirm bunker containers are all `restart: unless-stopped` (so a reboot
       brings the signer back).
 
-### ⬜ Tier 3 — runners / remote hands (so an incident never needs an hour of console-paste)
-- [ ] **Wire the `relay-ops` CI channel.** Add a *dedicated* CI key to the relay
-      box's `authorized_keys` (NOT the mgmt key — that stays on your Mac), put its
-      private half in repo secrets `RELAY_SSH_HOST` / `RELAY_SSH_USER` /
-      `RELAY_SSH_KEY`. Then `relay-ops.yml` lets the assistant run a command on the
-      relay box and read the result — e.g. restart the bunker — without you at the
-      console. (The workflow already exists; it just has no secrets.)
+### 🟢 Tier 3 — runners / remote hands (DONE — unified Nops)
+- [x] **Unified CI ops channels, all 3 boxes.** `fleet-ops.yml` = full channel for
+      main + warmcontact (per-box secrets). `relay-ops.yml` = RESTRICTED channel for
+      the bunker box: its CI key is forced-command-locked to `ci-ops-allow.sh` (a
+      fixed allowlist: status/ps/inventory/bunker-ps/restart-relay/restart-bunker/
+      logs) — never a root shell, never reads the `.env`. All three inventoried
+      hands-free to prove it.
 - [ ] Confirm the relay box's **auto-deploy** still works after the Docker rebuild.
 - [ ] Sweep the other workflows (deploy / verify / ops / smoke / brain-cron /
       probe) for anything still assuming firewalld or the old proxy path.
@@ -69,9 +72,11 @@ manager.
 - [x] `ssh-standard.md`, `rekey.sh`, `newbox.sh`, `harden.sh` reflect the real
       (firewalld-free) process.
 - [ ] Note the firewalld decision in `nave.pub/docs/sovereign-signing.md`.
-- [ ] Prune stray old keys from each box's `authorized_keys` down to
-      `nave-mgmt` (+ the two `github-deploy` keys on main), once the mgmt key is
-      trusted everywhere. Do it carefully, re-proving after each removal.
+- [x] Prune stray keys — **main** already clean (`github-deploy` ×2 + `nave-mgmt`);
+      **warm.contact** pruned to `nave-mgmt` + `nave-ci-warm` (old Mac key + two
+      expired `dotty_ssh` keys removed). **relay/bunker** pending: MANUAL prune to
+      `nave-mgmt` + `nave-ci-relay` (safe grep-keep pattern, aborts if either
+      missing).
 
 ## Standing up a NEW box (the unified path)
 
