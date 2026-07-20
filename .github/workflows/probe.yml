@@ -20,3 +20,11 @@ jobs:
           curl -sS --max-time 25 -H 'Accept: application/nostr+json' https://relay.nave.pub/ 2>&1 | head -3 || echo "(relay request failed)"
           echo "===== RELAY: status ====="
           curl -sS -o /dev/null -w "http=%{http_code}\n" --max-time 25 https://relay.nave.pub/ 2>&1 || true
+          echo "===== MAIN BOX: nact.nave.pub /api/health ====="
+          curl -sS -w "\nhttp=%{http_code} time=%{time_total}s\n" --max-time 25 https://nact.nave.pub/api/health 2>&1 | head -8 || echo "(nact health failed)"
+          echo "===== MAIN BOX: nact.nave.pub /api/state ====="
+          curl -sS -o /dev/null -w "http=%{http_code} time=%{time_total}s\n" --max-time 25 https://nact.nave.pub/api/state 2>&1 || echo "(nact state failed)"
+          echo "===== MAIN BOX: luke.nave.pub ====="
+          curl -sS -o /dev/null -w "http=%{http_code} time=%{time_total}s\n" --max-time 25 https://luke.nave.pub/ 2>&1 || echo "(luke failed)"
+          echo "===== MAIN BOX: nvoy.nave.pub ====="
+          curl -sS -o /dev/null -w "http=%{http_code} time=%{time_total}s\n" --max-time 25 https://nvoy.nave.pub/ 2>&1 || echo "(nvoy failed)"
