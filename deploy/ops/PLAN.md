@@ -64,7 +64,11 @@ manager.
 - [ ] Confirm bunker containers are all `restart: unless-stopped` (so a reboot
       brings the signer back).
 
-### 🟢 Tier 3 — runners / remote hands (DONE — unified Nops)
+### 🟢 Tier 3 — runners / remote hands (DONE — unified fleet ops / proto-Nops)
+<!-- This SSH+CI control plane is the INTERIM. Nops proper (nact/docs/nops.md)
+is the same shape made nostr-native: ops-runner has its own identity, receives
+allowed verbs as a scoped grant, executes on signed approval — no SSH/CI. -->
+
 - [x] **Unified CI ops channels, all 3 boxes.** `fleet-ops.yml` = full channel for
       main + warmcontact (per-box secrets). `relay-ops.yml` = RESTRICTED channel for
       the bunker box: its CI key is forced-command-locked to `ci-ops-allow.sh` (a
