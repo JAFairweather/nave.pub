@@ -22,7 +22,13 @@ if systemctl list-unit-files 2>/dev/null | grep -q '^firewalld'; then
 else
   echo "  firewalld not present — good"
 fi
-echo "  PORTS: seal inbound at the PROVIDER edge firewall — allow only 22/80/443."
+
+# 1b) On-box firewall — Docker-safe port control WITHOUT the provider panel
+#     (nftables INPUT + DOCKER-USER). The edge firewall stays as belt-and-suspenders.
+echo "-- on-box firewall --"
+FW="$(CDPATH= cd -- "$(dirname -- "$0")" 2>/dev/null && pwd)/firewall.sh"
+if [ -f "$FW" ]; then sh "$FW"
+else curl -fsSL https://raw.githubusercontent.com/JAFairweather/nave.pub/main/deploy/ops/firewall.sh | sh; fi
 
 # 2) fail2ban — SSH brute-force throttle. With firewalld gone it uses nftables/
 #    iptables directly (separate from Docker's chains, so it can't break Docker).
