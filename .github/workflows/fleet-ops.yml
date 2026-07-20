@@ -1,0 +1,51 @@
+name: Fleet ops — run a command on any box
+
+# One unified ops channel for the whole fleet. Pick a box, run a command, read
+# the result in the run log. Dispatch-only; never on push; only repo
+# collaborators can trigger it. The command is forwarded as a remote env var
+# (not interpolated into the script text) to avoid workflow injection.
+#
+# Per-box secrets (repo → Settings → Secrets and variables → Actions):
+#   main         : VPS_HOST        VPS_USER        VPS_SSH_KEY      (already set)
+#   relay/bunker : RELAY_SSH_HOST  RELAY_SSH_USER  RELAY_SSH_KEY
+#   warmcontact  : WARM_SSH_HOST   WARM_SSH_USER   WARM_SSH_KEY
+#
+# Each *_SSH_KEY is a PRIVATE key whose PUBLIC half is in that box's
+# ~/.ssh/authorized_keys. Use a DEDICATED CI key per box — never the nave-mgmt
+# key (that lives only on your Mac).
+on:
+  workflow_dispatch:
+    inputs:
+      box:
+        description: Which box
+        type: choice
+        default: main
+        options: [main, relay, warmcontact]
+      command:
+        description: Command to run on that box
+        required: true
+        default: sh deploy/ops/inventory.sh 2>/dev/null || curl -fsSL https://raw.githubusercontent.com/JAFairweather/nave.pub/main/deploy/ops/inventory.sh | sh
+
+concurrency:
+  group: fleet-ops
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and run
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          CMD: ${{ inputs.command }}
+        with:
+          host: ${{ (inputs.box == 'main' && secrets.VPS_HOST) || (inputs.box == 'relay' && secrets.RELAY_SSH_HOST) || secrets.WARM_SSH_HOST }}
+          username: ${{ (inputs.box == 'main' && secrets.VPS_USER) || (inputs.box == 'relay' && secrets.RELAY_SSH_USER) || secrets.WARM_SSH_USER }}
+          key: ${{ (inputs.box == 'main' && secrets.VPS_SSH_KEY) || (inputs.box == 'relay' && secrets.RELAY_SSH_KEY) || secrets.WARM_SSH_KEY }}
+          command_timeout: 8m
+          envs: CMD
+          script: |
+            set -u
+            echo "== fleet-ops on $(hostname) =="
+            eval "$CMD"
+            echo "== done =="
