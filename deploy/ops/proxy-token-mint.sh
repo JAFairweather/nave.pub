@@ -50,19 +50,30 @@ for f in nave-consumer.env luke-consumer.env; do
   grep -vE '^NACT_PROXY_TOKEN=' "$f" > "$f.tmp"; chmod 600 "$f.tmp"; mv "$f.tmp" "$f"
 done
 
-docker compose up -d --force-recreate nactor
-N=$(docker ps -qf name=nactor | head -1)
-sleep 3
-echo "verify: no token → expect 403"
-NOTOK=$(docker exec "$N" node -e 'fetch("http://127.0.0.1:8791/api/proxy/anthropic/v1/models").then(r=>console.log(r.status))' 2>&1 | tail -1)
-echo "  status: $NOTOK"
-echo "verify: with token → expect 200 from the real provider (grant-sourced key injected)"
-WITHTOK=$(docker exec -e TOK="$TOK" "$N" node -e 'fetch("http://127.0.0.1:8791/api/proxy/anthropic/v1/models",{headers:{"x-api-key":process.env.TOK}}).then(r=>console.log(r.status))' 2>&1 | tail -1)
-echo "  status: $WITHTOK"
-[ "$NOTOK" = "403" ] && [ "$WITHTOK" = "200" ] || { echo "✗ proxy verification failed (got $NOTOK / $WITHTOK)"; exit 1; }
-echo "✓ egress proxy LIVE — dummy-token gate up, real key injected from RAM"
-
+# Emit the ciphertext BEFORE verification so a verify hiccup never loses the
+# repo-sync payload.
 echo "== BEGIN nave.enc.env base64 (lift into deploy/secrets/nave.enc.env via PR) =="
 base64 -w0 secrets/nave.enc.env
 echo
 echo "== END nave.enc.env base64 =="
+
+docker compose up -d --force-recreate nactor
+N=$(docker ps -qf name=nactor | head -1)
+echo "verify: no token → expect 403"
+NOTOK=$(docker exec "$N" node -e 'fetch("http://127.0.0.1:8791/api/proxy/anthropic/v1/models").then(r=>console.log(r.status))' 2>&1 | tail -1)
+echo "  status: $NOTOK"
+# A fresh nactor boots with EMPTY CREDS (no env fallback post-retirement — by
+# design) and refills from the relays on the boot sweep. The with-token check
+# needs the anthropic credential loaded, so retry across the sweep window
+# instead of racing it (learned 2026-07-21: a 3s-early probe read 503
+# "credential not imported" and failed an otherwise-healthy mint).
+echo "verify: with token → expect 200 once the boot sweep loads the credential"
+WITHTOK=""
+for i in $(seq 1 12); do
+  sleep 10
+  WITHTOK=$(docker exec -e TOK="$TOK" "$N" node -e 'fetch("http://127.0.0.1:8791/api/proxy/anthropic/v1/models",{headers:{"x-api-key":process.env.TOK}}).then(r=>console.log(r.status))' 2>&1 | tail -1)
+  echo "  t+$((i*10))s status: $WITHTOK"
+  [ "$WITHTOK" = "200" ] && break
+done
+[ "$NOTOK" = "403" ] && [ "$WITHTOK" = "200" ] || { echo "✗ proxy verification failed (got $NOTOK / $WITHTOK)"; exit 1; }
+echo "✓ egress proxy LIVE — dummy-token gate up, real key injected from RAM"
