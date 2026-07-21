@@ -136,10 +136,11 @@ a per-person brain that drafts in your voice from granted credentials.**
   organic-verified from the engine's own transport log · **M5 mail
   connector BUILT ✅** (verb-scoped read-only IMAP + wire-audited offline suite;
   cutover = issue `credential:mail-gmail`, run `deploy/ops/m5-mail-verify.sh`,
-  repoint the consumer, delete `mail/app-passwd` — tracked in nact#4) · **M7
-  Nvoy MCP transport BUILT ✅** (client + flag default-relay in nact; `nvoy-mcp`
-  service deployed and soaking; review-only cutover script — key custody moves
-  only on a separate operator go) · **A2 stage 2 SHIPPED ✅** (owner grants
+  repoint the consumer, delete `mail/app-passwd` — tracked in nact#4) · **M7 Nvoy MCP
+  transport ✅ CUTOVER COMPLETE (2026-07-21)** — nvoy-mcp custodies the nactor
+  key; the runtime env holds no nsec and reads grants via the two
+  conformance-pinned MCP tools; direct-relay retained as the flagged fallback.
+  **The credential-migration M-series is CLOSED, M1→M7** · **A2 stage 2 SHIPPED ✅** (owner grants
   supply values with strict precedence; revoke Nactor-addressed duplicates from
   the console per credential once the audit shows the owner-tagged load —
   `google` ready first).
