@@ -46,7 +46,7 @@ green:
   it flows into every draft. *This is the seed of Quill's profile bundle (§4).*
 - **Guardrails are pure and unit-tested.** Use only provided facts, never invent
   shared history; open by acknowledging *their* reaching out; one light CTA matched
-  to the follow-up intent (hello/coffee/meetup); channel-correct length; genuine
+  to the follow-up intent (now **Message / Virtual coffee / In person**); channel-correct length; genuine
   "how are you" beat. `flags:["insufficient_context"]` instead of fabricating.
 - **Never auto-sends.** Draft → you edit → you approve → it sends from *your own*
   iMessage/Mail (`sms:`/`mailto:`), never a `noreply@`. Then retags the card
@@ -71,9 +71,10 @@ Two identities per user, both minted through Nave, plus the user's own root.
                       human tap)
 ```
 
-- **The user gets a nostr identity.** Either warm.contact **mints one** at signup
-  (most users — they never think about nostr) or the user **brings their own** npub
-  (the nostr-native minority sign in with their existing key). Either way, *the user
+- **The user gets a nostr identity — minted lazily.** warm.contact **mints it on
+  first Quill-enable**, not at signup (James, 2026-07-21; signup stays
+  identity-free — most users never think about nostr). The nostr-native minority
+  **bring their own** npub instead. Either way, *the user
   is the Director* of their own little estate — the root the whole thing chains up to,
   exactly as `jaf@dequalsf.com` is for the Nave fleet.
 - **Quill gets its own nostr identity, minted *for that user*.** Not a shared "warm"
@@ -84,6 +85,11 @@ Two identities per user, both minted through Nave, plus the user's own root.
 - **Authority = a grant the user signs, not a server ACL** (AD-6). The user's identity
   issues Quill a scoped grant; revocation is key rotation, not a database flip. Kill a
   Quill and every credential it held is dead with it — one revocable blast radius.
+- **Console visibility (James, 2026-07-21).** A minted Quill appears in the **Nvoy
+  Ledger at mint** (the grant-lifecycle lens, AD-1); it surfaces in **Nact only via
+  the approval plane**, if and when a Quill action routes through it. AD-6 keeps
+  Nactor out of Quill's call path, so the runtime audit staying empty of Quill is
+  correct by design, not a gap.
 
 This is the through-line to **Luke**: Luke is James's per-person brain that drafts in
 his voice from granted credentials. **Quill is that pattern generalized to every
@@ -101,14 +107,14 @@ extending today's `ReconnectProfile`:
 | `homeRegion` | ✅ in `ReconnectProfile` | drives the "nearby → coffee" default — unchanged |
 | **Anthropic key** | 🟡 pasted, in Keychain | **grant-to-app** — scoped credential to Quill's npub |
 | **Gmail app-password** | 🟡 pasted, in Keychain | **grant-to-app** — scoped, read-only IMAP for history |
-| **`coffeeLink`** (booking URL) | ✅ shipped 2026-07-21 | a booking URL offered in the `coffee` CTA (Calendly/Cal.com/any); `meetup` extension open |
+| **`coffeeLink`** (booking URL) | ✅ shipped 2026-07-21 | booking URL on the **Virtual coffee** option only (Calendly/Cal.com/any); **In person never carries it** |
 | personal briefing | ↳ = `narrative`, extend | freeform "here's what's true about me right now" |
 
 > **The booking link is the one genuinely net-new field** (an earlier note that
 > "signature was new" was wrong — `signature` already ships). It shipped 2026-07-21 as
 > **`coffeeLink`** — provider-agnostic; this doc previously said `calendlyURL`, and the
-> shipped name wins (AD-8). With it in the bundle, a `coffee` draft closes with a real
-> booking link instead of a vague "let's find a time".
+> shipped name wins (AD-8). With it in the bundle, a **Virtual coffee** draft closes with
+> a real booking link instead of a vague "let's find a time".
 
 ## 5 · How the credentials arrive (the decided posture)
 
@@ -152,10 +158,11 @@ is blocked on. **Quill and the Nave credential-migration M-series unblock each o
 - ⬜ Nave-side: confirm per-user hierarchical re-grant; the M2 grant-scope reader.
 - ⬜ Client crypto: NIP-44 decrypt + NIP-98 sign in the Swift agent (`swift-secp256k1`)
   — added to a lean, notarized app.
-- ⬜ Per-user identity bootstrap: mint-or-BYO at signup; register Quill's npub; issue the
-  scoped grant.
-- ✅ ~~Add the booking link to `ReconnectProfile`~~ — shipped as `coffeeLink` (coffee
-  intent; `meetup` surfacing still open — warm.contact#7).
+- ⬜ Per-user identity bootstrap: mint-or-BYO **on first Quill-enable** (lazy mint —
+  James 2026-07-21); register Quill's npub; issue the scoped grant.
+- ✅ ~~Add the booking link to `ReconnectProfile`~~ — shipped as `coffeeLink`; the
+  follow-up model is finalized as **Message / Virtual coffee / In person**, the link
+  riding Virtual coffee only (warm.contact#7 **closed**).
 - ⬜ Lifecycle: how a Quill npub is registered, scoped, and revoked at scale (many users).
 
 ## 7 · 2026-07-21 addendum — warm.contact feedback absorbed
@@ -164,15 +171,25 @@ Reconciliations from the warm.contact agent's integration pass (naming recorded
 as **AD-8** in `nave-architecture-decisions.md`; James can override):
 
 - **`coffeeLink`** is the shipped booking-URL field name (`calendlyURL` in this
-  doc superseded); `meetup`-intent surfacing still open (warm.contact#7).
+  doc superseded). Follow-up model finalized: **Message / Virtual coffee /
+  In person** — the link rides Virtual coffee only, never In person
+  (warm.contact#7 closed).
 - **"Director"** stays the *human root authority* ecosystem-wide (James for the
   fleet; the user for their Quill). Noir's AI game master is always qualified
   **"Noir's Director"** outside the game — the ECOSYSTEM-HUB §0.6 pattern.
 - **Scope-name namespace** `profile:* · credential:* · data:* · capability:*`
   blessed as the grant-scope convention (their `profile:voice`/`profile:policy`
   fit); Nvoy ledger/console should render it (folds into nvoy#2).
-- **`capability:*` stays interim-local** in warm.contact until Scoped Action
-  Approvals matures — consistent with the build-first posture (INVENTORY §1).
+- **`capability:*`, sharpened (2026-07-21):** the **management layer** — issuing,
+  holding, rotating a capability grant — is itself a NIP-DA scoped grant and
+  expressible **today**; only the **per-action approval handshake** is the
+  not-yet-a-NIP sketch. warm.contact's interim-local policy object covers exactly
+  that handshake half and converges when Scoped Action Approvals lands
+  (build-first, INVENTORY §1).
+- **Lazy mint (James, 2026-07-21):** the user's identity is minted on **first
+  Quill-enable**, not at signup — §3/§6 updated.
+- **Console visibility (James, 2026-07-21):** Quill-on-mint → **Nvoy Ledger**;
+  **Nact via the approval plane only** (AD-6 keeps Nactor out of the call path).
 - **§5's linchpin, corrected state:** hierarchical re-grant is design-CONFIRMED
   (`warm-contact-nave-review.md` Q1; the console's "＋ grant to another identity"
   is the mechanism). What still gates the Quill bootstrap (warm.contact#5): the
