@@ -23,7 +23,10 @@ set -eu
 STAMP=$(date +%Y%m%d-%H%M%S)
 CFG=openclaw-state/.openclaw/openclaw.json
 ENVF=openclaw.env
-PROXY=http://nactor:8791/api/proxy/google
+# The base includes /v1beta: under a custom baseUrl the engine appends only
+# /models/<id>:<method> (it adds /v1beta itself only on the default base) —
+# run 29857877999-era 404s were exactly the missing version segment.
+PROXY=http://nactor:8791/api/proxy/google/v1beta
 [ -f "$CFG" ] || { echo "✗ no $CFG (cwd $(pwd))"; exit 1; }
 command -v jq >/dev/null || { echo "✗ jq required"; exit 1; }
 TOK=$(grep '^NACT_PROXY_TOKEN=' nave.env | head -1 | cut -d= -f2-)
