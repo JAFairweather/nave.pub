@@ -20,6 +20,14 @@
       "body": "Repeat the {{N2}} pattern for the rest of the live credentials; retire env copies one by one; runtime audit shows each migration.\n\n- [ ] gworkspace\n- [ ] anthropic\n- [ ] telegram approval bots\n- [ ] nave.env carries no credential a grant now delivers\n\nDepends on {{N2}}. Source: nave.pub docs/INVENTORY.md §5."
     },
     {
+      "repo": "nact", "key": "N15",
+      "title": "M5: mail connector — verb-scoped read-only IMAP (Nmail)",
+      "labels": ["P1", "credential-migration"],
+      "skip_if_search": "IMAP",
+      "body": "## Context\nThe first real connector (the docs' #36 — that number predates this tracker; recreated here). Pinned design: `stateful-adapter` × {app-password | OAuth}, verb-scoped **READ-ONLY** IMAP enforced at the protocol, `POST /api/connector/mail`. Takes the Gmail app password off disk into RAM-only custody; also unblocks warm.contact's Gmail path (grant-to-app).\n\n## Acceptance criteria\n- [ ] stateful-adapter with app-password and OAuth modes\n- [ ] Read-only verb set enforced at the protocol layer (no send, no delete)\n- [ ] POST /api/connector/mail behind NIP-98\n- [ ] Gmail app password removed from disk\n\nDepends on {{N1}}. Source: nave.pub docs/INVENTORY.md §5 (M5); docs/imap-adapter.",
+      "_note": "was tracked as nact#36 in the docs; that number does not exist in this tracker"
+    },
+    {
       "repo": "nact", "key": "N4",
       "title": "M6: engine egress → /api/proxy (Anthropic key leaves the engine env)",
       "labels": ["P2", "credential-migration"],
@@ -87,10 +95,52 @@
       "body": "The nave-connect module is built + tested; the bunker path is proven (Armada). Wire it into each app's login UI and the unified title bar. Nvoy keeps its local-key onboarding (gated \"advanced\"); Nact stays signer-only (James 2026-07-18).\n\n- [ ] Per-app wiring checklist (nvoy, nvelope, nontact, notegate, nherit, noir, ntrigue, hub)\n- [ ] Unified title bar\n- [ ] Nvoy local-key onboarding preserved\n\nSource: nave.pub docs/INVENTORY.md §5 (#56 build direction)."
     },
     {
+      "repo": "nact", "key": "N16",
+      "title": "Delegate approval authority James → Nact_jaf (signature-gated)",
+      "labels": ["P2", "governance"],
+      "skip_if_search": "delegate approval",
+      "body": "Formalize the delegation so Nact_jaf can carry approvals on James's behalf where configured (the docs' #48 — number predates this tracker). Signature-gated and James-only: the delegation itself is a Director-signed act; nothing executes without it.\n\n- [ ] Delegation grant/event design (scope, expiry)\n- [ ] Revocation = rotation documented\n- [ ] James signs; runtime audit shows the chain\n\nSource: nave.pub docs/INVENTORY.md §5; docs/nave-architecture-decisions.md (queued builds)."
+    },
+    {
       "repo": "nvoy", "key": "V1",
       "title": "Hierarchical re-grant: confirm a grantee identity can re-issue scoped sub-grants",
       "labels": ["P0", "protocol"],
       "body": "The Quill linchpin (nave.pub docs/quill.md §5 — user→Quill is the simplest one-hop case) and the assumption under the central-identity fleet model (warm.contact integration review §6).\n\n- [ ] Determine whether kinds 30440/440/441/10440 as specced support a grantee re-issuing a narrower grant today\n- [ ] Decide revocation-cascade semantics (does rotating the mid-key kill descendants?)\n- [ ] Prototype one-hop user→instance re-grant\n- [ ] Feed conclusions to SPEC FUTURE.md (attenuation north star, SPEC §10) and the warm.contact bootstrap ticket\n\nRelated: {{N1}} (the reader that consumes such grants)."
+    },
+    {
+      "repo": "nvoy", "key": "V2",
+      "title": "Grant migration M1+M2: credentials as first-class grants in the Ledger",
+      "labels": ["P1", "credential-migration"],
+      "skip_if_search": "grant migration",
+      "body": "The Nvoy half of the credential-grant migration (the docs' #37, in-flight — number predates this tracker). Represent credential grants first-class in the Ledger and the issuance flow, aligned with the Nactor reader ({{N1}}).\n\n- [ ] M1: Ledger models credential grants distinctly from data grants\n- [ ] M2: issuance flow for Director-signed credential grants\n\nSource: nave.pub docs/INVENTORY.md §5 (Nvoy)."
+    },
+    {
+      "repo": "nvoy", "key": "V3",
+      "title": "A2: credential ciphertext → owning identity",
+      "labels": ["P2", "credential-migration"],
+      "skip_if_search": "ciphertext",
+      "body": "Move credential ciphertext custody to the owning identity (the docs' #43): the grant addressed to the identity holds the secret; Nactor's redundant copies get revoked after cross-box value-sourcing.\n\n- [ ] Ciphertext addressed to the owning identity only\n- [ ] Redundant copies revoked once consumers cut over\n\nSource: nave.pub docs/INVENTORY.md §5; nave-architecture-decisions.md (migration finish-work)."
+    },
+    {
+      "repo": "nvoy", "key": "V4",
+      "title": "luke.env → nave.env: retire the aliases",
+      "labels": ["P2", "cleanup"],
+      "skip_if_search": "nave.env",
+      "body": "Finish the env rename (the docs' #44): drop the luke.env aliases once no consumer references them. Sequenced deliberately so a late change can't strand the live box.\n\n- [ ] Consumer audit shows zero luke.env references\n- [ ] Aliases removed; deploy verified\n\nSource: nave.pub docs/INVENTORY.md §5."
+    },
+    {
+      "repo": "nvoy", "key": "V5",
+      "title": "Fleet console: central-identity view",
+      "labels": ["P2", "console"],
+      "skip_if_search": "fleet console",
+      "body": "The central-identity fleet console (the docs' #59), from the warm.contact review: one view of identities, standing grants, and instances under the Director.\n\n- [ ] Console lists identities + standing grants\n- [ ] Revocation (rotation) action surfaced\n\nSource: nave.pub docs/INVENTORY.md §5."
+    },
+    {
+      "repo": "nvoy", "key": "V6",
+      "title": "Re-delegation terms end-to-end",
+      "labels": ["P2", "protocol"],
+      "skip_if_search": "re-delegation",
+      "body": "Carry re-delegation terms through issuance → display → enforcement (the docs' #60); pairs with {{V1}}.\n\n- [ ] Terms expressed at issuance\n- [ ] Shown in the Ledger; honored by consumers\n\nSource: nave.pub docs/INVENTORY.md §5."
     },
     {
       "repo": "nostr-scoped-data-grants", "key": "S1",
@@ -210,11 +260,5 @@
       "body": "The Cloudflare MC proxy is built but not deployed; keyless mode works today, so this is optional by design. Deploy + document, or explicitly close as won't-do.\n\nSource: nave.pub docs/JOURNEY.md open ledger."
     }
   ],
-  "comments": [
-    {
-      "repo": "nact",
-      "issue": 36,
-      "body": "Sequenced as **M5** in the credential-migration M-series (nave.pub docs/INVENTORY.md §5). Depends on the M2 scope reader ({{N1}}). Shape per the pinned design: stateful-adapter × {app-password | OAuth}, verb-scoped READ-ONLY IMAP enforced at the protocol, POST /api/connector/mail. First real connector; also unblocks warm.contact's Gmail path (grant-to-app)."
-    }
-  ]
+  "comments": []
 }
