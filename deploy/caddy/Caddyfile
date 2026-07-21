@@ -39,6 +39,7 @@ noir.nave.pub {
 	# .mjs must be served as JavaScript or the browser refuses the module.
 	@mjs path *.mjs
 	header @mjs Content-Type "text/javascript; charset=utf-8"
+	header Cache-Control "no-cache"   # same stale-mix guard as the (app) snippet
 	redir / /client/ 302
 	file_server
 }
@@ -59,6 +60,12 @@ director.nave.pub {
 	encode gzip zstd
 	@mjs path *.mjs
 	header @mjs Content-Type "text/javascript; charset=utf-8"
+	# Revalidate on every load (ETag 304s are cheap). Without this, browsers
+	# heuristically cache the HTML for days — after an upgrade that changes
+	# the import map + modules together, a stale page with fresh modules
+	# fails to resolve bare specifiers and renders a blank shell
+	# (2026-07-21 incident: nvoy sign-in "broken" post-deploy).
+	header Cache-Control "no-cache"
 	file_server
 }
 
