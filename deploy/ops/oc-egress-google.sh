@@ -55,7 +55,11 @@ jq --arg url "$PROXY" --arg tok "$TOK" '
   # provider entry model list — copied, not invented.
   ([.agents.defaults.model.primary] + (.agents.defaults.model.fallbacks // [])
      | map(select(type == "string" and startswith("google/")))
-     | map(sub("^google/"; ""))) as $gm
+     | map(sub("^google/"; ""))
+     # provider model entries are OBJECTS ({id, name}), not bare id strings —
+     # the gateway validator rejects strings (learned run 29854864863; the
+     # existing anthropic entry confirms the shape).
+     | map({ id: ., name: . })) as $gm
   | .models.providers.google = { baseUrl: $url, apiKey: $tok, models: $gm }
   | del(.auth.profiles["google:default"])
 ' "$CFG" > "$tmp" && mv "$tmp" "$CFG" || { echo "✗ jq patch failed"; exit 1; }
