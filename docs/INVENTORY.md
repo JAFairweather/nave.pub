@@ -152,6 +152,35 @@ a per-person brain that drafts in your voice from granted credentials.**
   iconography, launch). ⬜ AD impl queue (AD-1 audit, AD-5 routing). ⬜ keyless-boot
   daemon (🧭). 💤 Luke console pass 2 (#26); James→Nact_jaf approval delegation (#48).
 
+### Ticket index (created 2026-07-21)
+
+The backlog above is now tracked as GitHub issues — the inventory stays the map;
+the issues are the tickets. **The old #NN references sprinkled above (#26/#36/
+#37/#43/#44/#48/#56/#59/#60) predate these trackers; the numbers below
+supersede them.**
+
+- **nave.pub #1–15** — nsec identity map (#1) · bunker `.env` backup reconcile
+  (#2) · registration-off (#3) · Bitwarden sweep (#4) · probe-IP fix (#5) ·
+  workflow sweep (#6) · relay auto-deploy check (#7) · warm `:8484` boot check
+  (#8) · Alma auto-updates (#9) · fleet heartbeat (#10) · relay lists out of
+  SOPS (#11) · edge firewalls (#12) · firewalld doc note (#13) · ECOSYSTEM-HUB
+  (#14) · essays 2+3 (#15).
+- **nact #1–16** — the M-series: M2 reader (#1, *the unblocker*) → M3 pilot
+  (#2) → M4 (#3) → M5 mail connector (#4) → M6 egress (#5) → M7 MCP (#6);
+  hardening P1–P5 (#7–#11); NCP gate/read-path (#12/#13); Nops design spike
+  (#14); James→Nact_jaf delegation (#15); nave-connect wiring (#16).
+- **nvoy #1–6** — hierarchical re-grant (#1, *the Quill linchpin*) · grant
+  migration M1+M2 (#2) · A2 ciphertext (#3) · luke.env→nave.env (#4) · fleet
+  console (#5) · re-delegation terms (#6).
+- **nostr-scoped-data-grants #1** — shepherd PR nostr-protocol/nips#2411.
+- **warm.contact #5–17** — Quill bootstrap/Swift-plumbing/Calendly/lifecycle
+  (#5–#8) · Nave integration (#9) · product: People sync, profile-key pull,
+  per-device tokens, CAPTCHA, custom domains, billing, launch loop, daily-brief
+  (#10–#17).
+- **luke #1** — employment-roadmap epic (console pass 2 stays 💤, unticketed).
+  **noir #1** — M3 AI Director. **nherit #1** — six-decisions review.
+  **ntrigue #19** — Cloudflare MC proxy (optional).
+
 ## 6 · Going-forward conventions
 - **Work = GitHub issues** per repo (this file is the map; issues are the tickets).
 - **New agent** = mint key → relay allowlist → SOPS → Bitwarden note → registry row.
