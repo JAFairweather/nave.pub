@@ -68,7 +68,7 @@ if [ -n "$SECRETS_SRC" ] && command -v sops >/dev/null 2>&1; then
     # env-split: the CONSUMERS (luke service, brain) get a copy with the BROKERED
     # credentials stripped — those live only in Nactor (which reads the full
     # nave.env). Box-local + gitignored.
-    grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN|TELEGRAM_LUKE_BOT_TOKEN|GOOGLE_OAUTH_[A-Z_]+|GMAIL_APP_PASSWORD|OPENCLAW_GATEWAY_PASSWORD|NACTOR_NSEC|NACT_CHANNEL_NSEC)=' nave.env > nave-consumer.env
+    grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN|TELEGRAM_LUKE_BOT_TOKEN|GOOGLE_OAUTH_[A-Z_]+|GMAIL_APP_PASSWORD|OPENCLAW_GATEWAY_PASSWORD|NACTOR_NSEC|NACT_CHANNEL_NSEC|NACT_PROXY_TOKEN)=' nave.env > nave-consumer.env
     chmod 600 nave-consumer.env
     cp nave-consumer.env luke-consumer.env; chmod 600 luke-consumer.env   # transition alias
     echo "🔓 consumer env (brokered creds stripped) → nave-consumer.env (+ luke-consumer.env alias)"
