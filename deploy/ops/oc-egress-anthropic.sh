@@ -53,7 +53,7 @@ echo "waiting for the gateway…"
 OK=0
 for i in $(seq 1 30); do
   sleep 2
-  docker logs --tail 40 "$(docker ps -qf name=openclaw | head -1)" 2>&1 | grep -qiE 'http server listening' && { OK=1; break; }
+  docker logs --tail 40 "$(docker ps -qf name=openclaw | head -1)" 2>&1 | grep -qiE 'gateway.*ready|http server listening' && { OK=1; break; }
 done
 E=$(docker ps -qf name=openclaw | head -1)
 if [ "$OK" = 1 ] && [ -n "$E" ]; then
@@ -62,6 +62,8 @@ if [ "$OK" = 1 ] && [ -n "$E" ]; then
   [ "$V" = "200" ] || OK=0
 fi
 if [ "$OK" != 1 ]; then
+  echo "── failed-boot engine log (captured before restore) ──"
+  docker logs --tail 30 "$(docker ps -aqf name=openclaw | head -1)" 2>&1 | sed 's/^/  /'
   echo "✗ VERIFICATION FAILED — restoring config + env and recreating"
   mv "$CFG.bak-egress-$STAMP" "$CFG"
   mv "$ENVF.bak-egress-$STAMP" "$ENVF"

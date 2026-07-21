@@ -68,7 +68,7 @@ echo "waiting for the gateway…"
 OK=0
 for i in $(seq 1 30); do
   sleep 2
-  docker logs --tail 40 "$(docker ps -qf name=openclaw | head -1)" 2>&1 | grep -qiE 'http server listening' && { OK=1; break; }
+  docker logs --tail 40 "$(docker ps -qf name=openclaw | head -1)" 2>&1 | grep -qiE 'gateway.*ready|http server listening' && { OK=1; break; }
 done
 E=$(docker ps -qf name=openclaw | head -1)
 if [ "$OK" = 1 ] && [ -n "$E" ]; then
@@ -76,7 +76,31 @@ if [ "$OK" = 1 ] && [ -n "$E" ]; then
   echo "  post-restart chain check: $V"
   [ "$V" = "200" ] || OK=0
 fi
+# ORGANIC proof — the engine's transport log prints the provider URL per model
+# call, and boot always fires an agent run + heartbeat on the primary model.
+# Require a real call routed through the proxy AND a 200 response: this is the
+# definitive test that the engine's own pathing honors the provider baseUrl
+# (the chain check above only proves the proxy works when called directly).
+if [ "$OK" = 1 ]; then
+  echo "  organic proof: waiting for a live model call routed via the proxy…"
+  ORG=0
+  for i in $(seq 1 18); do
+    sleep 10
+    LOGS=$(docker logs --tail 300 "$E" 2>&1)
+    if echo "$LOGS" | grep -q 'model-fetch] start .*url=http://nactor:8791/api/proxy/google' \
+       && echo "$LOGS" | grep -qE 'model-fetch] response provider=google .*status=200'; then ORG=1; break; fi
+  done
+  if [ "$ORG" = 1 ]; then
+    echo "  ✓ organic model call proxied and answered 200:"
+    docker logs --tail 300 "$E" 2>&1 | grep -E 'model-fetch] (start .*nactor:8791|response provider=google)' | tail -2 | sed 's/^/    /'
+  else
+    echo "  ✗ no proxied model call observed within 3 min"
+    OK=0
+  fi
+fi
 if [ "$OK" != 1 ]; then
+  echo "── failed-boot engine log (captured before restore) ──"
+  docker logs --tail 30 "$(docker ps -aqf name=openclaw | head -1)" 2>&1 | sed 's/^/  /'
   echo "✗ VERIFICATION FAILED — restoring config + env and recreating"
   mv "$CFG.bak-egress-$STAMP" "$CFG"
   mv "$ENVF.bak-egress-$STAMP" "$ENVF"
