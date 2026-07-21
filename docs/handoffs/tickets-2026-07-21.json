@@ -91,7 +91,6 @@
       "repo": "nact", "key": "N14",
       "title": "Wire nave-connect into every app login + unified title bar",
       "labels": ["P1", "sign-in"],
-      "skip_if_search": "nave-connect",
       "body": "The nave-connect module is built + tested; the bunker path is proven (Armada). Wire it into each app's login UI and the unified title bar. Nvoy keeps its local-key onboarding (gated \"advanced\"); Nact stays signer-only (James 2026-07-18).\n\n- [ ] Per-app wiring checklist (nvoy, nvelope, nontact, notegate, nherit, noir, ntrigue, hub)\n- [ ] Unified title bar\n- [ ] Nvoy local-key onboarding preserved\n\nSource: nave.pub docs/INVENTORY.md §5 (#56 build direction)."
     },
     {
