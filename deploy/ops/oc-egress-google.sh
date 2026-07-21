@@ -50,7 +50,13 @@ cp "$ENVF" "$ENVF.bak-egress-$STAMP" 2>/dev/null || touch "$ENVF.bak-egress-$STA
 echo "== 1. route: baseUrl-only override on the builtin provider =="
 tmp=$(mktemp)
 jq --arg url "$PROXY" '
-  .models.providers.google = ((.models.providers.google // {}) + { baseUrl: $url })
+  # api pinned explicitly: the google provider comes from a PLUGIN, and any
+  # models.providers.google entry shadows it with a generic custom provider
+  # whose default dialect is openai-completions (Bearer auth, /chat/completions
+  # — the 403s of runs 29855970067 + 29857432037). Pinning the native dialect
+  # keeps x-goog-api-key auth and /v1beta paths, which is what the proxy speaks.
+  .models.providers.google = ((.models.providers.google // {})
+      + { baseUrl: $url, api: "google-generative-ai" })
 ' "$CFG" > "$tmp" && mv "$tmp" "$CFG" || { echo "✗ jq patch failed"; exit 1; }
 chown 1000:1000 "$CFG" 2>/dev/null || true
 chmod 644 "$CFG"
