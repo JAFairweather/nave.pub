@@ -1,27 +1,24 @@
 #!/bin/bash
-# oc-egress-google.sh — M6 leg 2 (THE PRIMARY): route the engine's google/
-# Gemini model calls through Nactor's dummy-token proxy and remove the
-# engine-held key. Run AFTER oc-egress-anthropic.sh has held for a bit — this
-# is the primary engine model; the rehearsal leg de-risks the pattern.
+# oc-egress-google.sh — M6 leg 2 (THE PRIMARY), v3. Run AFTER the anthropic
+# rehearsal leg has verified — this is the primary engine model.
 #
-# Requires the Director-issued `credential:google` grant to be live in Nactor
-# (Issue the pending request in the Nvoy console first) — preflight refuses
-# otherwise. After this leg, the engine holds NO provider keys at all: every
-# model call goes credential-less to Nactor, which injects grant-sourced keys.
+# Same v3 design as the rehearsal (see oc-egress-anthropic.sh header for the
+# full rationale): auth profile UNTOUCHED, baseUrl-only routing override on
+# the builtin provider (native google-generative-ai dialect + x-goog-api-key
+# headers preserved), the profile's stored secret swapped to the dummy token
+# via the engine's own CLI, and any GEMINI/GOOGLE env keys retired. Preflight
+# refuses until Nactor's reader holds the Director-issued credential:google
+# grant. Verification is the decisive ORGANIC gate: the engine's transport
+# log must show a live model call to the proxy answered 200 — boot fires an
+# agent run + heartbeat on the primary model, so a healthy cutover proves
+# itself within seconds.
 #
-#   1. preflight: reader has loaded `google` from a grant; proxy serves the
-#      google models list end-to-end from the engine's container
-#   2. backup openclaw.json + openclaw.env
-#   3. jq: models.providers.google created with baseUrl → proxy, apiKey →
-#      dummy token, and a models array copied from the google/* ids already
-#      configured in agents.defaults.model (no new model policy introduced);
-#      auth.profiles["google:default"] deleted; GEMINI/GOOGLE env lines
-#      stripped from openclaw.env if present
-#   4. recreate engine, wait healthy, re-verify the chain
-#   5. organic verification: the PRIMARY model exercises immediately in normal
-#      operation — watch the log tail printed at the end; auth failures there
-#      = run the rollback (restore the two .bak-egress-<stamp> files, recreate)
-#   6. any in-script failure → automatic restore + recreate + exit 1
+# ROLLBACK NOTE: as with the rehearsal, the store swap is not auto-reversible
+# (the real key deliberately leaves the box — it lives in the Nvoy grant).
+# Auto-restore reverts routing only; recovery from a post-swap failure is
+# re-running fixed, or the Director re-pasting from Bitwarden:
+#   printf KEY | docker exec -i <engine> node openclaw.mjs models auth \
+#     paste-api-key --provider google --profile-id google:default
 set -eu
 STAMP=$(date +%Y%m%d-%H%M%S)
 CFG=openclaw-state/.openclaw/openclaw.json
@@ -40,7 +37,7 @@ L=$(docker logs --tail 300 "$N" 2>&1 | grep 'credential-grants: loaded' | tail -
 echo "  reader last sweep: ${L:-<none>}"
 case "$L" in
   *google*) echo "  ✓ google loaded from a grant" ;;
-  *) echo "✗ Nactor has not loaded a google grant — Issue the pending credential:google request in the Nvoy console, wait one sweep (≤5 min), re-run"; exit 1 ;;
+  *) echo "✗ Nactor has not loaded a google grant — issue credential:google in the Nvoy console, wait one sweep (≤5 min), re-run"; exit 1 ;;
 esac
 echo "== preflight 2: proxy chain from the engine's container =="
 PF=$(docker exec -e TOK="$TOK" "$E" node -e 'fetch("http://nactor:8791/api/proxy/google/v1beta/models",{headers:{"x-goog-api-key":process.env.TOK}}).then(r=>console.log(r.status)).catch(e=>console.log("ERR "+e.message))' 2>&1 | tail -1)
@@ -49,47 +46,53 @@ echo "  engine → proxy → provider: $PF"
 
 cp "$CFG" "$CFG.bak-egress-$STAMP"
 cp "$ENVF" "$ENVF.bak-egress-$STAMP" 2>/dev/null || touch "$ENVF.bak-egress-$STAMP"
+
+echo "== 1. route: baseUrl-only override on the builtin provider =="
 tmp=$(mktemp)
-jq --arg url "$PROXY" --arg tok "$TOK" '
-  # google/* model ids the agent already uses (primary + fallbacks) become the
-  # provider entry model list — copied, not invented.
-  ([.agents.defaults.model.primary] + (.agents.defaults.model.fallbacks // [])
-     | map(select(type == "string" and startswith("google/")))
-     | map(sub("^google/"; ""))
-     # provider model entries are OBJECTS ({id, name}), not bare id strings —
-     # the gateway validator rejects strings (learned run 29854864863; the
-     # existing anthropic entry confirms the shape).
-     | map({ id: ., name: . })) as $gm
-  | .models.providers.google = { baseUrl: $url, apiKey: $tok, models: $gm }
-  | del(.auth.profiles["google:default"])
+jq --arg url "$PROXY" '
+  .models.providers.google = ((.models.providers.google // {}) + { baseUrl: $url })
 ' "$CFG" > "$tmp" && mv "$tmp" "$CFG" || { echo "✗ jq patch failed"; exit 1; }
-# mktemp creates root:600 and the engine runs as uid 1000 — restore ownership
-# and a readable mode or the gateway boot-blocks on EACCES (learned run
-# 29853598973, the captured failed-boot log).
 chown 1000:1000 "$CFG" 2>/dev/null || true
 chmod 644 "$CFG"
+
+echo "== 2. auth: swap the profile's stored secret to the dummy (engine CLI) =="
+if printf '%s\n' "$TOK" | docker exec -i "$E" node openclaw.mjs models auth paste-api-key --provider google --profile-id google:default >/dev/null 2>&1; then
+  echo "  ✓ google:default now holds the dummy token (store write; value never logged)"
+else
+  echo "✗ profile swap failed — restoring routing, nothing else changed"
+  mv "$CFG.bak-egress-$STAMP" "$CFG"; chown 1000:1000 "$CFG" 2>/dev/null || true; chmod 644 "$CFG"
+  rm -f "$ENVF.bak-egress-$STAMP"
+  exit 1
+fi
+
+echo "== 3. env: retire any engine-held google keys =="
 grep -vE '^(GEMINI_API_KEY|GOOGLE_API_KEY|GOOGLE_GENERATIVE_AI_API_KEY)=' "$ENVF" > "$ENVF.tmp" 2>/dev/null || true
 mv "$ENVF.tmp" "$ENVF"; chmod 600 "$ENVF"
-echo "✓ patched: google provider → proxy with dummy key; auth profile + any env keys OUT"
 
+echo "== 4. recreate + verify =="
 docker compose --profile cutover up -d --force-recreate openclaw
-echo "waiting for the gateway…"
 OK=0
 for i in $(seq 1 30); do
   sleep 2
   docker logs --tail 40 "$(docker ps -qf name=openclaw | head -1)" 2>&1 | grep -qiE 'gateway.*ready|http server listening' && { OK=1; break; }
 done
 E=$(docker ps -qf name=openclaw | head -1)
-if [ "$OK" = 1 ] && [ -n "$E" ]; then
+if [ "$OK" = 1 ]; then
+  if docker logs --tail 200 "$E" 2>&1 | grep -q 'auth-profile-failure'; then
+    echo "  ✗ auth-profile-failure in boot log — resolution broke"
+    OK=0
+  else
+    echo "  ✓ no auth-profile-failure — profile resolution intact"
+  fi
+fi
+if [ "$OK" = 1 ]; then
   V=$(docker exec -e TOK="$TOK" "$E" node -e 'fetch("http://nactor:8791/api/proxy/google/v1beta/models",{headers:{"x-goog-api-key":process.env.TOK}}).then(r=>console.log(r.status)).catch(e=>console.log("ERR "+e.message))' 2>&1 | tail -1)
   echo "  post-restart chain check: $V"
   [ "$V" = "200" ] || OK=0
 fi
-# ORGANIC proof — the engine's transport log prints the provider URL per model
-# call, and boot always fires an agent run + heartbeat on the primary model.
-# Require a real call routed through the proxy AND a 200 response: this is the
-# definitive test that the engine's own pathing honors the provider baseUrl
-# (the chain check above only proves the proxy works when called directly).
+# ORGANIC proof — the decisive gate: a real model call, routed via the proxy,
+# answered 200, in the engine's own transport log. Native dialect is preserved
+# in v3, so the call shape is google-generative-ai against the proxied baseUrl.
 if [ "$OK" = 1 ]; then
   echo "  organic proof: waiting for a live model call routed via the proxy…"
   ORG=0
@@ -110,17 +113,20 @@ fi
 if [ "$OK" != 1 ]; then
   echo "── failed-boot engine log (captured before restore) ──"
   docker logs --tail 30 "$(docker ps -aqf name=openclaw | head -1)" 2>&1 | sed 's/^/  /'
-  echo "✗ VERIFICATION FAILED — restoring config + env and recreating"
+  echo "✗ VERIFICATION FAILED — restoring routing (config + env) and recreating."
+  echo "  NOTE: the google:default profile now holds the DUMMY token; the real key"
+  echo "  lives in the Nvoy grant. Re-run once fixed, or re-paste from Bitwarden:"
+  echo "  printf KEY | docker exec -i <engine> node openclaw.mjs models auth \\"
+  echo "    paste-api-key --provider google --profile-id google:default"
   mv "$CFG.bak-egress-$STAMP" "$CFG"
   chown 1000:1000 "$CFG" 2>/dev/null || true; chmod 644 "$CFG"
   mv "$ENVF.bak-egress-$STAMP" "$ENVF"
   docker compose --profile cutover up -d --force-recreate openclaw
-  echo "restored. Nothing cut over."
   exit 1
 fi
-echo "── engine log tail (watch the next few organic turns for auth errors) ──"
+echo "── engine log tail (watch the next organic turns for auth errors) ──"
 docker logs --tail 20 "$E" 2>&1 | sed 's/^/  /'
-echo "✓ google egress CUT OVER — the engine now holds ZERO provider keys; every"
-echo "  model call (primary included) rides the dummy token through Nactor,"
-echo "  which injects grant-sourced keys. Revocation = rotate the scope in Nvoy."
-echo "  Rollback: restore *.bak-egress-$STAMP (config + env), recreate openclaw."
+echo "✓ google egress CUT OVER (v3) — the PRIMARY now rides the dummy token"
+echo "  through Nactor with the grant-sourced key injected from RAM. The engine"
+echo "  holds ZERO real provider keys. Revocation = rotate the scope in Nvoy."
+echo "  Rollback: restore *.bak-egress-$STAMP routing + re-paste key from Bitwarden."
