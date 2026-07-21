@@ -1,0 +1,16 @@
+{
+  "_readme": "Cross-team corrective comments from the 2026-07-21 warm.contact feedback pass. Run via tickets.yml (json=deploy/ops/xteam-2026-07-21.json). Delete after posting.",
+  "tickets": [],
+  "comments": [
+    {
+      "repo": "nvoy",
+      "issue": 1,
+      "body": "**State correction (2026-07-21, from the warm.contact integration pass).** nave.pub `docs/warm-contact-nave-review.md` Q1 already records hierarchical re-grant as **supported** — the mechanism exists in the console today (\"＋ grant to another identity\"), gated by the grant's re-delegation terms. So this ticket's remaining scope is narrower than its title: (1) **prototype** the live one-hop `user → Quill` re-grant end-to-end, (2) **pin revocation-cascade semantics** (does rotating the mid key kill descendant grants?), (3) document both. warm.contact#5 (Quill identity bootstrap) stays blocked on that prototype **plus** the nact#1 M2 reader — not on the design answer, which is settled. Re-delegation *terms* end-to-end remain nvoy#6."
+    },
+    {
+      "repo": "nact",
+      "issue": 1,
+      "body": "**Cross-team dependency note (2026-07-21).** warm.contact's Quill build (their #5/#6/#9) blocks on this reader's delivery path — it is the shared gate together with nvoy#1. Two forward-compat items to hold while building: (1) warm.contact ships an **interim local policy object** for capability-style approvals until Scoped Action Approvals matures — review compatibility when this reader lands; (2) grant scope names now follow the blessed namespace `profile:* / credential:* / data:* / capability:*` (nave.pub AD-8) — treat scope names as namespaced strings, not enums."
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+# Generic cross-repo issue runner (creation + comments) via create-tickets.sh.
+# Needs secret TICKETS_PAT: fine-grained PAT, Issues:read/write on the target
+# repos, short expiry. Dry-run by default; tick "apply" to write for real.
+# Point it at a JSON file ({tickets:[...], comments:[...]}) committed in-repo.
+name: tickets
+on:
+  workflow_dispatch:
+    inputs:
+      json:
+        description: path to a tickets JSON (tickets[] + comments[])
+        required: true
+        type: string
+      apply:
+        description: actually write (off = dry run)
+        type: boolean
+        default: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: run
+        env:
+          TICKETS_PAT: ${{ secrets.TICKETS_PAT }}
+          APPLY: ${{ inputs.apply }}
+          JSON: ${{ inputs.json }}
+        run: |
+          test -n "$TICKETS_PAT" || { echo "missing TICKETS_PAT secret (fine-grained, Issues:write on target repos)"; exit 1; }
+          export GH_TOKEN="$TICKETS_PAT"
+          FLAG=""; [ "$APPLY" = "true" ] && FLAG="--apply"
+          bash deploy/ops/create-tickets.sh "$JSON" $FLAG

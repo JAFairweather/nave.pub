@@ -101,13 +101,14 @@ extending today's `ReconnectProfile`:
 | `homeRegion` | ✅ in `ReconnectProfile` | drives the "nearby → coffee" default — unchanged |
 | **Anthropic key** | 🟡 pasted, in Keychain | **grant-to-app** — scoped credential to Quill's npub |
 | **Gmail app-password** | 🟡 pasted, in Keychain | **grant-to-app** — scoped, read-only IMAP for history |
-| **Calendly link** | ⬜ new | a booking URL Quill can offer in a `coffee`/`meetup` CTA |
+| **`coffeeLink`** (booking URL) | ✅ shipped 2026-07-21 | a booking URL offered in the `coffee` CTA (Calendly/Cal.com/any); `meetup` extension open |
 | personal briefing | ↳ = `narrative`, extend | freeform "here's what's true about me right now" |
 
-> **Calendly is the one genuinely net-new field** (an earlier note that "signature was
-> new" was wrong — `signature` already ships). With a Calendly link in the bundle, a
-> `coffee`/`meetup` draft can close with a real booking link instead of a vague "let's
-> find a time" — turning a warm reply into an actual meeting with no back-and-forth.
+> **The booking link is the one genuinely net-new field** (an earlier note that
+> "signature was new" was wrong — `signature` already ships). It shipped 2026-07-21 as
+> **`coffeeLink`** — provider-agnostic; this doc previously said `calendlyURL`, and the
+> shipped name wins (AD-8). With it in the bundle, a `coffee` draft closes with a real
+> booking link instead of a vague "let's find a time".
 
 ## 5 · How the credentials arrive (the decided posture)
 
@@ -145,7 +146,7 @@ is blocked on. **Quill and the Nave credential-migration M-series unblock each o
 - Credential posture: **grant-to-app, uniform** (never broker contact plaintext).
 - Two identities per user (the human = Director; their Quill = instance), both minted
   through Nave; mint-or-BYO for the human.
-- Profile bundle = `ReconnectProfile` + Anthropic key + Gmail app-password + **Calendly**.
+- Profile bundle = `ReconnectProfile` + Anthropic key + Gmail app-password + **`coffeeLink`** (shipped).
 
 **Open (the build queue)**
 - ⬜ Nave-side: confirm per-user hierarchical re-grant; the M2 grant-scope reader.
@@ -153,10 +154,32 @@ is blocked on. **Quill and the Nave credential-migration M-series unblock each o
   — added to a lean, notarized app.
 - ⬜ Per-user identity bootstrap: mint-or-BYO at signup; register Quill's npub; issue the
   scoped grant.
-- ⬜ Add `calendlyURL` to `ReconnectProfile` + surface it in the `coffee`/`meetup` CTA.
+- ✅ ~~Add the booking link to `ReconnectProfile`~~ — shipped as `coffeeLink` (coffee
+  intent; `meetup` surfacing still open — warm.contact#7).
 - ⬜ Lifecycle: how a Quill npub is registered, scoped, and revoked at scale (many users).
 
-## 7 · The one-paragraph pitch
+## 7 · 2026-07-21 addendum — warm.contact feedback absorbed
+
+Reconciliations from the warm.contact agent's integration pass (naming recorded
+as **AD-8** in `nave-architecture-decisions.md`; James can override):
+
+- **`coffeeLink`** is the shipped booking-URL field name (`calendlyURL` in this
+  doc superseded); `meetup`-intent surfacing still open (warm.contact#7).
+- **"Director"** stays the *human root authority* ecosystem-wide (James for the
+  fleet; the user for their Quill). Noir's AI game master is always qualified
+  **"Noir's Director"** outside the game — the ECOSYSTEM-HUB §0.6 pattern.
+- **Scope-name namespace** `profile:* · credential:* · data:* · capability:*`
+  blessed as the grant-scope convention (their `profile:voice`/`profile:policy`
+  fit); Nvoy ledger/console should render it (folds into nvoy#2).
+- **`capability:*` stays interim-local** in warm.contact until Scoped Action
+  Approvals matures — consistent with the build-first posture (INVENTORY §1).
+- **§5's linchpin, corrected state:** hierarchical re-grant is design-CONFIRMED
+  (`warm-contact-nave-review.md` Q1; the console's "＋ grant to another identity"
+  is the mechanism). What still gates the Quill bootstrap (warm.contact#5): the
+  live one-hop user→Quill **prototype** + revocation-cascade semantics (nvoy#1)
+  and the M2 delivery reader (nact#1).
+
+## 8 · The one-paragraph pitch
 
 Everyone has a list of people they mean to get back to and never do. warm.contact
 already collects the people who reached in to you without any server ever seeing who

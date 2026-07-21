@@ -222,6 +222,35 @@ warm.contact=grant-to-app).
 
 ---
 
+## AD-8 — Naming & scope-namespace reconciliations (warm.contact integration)
+*(from the warm.contact agent's 2026-07-21 feedback pass; recommended — override any)*
+
+**Decisions.**
+1. **"Director" = the human root authority, ecosystem-wide** (James for the
+   fleet; the user for their own Quill estate). Noir's AI game master is always
+   written **"Noir's Director"** outside the game — extending the ECOSYSTEM-HUB
+   §0.6 pattern that already killed one Director collision. A third synonym
+   ("root grantor", used provisionally by the warm.contact agent) is declined:
+   new synonyms fragment vocabulary the docs already rely on.
+2. **The booking-URL profile field is `coffeeLink`** — the shipped name wins
+   over the drafted `calendlyURL`, and it's provider-agnostic on purpose.
+   `meetup`-intent surfacing stays tracked in warm.contact#7.
+3. **Grant scope names use the namespace** `profile:* · credential:* · data:* ·
+   capability:*` (warm.contact's proposal, blessed as the convention). The Nvoy
+   ledger/console should render namespaced scopes (folds into nvoy#2);
+   `capability:*` remains interim-local to apps until Scoped Action Approvals
+   matures (build-first, INVENTORY §1).
+
+**Rationale.** All three have cross-repo blast radius precisely because they are
+names: grant keys outlive refactors, and two "Directors" already forced §0.6
+once. Deciding in the ADR log now keeps warm.contact unblocked without paying a
+doc-drift tax later.
+
+**Status.** Recommended 2026-07-21 · `quill.md` §7 updated · corrective
+cross-refs commented on nvoy#1 / nact#1.
+
+---
+
 ## Not decisions — just queued builds (for completeness, not dangling)
 
 **Nvoy sign-in (confirmed, James 2026-07-18):** Nvoy **keeps** its local-key /
