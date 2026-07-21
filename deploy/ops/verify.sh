@@ -25,6 +25,8 @@ crit_up() { s=$(docker inspect -f '{{.State.Status}}' "deploy-$1-1" 2>/dev/null 
 warn_up() { s=$(docker inspect -f '{{.State.Status}}' "deploy-$1-1" 2>/dev/null || echo missing); [ "$s" = running ] && pass "$1: running" || warn "$1: $s"; }
 crit_up nactor; crit_up luke; crit_up caddy
 warn_up director; warn_up openclaw
+# M7: warn-tier until the cutover makes Nactor depend on it (then promote to crit).
+warn_up nvoy-mcp
 
 echo "-- vhosts (local TLS via caddy) --"
 for h in nave.pub nact.nave.pub luke.nave.pub nvoy.nave.pub noir.nave.pub; do
