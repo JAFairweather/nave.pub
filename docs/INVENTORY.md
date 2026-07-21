@@ -128,12 +128,14 @@ a per-person brain that drafts in your voice from granted credentials.**
   nact `docs/migration-status-2026-07.md` §5) · **M4 the rest ✅** (gworkspace ✓
   anthropic ✓ approvals `telegram`→`telegram-nactjaf` flip to @navenactorbot ✓,
   plus beyond-plan `telegram-brain`/`telegram-nave`; final env deletions ran via
-  the reviewed `retire-brokered-env.sh`, bundle synced, verified) · remaining:
-  **M5 mail connector (#36)** · **M6 engine egress** → `/api/proxy` — now covers
-  BOTH engine-held keys: google/Gemini (**the primary engine model**,
-  `google/gemini-3.1-pro-preview`, key in the gateway's `google:default` profile)
-  and anthropic (openclaw.env) · M7 Nvoy MCP transport · A2 ciphertext
-  re-addressing, per-credential.
+  the reviewed `retire-brokered-env.sh`, bundle synced, verified) · **M6 engine
+  egress ✅ (2026-07-21)** — the engine holds ZERO real provider keys; every
+  model call (the primary included) rides the dummy token through Nactor's
+  `/api/proxy`, grant-sourced keys injected from RAM; `credential:google` was
+  issued **owner-first (Luke)** and re-granted to Nactor as broker supply;
+  organic-verified from the engine's own transport log · remaining:
+  **M5 mail connector (#36)** · M7 Nvoy MCP transport · A2 ciphertext
+  re-addressing, per-credential (stage-2 reader = the next nact build).
 - **nvoy#1 hierarchical re-grant ✅ (2026-07-21)** — one-hop chain proven against
   the conforming MCP receiver (`nvoy test/regrant.mjs`); cascade semantics pinned
   (derived-scope sub-grants attenuate + revoke per-leaf; root revocation cascades
