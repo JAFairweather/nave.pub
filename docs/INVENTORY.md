@@ -92,8 +92,15 @@ a per-person brain that drafts in your voice from granted credentials.**
 - **Credential model (AD-6):** authority = a Director-signed grant carried by the
   *identity*, never a box ACL. Two consumption modes per (credential × consumer):
   **broker** (on-box, RAM) vs **grant-to-app** (identity holds its own key, off-box
-  / content-sensitive). Broker is **live** (5 providers); grant *delivery* is
-  **built-but-never-used** — the gap is a Nactor credential-scope reader (M2).
+  / content-sensitive). Broker is **live**; grant delivery is **LIVE end-to-end
+  (2026-07-21)** — the M2 reader shipped hardened (Director-only trust, AD-1 audit
+  events, env-fallback provenance; nact#1 closed), all seven provider credentials
+  arrive as relay scopes, ownership enforcement is ON, and the last two bootstrap
+  env lines (`ANTHROPIC_API_KEY`, approvals `TELEGRAM_BOT_TOKEN`) were deleted at
+  source via the reviewed `deploy/ops/retire-brokered-env.sh` run — **grants are
+  every live credential's only durable home**. Engine-held keys (google/Gemini —
+  the PRIMARY engine model — in the gateway's `google:default` profile, plus
+  anthropic in openclaw.env) remain E-tier by design until M6.
 
 ## 4 · Nfra + Nops (infrastructure & operations)
 
@@ -113,11 +120,26 @@ a per-person brain that drafts in your voice from granted credentials.**
 
 ## 5 · THE BACKLOG (what's next, grounded from the docs)
 
-### Credential migration (nact) — M-series, *the live frontier*
-- 🟡 M1 re-inventory ✅ · **M2 Nactor credential-scope reader — the one missing
-  piece** (2b broker is live, delivery-via-grants built-but-never-used) · M3 pilot
-  (`telegram-luke`) · M4 the rest (gworkspace/anthropic/approvals) · **M5 mail
-  connector (#36)** · M6 engine egress → `/api/proxy` · M7 Nvoy MCP transport.
+### Credential migration (nact) — M-series, *delivery complete 2026-07-21*
+- 🟢 M1 re-inventory ✅ · **M2 reader ✅ (nact#1 merged: Director-only trust,
+  entitlement revocation fix, AD-1 grant/entitlement audit events, per-credential
+  `source` provenance)** · **M3 `telegram-luke` pilot ✅** (issued 2026-07-18 via
+  request→Issue; verified read-live 2026-07-21; env line gone; rollback path in
+  nact `docs/migration-status-2026-07.md` §5) · **M4 the rest ✅** (gworkspace ✓
+  anthropic ✓ approvals `telegram`→`telegram-nactjaf` flip to @navenactorbot ✓,
+  plus beyond-plan `telegram-brain`/`telegram-nave`; final env deletions ran via
+  the reviewed `retire-brokered-env.sh`, bundle synced, verified) · remaining:
+  **M5 mail connector (#36)** · **M6 engine egress** → `/api/proxy` — now covers
+  BOTH engine-held keys: google/Gemini (**the primary engine model**,
+  `google/gemini-3.1-pro-preview`, key in the gateway's `google:default` profile)
+  and anthropic (openclaw.env) · M7 Nvoy MCP transport · A2 ciphertext
+  re-addressing, per-credential.
+- **nvoy#1 hierarchical re-grant ✅ (2026-07-21)** — one-hop chain proven against
+  the conforming MCP receiver (`nvoy test/regrant.mjs`); cascade semantics pinned
+  (derived-scope sub-grants attenuate + revoke per-leaf; root revocation cascades
+  via the sub-issuer's rotation obligation; key re-wrap rejected by conforming
+  receivers) and fed to SPEC FUTURE.md. Both shared gates down → warm.contact
+  #5/#6/#9/#18 unblocked.
 - **Mail connector (#36 / M5)** — `stateful-adapter` × {app-password | OAuth},
   verb-scoped **read-only** IMAP, `POST /api/connector/mail`; first connector, also
   unblocks warm.contact's Gmail. Unbuilt.
@@ -165,13 +187,16 @@ supersede them.**
   (#8) · Alma auto-updates (#9) · fleet heartbeat (#10) · relay lists out of
   SOPS (#11) · edge firewalls (#12) · firewalld doc note (#13) · ECOSYSTEM-HUB
   (#14) · essays 2+3 (#15).
-- **nact #1–16** — the M-series: M2 reader (#1, *the unblocker*) → M3 pilot
-  (#2) → M4 (#3) → M5 mail connector (#4) → M6 egress (#5) → M7 MCP (#6);
-  hardening P1–P5 (#7–#11); NCP gate/read-path (#12/#13); Nops design spike
-  (#14); James→Nact_jaf delegation (#15); nave-connect wiring (#16).
-- **nvoy #1–6** — hierarchical re-grant (#1, *the Quill linchpin*) · grant
-  migration M1+M2 (#2) · A2 ciphertext (#3) · luke.env→nave.env (#4) · fleet
-  console (#5) · re-delegation terms (#6).
+- **nact #1–16** — the M-series: M2 reader (#1 ✅ 2026-07-21) → M3 pilot
+  (#2 ✅ 2026-07-21) → M4 (#3 — env retirement ran 2026-07-21; close pending a
+  quiet week of grant-only operation) → M5 mail connector (#4) → M6 egress
+  (#5, *now the frontier* — both engine keys incl. the primary Gemini) → M7 MCP
+  (#6); hardening P1–P5 (#7–#11); NCP gate/read-path (#12/#13); Nops design
+  spike (#14); James→Nact_jaf delegation (#15); nave-connect wiring (#16).
+- **nvoy #1–6** — hierarchical re-grant (#1 ✅ 2026-07-21, *the Quill linchpin*
+  — proven + cascade semantics pinned) · grant migration M1+M2 (#2) · A2
+  ciphertext (#3) · luke.env→nave.env (#4) · fleet console (#5) ·
+  re-delegation terms (#6).
 - **nostr-scoped-data-grants #1** — shepherd PR nostr-protocol/nips#2411.
 - **warm.contact #5–17** — Quill bootstrap/Swift-plumbing/Calendly/lifecycle
   (#5–#8) · Nave integration (#9) · product: People sync, profile-key pull,
