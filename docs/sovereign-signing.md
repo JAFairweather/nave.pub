@@ -142,6 +142,31 @@ getSigner() → picks a transport:
 - Ships as a single vendored ES module (no build step), same posture as the rest
   of the apps.
 
+### The unified title bar — `nave-titlebar` (built)
+
+The title-bar half now has a source of truth in this repo:
+`components/nave-titlebar.html` (static markup + styles, fleet ids included)
+and `components/nave-titlebar.mjs`
+(`renderTitlebar(el, { appName, npub, kind, onRefresh, onLogout, onSignIn })` +
+`updateTitlebar(el, patch)`). One bar everywhere: seal + wordmark; signed in —
+the **signer-kind badge** (`extension` / `bunker` / `local key`), the
+**click-to-copy npub pill** (truncated middle), **Refresh**, **Log out**;
+signed out — a single **Sign in** slot. Token-driven, so each app's `--accent`
+carries through (per the harmonized Nvoy/Nact header), with dark-canonical
+fallbacks baked in; demo/verification page: `components/titlebar-demo.html`.
+
+**Adoption (per app, tracked in nact#16):** vendor a copy — the same no-build
+copy-in as `nave-footer.html` and nave-connect ("do not edit the copy") — and
+wire it to nave-connect's signer: on login,
+`renderTitlebar(el, { appName, npub, kind: signer.kind, onRefresh, onLogout })`;
+on boot/logout, `npub: null` + `onSignIn`. The badge mapping (`nip07 →
+extension`, `nip46 → bunker`, `local → local key`) is exactly what the Nvoy
+console shipped as the pattern-setter. Nvoy, Nvelope, Nontact, and Nherit each
+hand-roll a near-identical `<div id="me">` today; adoption replaces those with
+the vendored component — the static block keeps the fleet's `#me` / `#me-kind`
+/ `#my-npub` / `#refresh` / `#logout` ids, so existing by-id wiring survives,
+while the `.mjs` path wires by callback.
+
 ## Risks (condensed)
 
 **Bunker:** always‑on signer = always‑on attack surface (→ scoped tokens,
