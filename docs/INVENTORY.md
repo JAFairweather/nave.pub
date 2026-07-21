@@ -133,9 +133,16 @@ a per-person brain that drafts in your voice from granted credentials.**
   model call (the primary included) rides the dummy token through Nactor's
   `/api/proxy`, grant-sourced keys injected from RAM; `credential:google` was
   issued **owner-first (Luke)** and re-granted to Nactor as broker supply;
-  organic-verified from the engine's own transport log · remaining:
-  **M5 mail connector (#36)** · M7 Nvoy MCP transport · A2 ciphertext
-  re-addressing, per-credential (stage-2 reader = the next nact build).
+  organic-verified from the engine's own transport log · **M5 mail
+  connector BUILT ✅** (verb-scoped read-only IMAP + wire-audited offline suite;
+  cutover = issue `credential:mail-gmail`, run `deploy/ops/m5-mail-verify.sh`,
+  repoint the consumer, delete `mail/app-passwd` — tracked in nact#4) · **M7
+  Nvoy MCP transport BUILT ✅** (client + flag default-relay in nact; `nvoy-mcp`
+  service deployed and soaking; review-only cutover script — key custody moves
+  only on a separate operator go) · **A2 stage 2 SHIPPED ✅** (owner grants
+  supply values with strict precedence; revoke Nactor-addressed duplicates from
+  the console per credential once the audit shows the owner-tagged load —
+  `google` ready first).
 - **nvoy#1 hierarchical re-grant ✅ (2026-07-21)** — one-hop chain proven against
   the conforming MCP receiver (`nvoy test/regrant.mjs`); cascade semantics pinned
   (derived-scope sub-grants attenuate + revoke per-leaf; root revocation cascades
@@ -152,9 +159,13 @@ a per-person brain that drafts in your voice from granted credentials.**
   one-tap); **channel binding as a scoped grant** (nonce ceremony); Mini-App signer
   (`nact.nave.pub/sign`).
 
-### Common sign-in — `nave-connect` (#56)
-- ✅ Module built + tested; bunker path proven (Armada). ⬜ Wire into every app's
-  login UI + unified title bar. Nvoy keeps local-key onboarding; Nact signer-only.
+### Common sign-in — `nave-connect` (#56 → nact#16, CLOSED ✅ 2026-07-21)
+- ✅ Wired fleet-wide and deployed: nvoy, nontact, nherit, nvelope, noir (master
+  overlay), notegate (Director-scoped minimal); ntrigue excluded by design
+  (burner anonymity is the product). ✅ Unified title bar shipped as a copy-in
+  component (`nave.pub/components/nave-titlebar.{html,mjs}` + demo) and adopted
+  in all four pill-bearing apps. Nvoy keeps local-key onboarding gated behind
+  Advanced; Nact stays signer-only.
 
 ### Nvoy
 - 🟡 grant migration M1+M2 (#37) · ⬜ A2 credential ciphertext → owning identity
