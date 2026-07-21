@@ -57,10 +57,14 @@ manager.
       still verify the Node app (`:8484`) is a boot-enabled systemd unit.
 
 ### ⬜ Tier 2 — bunker sovereignty
-- [ ] **Off-box backup of `/root/bunker46/.env`** — it holds the `ENCRYPTION_KEY`
+- [x] **Off-box backup of `/root/bunker46/.env`** — VERIFIED 2026-07-21: the
+      Director confirmed the Bitwarden note holds the JWT + ENCRYPTION_KEY and
+      matches the live file (nave.pub#2 closed; registry custody map agrees). — it holds the `ENCRYPTION_KEY`
       that decrypts the sovereign nsec. Lose the box without it and the key is
       unrecoverable. Copy to the Mac vault; store encrypted.
-- [ ] **`ALLOW_REGISTRATION=true` → `false`** in the bunker `.env`, then
+- [x] **`ALLOW_REGISTRATION=true` → `false`** — DONE 2026-07-21 by the Director
+      via nave_mgmt (nave.pub#3); registration closed, compose restarted. The
+      NIP-46 re-prove path is the fleet consoles' new bunker sign-in. in the bunker `.env`, then
       `docker compose up -d` — you're registered; close the door so no one else can
       create a bunker account.
 - [x] Confirm bunker containers are all `restart: unless-stopped` — verified
