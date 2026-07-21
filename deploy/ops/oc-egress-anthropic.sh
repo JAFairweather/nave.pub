@@ -44,6 +44,11 @@ jq --arg url "$PROXY" --arg tok "$TOK" '
       + { baseUrl: $url, apiKey: $tok })
   | del(.auth.profiles["anthropic:default"])
 ' "$CFG" > "$tmp" && mv "$tmp" "$CFG" || { echo "✗ jq patch failed"; exit 1; }
+# mktemp creates root:600 and the engine runs as uid 1000 — restore ownership
+# and a readable mode or the gateway boot-blocks on EACCES (learned run
+# 29853598973, the captured failed-boot log).
+chown 1000:1000 "$CFG" 2>/dev/null || true
+chmod 644 "$CFG"
 grep -vE '^ANTHROPIC_API_KEY=' "$ENVF" > "$ENVF.tmp" 2>/dev/null || true
 mv "$ENVF.tmp" "$ENVF"; chmod 600 "$ENVF"
 echo "✓ patched: provider → proxy, dummy key in; auth profile + env key OUT"
@@ -66,6 +71,7 @@ if [ "$OK" != 1 ]; then
   docker logs --tail 30 "$(docker ps -aqf name=openclaw | head -1)" 2>&1 | sed 's/^/  /'
   echo "✗ VERIFICATION FAILED — restoring config + env and recreating"
   mv "$CFG.bak-egress-$STAMP" "$CFG"
+  chown 1000:1000 "$CFG" 2>/dev/null || true; chmod 644 "$CFG"
   mv "$ENVF.bak-egress-$STAMP" "$ENVF"
   docker compose --profile cutover up -d --force-recreate openclaw
   echo "restored. Nothing cut over."
