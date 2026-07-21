@@ -1,0 +1,100 @@
+<!doctype html>
+<!-- titlebar-demo.html — a working page for nave-titlebar (html + mjs), with
+     fake data only. Serve the repo root (any static server) and open
+     /components/titlebar-demo.html: the first bar is interactive (Sign in →
+     signed-in bunker state → Log out), the rest pin each signer-kind badge,
+     and the teal block proves the bar picks up a host app's --accent. This
+     page doubles as the component's verification page; it lives in the
+     source-of-truth repo, so linking ../design/tokens.css directly is fine
+     here (apps vendor instead). Source of truth: nave.pub/components/titlebar-demo.html. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nave-titlebar — demo</title>
+<link rel="stylesheet" href="../design/tokens.css">
+<style>
+  body { margin: 0; background: var(--ground); color: var(--text);
+    font-family: var(--sans); }
+  main { max-width: 1080px; margin: 0 auto; padding: 26px 28px 60px; }
+  h2 { font-size: 13px; font-family: var(--mono); font-weight: 500; color: var(--dim);
+    letter-spacing: .14em; text-transform: uppercase; margin: 34px 0 10px; }
+  .slot { border: 1px dashed var(--line-strong); border-radius: var(--r-md); overflow: hidden; }
+  .slot .nave-titlebar { position: static; }   /* demo page: don't stack sticky bars */
+  #log { font-family: var(--mono); font-size: 12px; color: var(--dim); background: var(--panel);
+    border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 18px;
+    min-height: 3.6em; white-space: pre-wrap; }
+  .note { color: var(--dim); font-size: 13px; line-height: 1.6; max-width: 62ch; }
+</style>
+</head>
+<body>
+<main>
+  <h2>interactive — signed out ⇄ signed in (renderTitlebar / updateTitlebar)</h2>
+  <div class="slot"><header id="bar-live"></header></div>
+  <p class="note">Sign in flips this bar to the signed-in state (bunker) via
+    <code>updateTitlebar</code>; Log out flips it back. Click the npub pill to
+    copy the full npub — it flashes <em>copied</em>, or expands selected if no
+    clipboard API is available.</p>
+
+  <h2>signed in — extension (nip07)</h2>
+  <div class="slot"><header id="bar-ext"></header></div>
+
+  <h2>signed in — local key, inside an Nvoy-accent host (token pickup)</h2>
+  <div class="slot" style="--accent:#6fa8a0; --accent-bright:#8fc4bc; --accent-ink:#06120f">
+    <header id="bar-local"></header>
+  </div>
+
+  <h2>callback log</h2>
+  <div id="log">—</div>
+</main>
+<script type="module">
+  import { renderTitlebar, updateTitlebar } from './nave-titlebar.mjs'
+
+  const FAKE_NPUB = 'npub1' + 'demo'.repeat(13) + 's9x4ck'   // fake, shape-correct only
+  const log = (m) => {
+    const el = document.getElementById('log')
+    el.textContent = (el.textContent === '—' ? '' : el.textContent + '\n') + m
+  }
+
+  const NAVE_SEAL = `<svg viewBox="0 0 100 100" fill="none" aria-hidden="true">
+    <circle cx="50" cy="50" r="46" stroke="#c39a56" stroke-width="2" opacity="0.5"/>
+    <path d="M50 6 L57 43 L94 50 L57 57 L50 94 L43 57 L6 50 L43 43 Z" fill="#c39a56" fill-opacity="0.16" stroke="#c39a56" stroke-width="2"/>
+    <circle cx="50" cy="50" r="4" fill="#e2c079"/></svg>`
+  const NVOY_SEAL = `<svg viewBox="0 0 32 32" aria-hidden="true">
+    <rect x="1" y="1" width="30" height="30" rx="7" fill="#0b0906" stroke="#6fa8a0" stroke-opacity=".5" stroke-width="1.2"/>
+    <g transform="translate(4 4)" fill="none" stroke="#6fa8a0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12 H16"/><path d="M12 7 L17 12 L12 17"/><circle cx="20" cy="12" r="1.6" fill="#6fa8a0" stroke="none"/></g></svg>`
+
+  // 1 — interactive: boots signed out, Sign in ⇄ Log out via updateTitlebar.
+  renderTitlebar('#bar-live', {
+    appName: 'Napp', tagline: 'demo console', sealSvg: NAVE_SEAL,
+    npub: null,
+    onSignIn: () => {
+      log('onSignIn → signed in as bunker')
+      updateTitlebar('#bar-live', { npub: FAKE_NPUB, kind: 'nip46' })
+    },
+    onRefresh: () => log('onRefresh (bar-live)'),
+    onLogout: () => {
+      log('onLogout → signed out')
+      updateTitlebar('#bar-live', { npub: null })
+    },
+  })
+
+  // 2 — pinned: extension (nip07).
+  renderTitlebar('#bar-ext', {
+    appName: 'Napp', tagline: 'extension session', sealSvg: NAVE_SEAL,
+    npub: FAKE_NPUB, kind: 'nip07',
+    onRefresh: () => log('onRefresh (bar-ext)'),
+    onLogout: () => log('onLogout (bar-ext)'),
+  })
+
+  // 3 — pinned: local key, under Nvoy's accent override.
+  renderTitlebar('#bar-local', {
+    appName: 'Nvoy', tagline: 'delegator console', sealSvg: NVOY_SEAL,
+    npub: FAKE_NPUB, kind: 'local',
+    onRefresh: () => log('onRefresh (bar-local)'),
+    onLogout: () => log('onLogout (bar-local)'),
+  })
+</script>
+</body>
+</html>
