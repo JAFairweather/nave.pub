@@ -210,6 +210,12 @@ supersede them.**
   — proven + cascade semantics pinned) · grant migration M1+M2 (#2) · A2
   ciphertext (#3) · luke.env→nave.env (#4) · fleet console (#5) ·
   re-delegation terms (#6).
+- **nostr-scoped-data-grants P-series EPIC (spec repo #4, queued 2026-07-21)** —
+  external design review + six PR-sized spec evolutions (repo #5–#10):
+  P1 grant-author verification · P2 anti-rollback `u` sequence · P4 incremental
+  inbox · P6 metadata-hardening profile · P3 multi-device consistency (gated) ·
+  P5 attenuable per-field key trees, experimental kind 31440 (gated). Not
+  started; behind current Nave work by Director decision.
 - **nostr-scoped-data-grants #1** — shepherd PR nostr-protocol/nips#2411.
 - **warm.contact #5–17** — Quill bootstrap/Swift-plumbing/Calendly/lifecycle
   (#5–#8) · Nave integration (#9) · product: People sync, profile-key pull,
