@@ -1,5 +1,11 @@
 # Remaining ticket creation plan (approved by James 2026-07-21)
 
+> **Now executable via CI:** `tickets.yml` (workflow_dispatch) runs
+> `deploy/ops/create-tickets.sh` against `docs/handoffs/tickets-2026-07-21.json`
+> — the verbatim ticket bodies from this plan, with dedupe + cross-ref
+> threading built in. Needs secret `TICKETS_PAT` (fine-grained, Issues:write
+> on the 8 target repos). Dry-run by default.
+>
 > **Transient handoff — delete once executed.** nave.pub #1–#15 are created;
 > this file exists so any session (this one or a fresh one with the other
 > repos attached) can create the remaining ~33 tickets mechanically. Blocked

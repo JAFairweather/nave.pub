@@ -1,0 +1,28 @@
+# One-shot: create the 2026-07-21 backlog tickets across the Nave repos.
+# Needs secret TICKETS_PAT: a FINE-GRAINED PAT — Resource owner JAFairweather;
+# Repository access: only nact, nvoy, warm.contact, luke, noir, nherit,
+# ntrigue, nostr-scoped-data-grants; Permissions: Issues = Read and write;
+# short expiry. Dry-run by default; tick "apply" to create for real.
+# Idempotent — safe to re-run; existing titles are skipped.
+name: tickets (one-shot)
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: actually create issues (off = dry run)
+        type: boolean
+        default: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: create tickets
+        env:
+          TICKETS_PAT: ${{ secrets.TICKETS_PAT }}
+          APPLY: ${{ inputs.apply }}
+        run: |
+          test -n "$TICKETS_PAT" || { echo "missing TICKETS_PAT secret (fine-grained, Issues:write on the 8 target repos)"; exit 1; }
+          export GH_TOKEN="$TICKETS_PAT"
+          FLAG=""; [ "$APPLY" = "true" ] && FLAG="--apply"
+          bash deploy/ops/create-tickets.sh docs/handoffs/tickets-2026-07-21.json $FLAG
