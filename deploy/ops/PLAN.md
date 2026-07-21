@@ -37,17 +37,19 @@ manager.
 - [x] **`harden.sh` on main + warm.contact** (via CI) — fail2ban active,
       auto-updates on, Docker-on-boot confirmed (main), `.env` → 600. Stale
       `openclaw-kajk` container pruned on main.
-- [ ] **`harden.sh` on the relay/bunker box** — MANUAL via `nave_mgmt` (the
-      restricted CI channel deliberately can't run mutating scripts). firewalld
-      already removed; run for fail2ban.
+- [x] **`harden.sh` on the relay/bunker box** — DONE; fail2ban **active**,
+      verified 2026-07-21 via `relay-ops` inventory. Loose end: the inventory's
+      auto-updates check prints `not-found` on Alma (Debian-ism in
+      `inventory.sh`?) — confirm dnf-automatic and make the check Alma-aware.
 - [x] **On-box Docker-safe firewall** (`firewall.sh`, called by harden.sh):
       nftables INPUT (allow lo/established/docker-subnet/icmp + 22/80/443, drop
       rest — seals host-bound ports) + DOCKER-USER seal (published ports except
       80/443). Applied on main (DOCKER-USER 3 rules) + warm.contact (`:8484`
       sealed, node still local-reachable). Main sites verified 200 externally.
-      **Relay/bunker: run `firewall.sh` there** to seal `:8080` (currently OPEN —
-      probe shows :8080=200; the earlier "sealed" reading was just the container
-      being down, never a real firewall).
+      **Relay/bunker: SEALED, verified 2026-07-21 ✓** — `inet nave_fw` table
+      live on-box; external probe times out on `:8080` **while** `bunker46-web-1`
+      is Up and publishing it, so this is a true firewall seal (not the
+      container-down false positive that fooled the earlier probe).
 - [ ] Provider edge firewall (22/80/443) is still worthwhile as belt-and-
       suspenders, but the on-box firewall is now the primary — no panel required.
 - [x] **Reboot survival: main + relay** — Docker enabled on boot, all containers
@@ -61,8 +63,8 @@ manager.
 - [ ] **`ALLOW_REGISTRATION=true` → `false`** in the bunker `.env`, then
       `docker compose up -d` — you're registered; close the door so no one else can
       create a bunker account.
-- [ ] Confirm bunker containers are all `restart: unless-stopped` (so a reboot
-      brings the signer back).
+- [x] Confirm bunker containers are all `restart: unless-stopped` — verified
+      2026-07-21: all six (relay strfry/caddy + bunker46 web/server/db/redis).
 
 ### 🟢 Tier 3 — runners / remote hands (DONE — unified fleet ops / proto-Nops)
 <!-- This SSH+CI control plane is the INTERIM. Nops proper (nact/docs/nops.md)
@@ -85,9 +87,8 @@ allowed verbs as a scoped grant, executes on signed approval — no SSH/CI. -->
 - [ ] Note the firewalld decision in `nave.pub/docs/sovereign-signing.md`.
 - [x] Prune stray keys — **main** already clean (`github-deploy` ×2 + `nave-mgmt`);
       **warm.contact** pruned to `nave-mgmt` + `nave-ci-warm` (old Mac key + two
-      expired `dotty_ssh` keys removed). **relay/bunker** pending: MANUAL prune to
-      `nave-mgmt` + `nave-ci-relay` (safe grep-keep pattern, aborts if either
-      missing).
+      expired `dotty_ssh` keys removed). **relay/bunker** DONE — verified
+      2026-07-21: exactly `nave-mgmt` + forced-command `nave-ci-relay` remain.
 
 ## Standing up a NEW box (the unified path)
 
