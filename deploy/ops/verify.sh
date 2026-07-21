@@ -33,9 +33,18 @@ for h in nave.pub nact.nave.pub luke.nave.pub nvoy.nave.pub noir.nave.pub; do
 done
 
 echo "-- nactor broker health --"
-HJ=$(curl -sk --resolve nact.nave.pub:443:127.0.0.1 --max-time 15 https://nact.nave.pub/api/health 2>/dev/null)
+# Post-migration there is NO env fallback: a fresh nactor boots with EMPTY
+# CREDS and refills from relay grants on the boot sweep (seconds to ~2 min).
+# Poll for the sweep instead of racing it — the 2026-07-21 deploy false-failed
+# exactly here moments before the sweep landed all nine grants.
+HJ=""
+for i in $(seq 1 16); do
+  HJ=$(curl -sk --resolve nact.nave.pub:443:127.0.0.1 --max-time 15 https://nact.nave.pub/api/health 2>/dev/null)
+  echo "$HJ" | grep -qE '"credentials":[1-9]' && break
+  sleep 8
+done
 echo "$HJ" | grep -q '"ok":true' && pass "nactor ok:true" || fail "nactor health not ok"
-echo "$HJ" | grep -qE '"credentials":[1-9]' && pass "credentials loaded" || fail "credentials = 0 (broker holds no creds)"
+echo "$HJ" | grep -qE '"credentials":[1-9]' && pass "credentials loaded (grant sweep)" || fail "credentials = 0 after ~2 min — grant sweep did not land"
 for id in luke brain nave nactjaf; do echo "$HJ" | grep -q "\"$id\"" && pass "identity $id" || warn "identity $id absent from health"; done
 
 echo "-- luke telegram webhook --"
