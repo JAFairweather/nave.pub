@@ -1,0 +1,70 @@
+{
+  "cards": [
+    {
+      "slug": "nave",
+      "url": "https://nave.pub/assets/cards/nave.png",
+      "alt": "A room on the open internet no one can take from you.",
+      "use": "default — general Nave posts, or when nothing more specific fits"
+    },
+    {
+      "slug": "nvoy",
+      "url": "https://nave.pub/assets/cards/nvoy.png",
+      "alt": "Delegation you can see. Revocation you can feel.",
+      "use": "Nvoy: the delegation console, issuing/revoking grants, the ledger"
+    },
+    {
+      "slug": "grants",
+      "url": "https://nave.pub/assets/cards/grants.png",
+      "alt": "Hand out references, not copies.",
+      "use": "the data-grants spec/protocol: scopes, address books, live dereference"
+    },
+    {
+      "slug": "revocation",
+      "url": "https://nave.pub/assets/cards/revocation.png",
+      "alt": "Rotate the key — the room changes its locks.",
+      "use": "revocation, key rotation, burn notices, taking access back"
+    },
+    {
+      "slug": "nactor",
+      "url": "https://nave.pub/assets/cards/nactor.png",
+      "alt": "Agents act. Keys stay home.",
+      "use": "agents/credentials: Nactor, brokered keys, keyless runtimes, agent security"
+    },
+    {
+      "slug": "warm-contact",
+      "url": "https://nave.pub/assets/cards/warm-contact.png",
+      "alt": "Inbound-first contact. Zero-knowledge on the wire.",
+      "use": "warm.contact: contact collection, the reconnect agent, sealed envelopes"
+    },
+    {
+      "slug": "noir",
+      "url": "https://nave.pub/assets/cards/noir.png",
+      "alt": "Spycraft where a burn notice is a key rotation.",
+      "use": "Noir, the game: intel as grants, burns, the Director"
+    },
+    {
+      "slug": "notegate",
+      "url": "https://nave.pub/assets/cards/notegate.png",
+      "alt": "A tip line with no one in the middle.",
+      "use": "Notegate: journalism, secure tips, serverless drops"
+    },
+    {
+      "slug": "shipping",
+      "url": "https://nave.pub/assets/cards/shipping.png",
+      "alt": "Built in the open. This is today’s timber.",
+      "use": "shipped-today / commit-digest posts about concrete progress"
+    },
+    {
+      "slug": "essay",
+      "url": "https://nave.pub/assets/cards/essay.png",
+      "alt": "Longer thoughts, same room.",
+      "use": "linking a Substack essay or any longer written piece"
+    },
+    {
+      "slug": "community",
+      "url": "https://nave.pub/assets/cards/community.png",
+      "alt": "Replies are how a room gets built.",
+      "use": "engagement follow-ups, replies, questions to the room"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#0b0906"/>
+  <rect x="24" y="24" width="1152" height="582" fill="#12100a" stroke="#c39a56" stroke-opacity=".38" stroke-width="1.5"/>
+  <rect x="34" y="34" width="1132" height="562" fill="none" stroke="#c39a56" stroke-opacity=".14" stroke-width="1"/>
+  <text x="96" y="150" font-family="'Courier New',Courier,monospace" font-size="26" letter-spacing="10" fill="#7a6338">N V O Y   ·   D E L E G A T I O N</text>
+  <rect x="96" y="178" width="120" height="2" fill="#c39a56" fill-opacity=".65"/>
+  <text x="96" y="315" font-family="Georgia,'Times New Roman',serif" font-style="italic" font-size="60" fill="#f4efe4"><tspan x="96" dy="0">Delegation you can see.</tspan><tspan x="96" dy="78">Revocation you can feel.</tspan></text>
+  <text x="96" y="540" font-family="'Courier New',Courier,monospace" font-weight="bold" font-size="30" letter-spacing="12" fill="#f4efe4">NAVE</text>
+  <text x="1104" y="540" text-anchor="end" font-family="'Courier New',Courier,monospace" font-size="26" letter-spacing="4" fill="#c39a56">nave.pub</text>
+</svg>
