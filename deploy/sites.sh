@@ -20,6 +20,7 @@ apps=(
   "notegate:notegate"
   "ntrigue:ntrigue"
   "nvoy:nvoy"
+  "ngage:ngage"                   # sovereign drafts — review + sign in your own hand
   "nherit:nherit"
   "nscope:nostr-scoped-data-grants"
   "nact:nact"                     # the signature-gated agentic-actions library + landing

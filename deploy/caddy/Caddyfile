@@ -84,6 +84,9 @@ ntrigue.nave.pub {
 nvoy.nave.pub {
 	import app nvoy
 }
+ngage.nave.pub {
+	import app ngage
+}
 nherit.nave.pub {
 	import app nherit
 }
