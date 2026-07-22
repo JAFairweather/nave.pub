@@ -1,246 +1,237 @@
 # Hardening a protocol in public
 
-*A design review found six weaknesses in NIP-DA. None were mistakes —
-they were the itemized cost of one deliberate bet, and hardening meant
-paying the lines that could be paid and writing the rest into the spec.*
+There is a wall at the back of every good hardware store that I have
+never once walked past. Key blanks — hundreds of them — brass and nickel
+on little hooks, sorted by a numbering system only the man behind the
+counter understands.
 
----
+Hand him yours and he looks at it for a second, then reaches without
+counting.
 
-A design review that finds six weaknesses in your protocol is either an
-obituary or an invoice, and the difference is whether the findings trace
-back to mistakes or to a decision. The review of
-[NIP-DA](https://github.com/JAFairweather/nostr-scoped-data-grants) —
-committed to the same repository as the spec it criticizes — traced all
-six to a single sentence in the design: *a scope is protected by one
-symmetric key, handed to grantees as a bearer token.*
+Then the machine. The vise — the tracer riding your old key while the
+wheel cuts the new one — the small arc of sparks — the burr he takes off
+with a wire brush before he hands it back warm.
 
-That bet is why the protocol is usable at all. One key over one payload
-makes the encrypted data set O(1) in grantee count, makes updates free
-(republish; every grantee dereferences the new truth), and asks nothing
-of relays beyond plain NIP-01 addressable-event semantics — which is why
-it runs today against stock public relays instead of waiting on anyone's
-adoption. The six weaknesses are what that costs, itemized. So hardening
-could not mean fixing bugs. It meant reading the invoice line by line,
-paying the lines that could be paid, and moving the unpayable ones into
-normative text, where the applications standing on top can't quietly
-promise otherwise.
+I love that whole ritual.
 
-## What a client can refuse
+And I have handed out a lot of keys that came off that machine — to a
+neighbor before a long trip — to a contractor I met exactly once — to a
+kid who would be home before I was.
 
-The spec already required a replacement `kind:30440` to be signed by the
-publisher named in its own address. The symmetric check on the *grant*
-side was only implementation lore. A `kind:440` grant is an unsigned
-rumor, sealed and gift-wrapped; its authenticated author is the seal's
-pubkey. If that author differs from the publisher encoded in the grant's
-`a` tag, the grant is a **re-wrap** — a grantee re-gifting a key it holds
-— and is cryptographically indistinguishable from key exfiltration.
-Nothing normative said so, and the default reader would have presented it
-as though the publisher had issued it.
+Not one of them ever asked the person holding it who he was.
 
-P1 makes the comparison a MUST, default-rejects re-wraps, and keeps the
-distinct author on the record so an explicit deployment policy can
-override. What that buys is narrower than it looks, and the spec says so
-in the same breath: a grantee holding a scope key can always paste it
-into a channel no client mediates. Enforcement is honest-client, not
-cryptographic. The win is a clean line between the sanctioned delegation
-path — a derived scope, where a sub-issuer publishes its *own* `30440`
-and author matches publisher by construction — and raw key re-delivery,
-which no conforming client will mistake for a first-party grant again.
+That is not a flaw in the key. That is the entire reason a house works.
 
-## Detectable, not impossible
+Bearer — the one who carries. Not the owner, not the name on the deed,
+not the person I had in mind at that counter. The one whose pocket it is
+in when the door comes up.
 
-Replacement is what makes grants live, but content updates never bumped
-the rotation counter `v`, so a grantee talking to a single withholding
-relay could be pinned indefinitely to an older, perfectly valid,
-perfectly signed event. The only freshness evidence was an `updated_at`
-claim invisible until after decryption.
+Now, a protocol.
 
-P2 adds `u`: a signed, relay-visible content sequence, strictly
-increasing per `(pubkey, d)`, bumped on **every** publish. The counters
-now have disjoint jobs — `v` is the rotation generation, `u` the content
-sequence, a rotation bumps both. Grantees fetch from at least two relays
-and take the highest `(u, created_at)`, ties broken by lowest event id —
-NIP-01's own replacement tiebreak, so readers converge on exactly the
-event the relays will keep. They persist a per-scope `(v, u)` high-water
-mark and MUST NOT downgrade below it; an event with no `u` compares as
-zero, so a pre-`u` copy served after a sequenced one is flagged too.
+[NIP-DA](https://github.com/JAFairweather/nostr-scoped-data-grants) is a
+small nostr primitive for handing somebody scoped, revocable access to a
+slice of your life — a contact list — a folder — one field on one
+record. And the sentence at the bottom of its design is the sentence on
+the hook by my back door.
 
-The honest word there is *detectable*. Rollback becomes visible without
-decryption, and multi-relay fanout routes around it whenever any queried
-relay carries the newer event. But a relay can still withhold, and a
-grantee whose every relay withholds — and whose mark never advanced past
-the old copy — gets no signal at all. Withholding, like erasure, is not
-something a protocol gets to prevent.
+A scope is protected by one symmetric key, handed to grantees as a
+bearer token.
 
-## The cursor that loses mail
+That bet is why the thing is usable at all. One key over one payload
+means the encrypted data does not grow when your circle does — twelve
+grantees or twelve hundred, the same ciphertext. It means an update is
+free. Republish, and every grantee reads the new truth the next time it
+looks.
 
-Rebuilding an address book meant pulling every `kind:1059` wrap addressed
-to you and trial-unwrapping all of them, every time. Half that cost is
-intrinsic: the inner kind is encrypted, so no relay can ever be asked for
-"grant wraps only." That indistinguishability isn't a defect to fix — it
-is precisely the NIP-59 property the protocol rests on, since the grant
-graph is the thing being protected. P4 documents it and bounds the rest.
+And it asks a relay for nothing beyond plain addressable events, which
+is why it runs today, on stock public relays, without anyone agreeing to
+anything first.
 
-The bound is a `since` cursor plus the Grant Index as a warm cache, and
-it contains the sharpest bug of the series. NIP-59 canonically backdates
-wrap timestamps by up to two days, so a wrap delivered *after* your scan
-can carry a `created_at` older than everything that scan saw. A naive
-`since = checkpoint` silently drops those grants — no error, no gap to
-notice. The fix reaches back the full randomization window behind the
-checkpoint, which makes consecutive scans overlap, which makes
-deduplication by wrap id mandatory. Trial-unwrapping is idempotent, so a
-forgotten id costs a repeated decrypt and never a wrong answer: the id
-set is a cost bound, not a safety mechanism. The cursor lives in the
-Grant Index beside the cache it summarizes, written in the same event,
-because a cursor that outruns its cache hides grants behind an
-already-advanced checkpoint. The test suite proves the miss first, then
-proves the fix.
+A careful design review of that spec — committed to the same repository
+as the spec it criticizes — came back with six weaknesses.
 
-## Raising the price of watching
+All six trace to that one sentence.
 
-Gift-wrapping hides the grant graph from a single relay. It doesn't hide
-that a stable `d` tag turns a scope's history into a countable series —
-*this scope changed 47 times, at these hours* — or that a wrap delivery
-followed by a fetch of a specific address correlates grantor to grantee
-on the clock.
+None of them were mistakes. They were the bill for the key, itemized.
 
-P6 collects five independent defenses, and the first is the one worth the
-argument: **rotate the `d` at rotation time.** It is free. Rotation is
-already re-granting every survivor, so the new address rides inside the
-same gift wrap as the new key, and a re-granted client follows it exactly
-as it would a first grant. The old address is stranded behind an empty
-tombstone under a never-granted key; a revoked party watching it sees
-ordinary generation supersession and learns neither the new address nor
-whether one exists. The content sequence restarts under the new identity
-— a continued `u` would be a correlator re-linking the very histories the
-move severed — so the high-water mark is keyed per `(pubkey, d)` and MUST
-NOT cross the change, or a client false-flags its own publisher for
-rollback. Fetch jitter, read-relay separation, coarse size padding, and
-decoy updates are the opt-in remainder.
+And the six proposals that followed are what it looks like to read a
+bill line by line — pay the lines that can be paid — and print the rest
+on the receipt where whoever comes next has to read it.
 
-The profile raises an observer's cost; it does not buy unobservability,
-and the spec spends a paragraph saying so. The rotation moment is loud:
-an observer watching both addresses sees one identity go quiet as another
-appears, and links them on timing alone. What item 1 severs is the
-*longitudinal* trail. Jitter widens the correlation window without
-closing it; padding coarsens size classes without erasing them; decoys
-blur which updates are real, not that the publisher is active. Each item
-removes one cheap handle. None removes the observer.
+Start with the copy. A man I handed a key to can have another cut off it —
+same wall, same machine, same warm burr — and that key opens my door,
+and it always will, and no lock ever made can tell the two apart from
+the inside.
 
-## Two devices, one key
+A grant here is an unsigned rumor, sealed and gift-wrapped, and the
+author it authenticates is the pubkey on the seal. When that author is
+not the publisher named inside the grant's own address, what you hold is
+a re-wrap — a grantee re-gifting a key it was given. And it is
+cryptographically identical to somebody walking off with mine.
 
-Everyone has a phone and a laptop, and a publisher's devices share one
-keypair while coordinating only through relays. Two rotating the same
-scope concurrently would each naively pick `v + 1` with *different* keys;
-survivors re-granted by the loser would read stale forever; concurrent
-Grant Index writes would clobber each other outright.
+The spec said nothing normative about that.
 
-P3 answers with three rules. `v` becomes a **Lamport counter** — max
-observed across your own record and what your relays currently serve,
-plus one — which cannot prevent a collision but guarantees the generation
-never moves backwards once devices see each other. The **deterministic
-winner** is whatever NIP-01 replacement already leaves standing (highest
-`created_at`, ties to lowest id), so relays and readers converge with no
-coordination; the grantee holding the losing key gets a MAC failure and
-reads `stale` — detectably, not silently — and MUST be re-granted.
-**Reconciliation** is mandatory: on index sync, a device whose issued
-`(v, key)` doesn't match the authoritative event re-issues. That last
-rule works only because the Grant Index stops being a last-write-wins
-blob and becomes a **mergeable** structure — entries keyed by scope or
-address, each carrying an `mtime`, merged by union with a per-key max,
-deletions written as tombstones so a lagging device cannot resurrect a
-revoked grant. Same-`v` rivals union their grantee lists and mark the
-survivor conflicted, which is how a collision reaches the one device that
-can repair it.
+So the comparison is a MUST now. Re-wraps are rejected by default, and
+where a deployment allows one the different author stays on the record.
 
-This is convergence for **honest devices sharing a key**, not byzantine
-tolerance, and the spec refuses the upgrade: a malicious holder of the
-publisher key is not a device to reconcile with. It can sign anything the
-key can sign, rotations and index rewrites included, and no client-side
-rule constrains it.
+You cannot stop a man from having your key copied. You can stop a
+program from telling you the key came from me.
 
-## The one that argues with the bet
+Then the old copy. Replacement is what keeps a grant alive, but a
+content update never touched the rotation counter. So a grantee talking
+to one withholding relay could sit forever on an event that was stale
+and perfectly valid and perfectly signed all at once.
 
-P1, P2, P4 and P6 all work *within* the bet. P5 argues with it, and so
-ships as an experimental parallel track — `kind:31440` beside `30440`,
-its own spec document, its own library, nothing in v1 touched.
+The only evidence of freshness sat inside the ciphertext. Invisible
+until after you had decrypted it and believed it.
 
-A scope gets a random 32-byte root key `K`, and each field is encrypted
-under a subkey derived from it:
-`K_f(g) = HKDF-Expand(K, "nipda/v2/field:" || f || ":" || g, 32)`. The
-generation `g` sits *inside* the derivation, which is the whole trick —
-it is what lets one field rotate without rotating the root. A grant
-carries a *subset* of subkeys, and because HKDF-Expand is a PRF, no
-computation on the subkeys you hold reaches `K`, a sibling field, or
-another generation of your own. An attenuated grantee cryptographically
-cannot read what it wasn't given — against a malicious grantee too — and
-an onward re-wrap can only narrow. Revoking one field costs O(that
-field's attenuated holders) rather than O(everyone). Field names never
-reach the wire: each travels under an opaque derived label, and every
-label changes when the root rotates. Even the grant is a new rumor kind
-(`442`), because a `440` rumor without a `scope_key` would crash a
-conforming v1 reader mid-scan — coexistence by construction beats
-coexistence by careful parsing.
+So there is a second counter on the outside of the envelope now.
 
-The limits are stated as flatly as the gains. Subkeys are still bearer
-tokens; a holder can re-share what it holds and nothing sees it happen.
-There is **no cryptographic re-delegation control** — a narrowing re-wrap
-can be rejected by an honest reader, never prevented — and **no expiry
-enforcement**: `expiration` stays advisory exactly as in v1. A
-field-revoked holder keeps the manifest key, and with it field names and
-generations, until the root rotates. Attenuation also hands the relay a
-new leak class: per-label size trajectories and rotation counters, finer
-structure in exchange for finer grants, disclosed rather than discovered.
-P5 closes the half of the bearer-token weakness that cryptography can
-close, and doesn't pretend about the other half.
+A signed, relay-visible content sequence, bumped on every single
+publish. The two counters have disjoint jobs — one is the generation of
+the key, the other is the sequence of the content — and a rotation moves
+both.
 
-## Why any of this is believable
+A grantee asks two relays and keeps the highest, ties broken the way
+nostr already breaks them. So a reader lands on the event the relays are
+going to keep anyway. And it writes down a high-water mark that it will
+never go beneath.
 
-The discipline is older than the series. Two independent implementations
-— a JavaScript reference library and a Go CLI — share nothing but the
-spec, and thirteen cross-implementation assertions run them against real
-public relays: each decrypts the other's scopes through the other's
-grants, reads the content sequence the other published, recovers an
-address book from the other's Grant Index, honors an inbox cursor the
-other wrote. Every proposal touching a field the Go side reads had to
-land on both sides in the same PR, or the suite went red.
+You cannot stop a relay from withholding. You can make it impossible for
+one to lie to you quietly.
 
-That is what stops a wire format from quietly becoming "whatever the
-reference implementation happens to do," and it produced the series'
-cleanest compatibility proof: P6's claim that a `d`-rotation demands
-nothing of readers was demonstrated by an **unmodified** Go
-implementation following a JS rotation to a new address with zero new
-code, reading the stranded old one as ordinary supersession. The
-discipline also names its own edge — Go doesn't read `31440` yet, so the
-v2 suite is JavaScript-only, listed in the spec as an open question
-rather than left as an omission.
+Then the mail. Rebuilding an address book meant pulling every gift wrap
+ever addressed to you and trying to open all of them, every time. Half
+that cost is the property and not the defect — the inner kind is
+encrypted, so no relay can ever be asked for just the grants.
 
-## What hardening turned out to be
+The grant graph is the thing being protected. You do not get to ask the
+guard to sort your secrets for you.
 
-None of the six made the protocol safe from a malicious grantee, and none
-was ever going to. What they did was convert vague liabilities into
-precise ones: rollback went from invisible to *detectable*; discovery
-from O(everything) to bounded, with the timestamp trap that bound
-conceals written down; observer correlation from free to merely cheap;
-concurrent devices from silently divergent to convergent and repairable;
-attenuation from impossible to real for decryption, still absent for
-re-delegation.
+The other half is a cursor, and it hid the sharpest bug in the series.
+Gift wraps are backdated by as much as two days on purpose. So a wrap
+that lands in your inbox after a scan can carry a timestamp older than
+everything that scan saw.
 
-Every one of those sentences has a second half, and that is the point.
-This primitive is fuel for things that inherit its claims — an address
-book, a document vault, a tip line, an agent runtime handing scope keys
-to software that will read them with no human in the loop — and an
-application implying containment the primitive does not provide is a more
-dangerous artifact than the weakness itself. Hardening in public means
-the review ships in the tree beside the spec, the fixes ship as numbered
-proposals anyone can audit, and the limits ship *inside* the normative
-text, where whoever builds on it next has to read them.
+Set the cursor to the checkpoint and those grants are gone.
 
-The bet stands. The bill is itemized, paid where it could be, and printed
-on the receipt where it couldn't.
+No error. No gap. Just a friend who wonders why you never picked up.
 
----
+So the fix reaches back the whole window behind the checkpoint — which
+makes consecutive scans overlap — which makes deduplication by wrap id
+mandatory.
 
-*The spec, both reference implementations, the design review, and all six
-proposals are public:
-[nostr-scoped-data-grants](https://github.com/JAFairweather/nostr-scoped-data-grants).*
+The test suite proves the miss first. Then it proves the fix.
+
+Then the man across the street. A gift wrap hides who I gave a key to.
+But it does not hide that a door with a stable name becomes a countable
+series — this one opened forty-seven times — at these hours — on these
+days. Or that a delivery followed by a fetch of one address puts a
+grantor and a grantee on the same clock.
+
+So rotate the name of the door when you rotate the key.
+
+It costs nothing. A rotation is already re-granting every survivor, so
+the new address rides inside the same gift wrap as the new key. The old
+one is left behind an empty tombstone under a key nobody was ever given,
+and a revoked party watching it learns neither the new address nor
+whether one exists.
+
+An observer is a man with a budget. Fetch jitter widens the window he
+has to correlate across — read-relay separation splits the picture
+between parties who each hold half — coarse padding blurs the size
+classes — decoy updates blur which of them are real. Every one of those
+raises what he has to spend. What you take off the table is the long
+trail behind a scope.
+
+He is still standing there.
+
+Then your other hand. Everybody has a phone and a laptop, and a
+publisher's devices share one keypair while speaking to each other only
+through relays. Two of them rotating the same scope at the same moment
+would each reach for the next generation holding a different key, and
+the survivors re-granted by the loser would read stale forever.
+
+Mr. Lamport wrote the answer to that in 1978 and it still fits in a
+sentence. The generation becomes the highest one you have seen anywhere
+— your own record joined with whatever your relays are serving right now
+— plus one.
+
+Collisions still happen. The generation never walks backwards once two
+devices have laid eyes on each other.
+
+The winner is whoever nostr replacement already leaves standing, so
+relays and readers converge with no coordination at all. And the grantee
+holding the losing key gets a MAC failure and reads stale — out loud,
+not silently — and gets re-granted.
+
+On the next sync, a device whose issued key does not match the
+authoritative event issues again. Which only works because the index
+stopped being a blob you overwrite and became something you merge —
+entries keyed by scope — deletions written as tombstones so a lagging
+device can never resurrect a grant you revoked.
+
+That is convergence between honest devices holding one key. A key still
+does not know which of your hands it is in — the hook by the back door,
+arriving again. Whoever holds the publisher key can sign a rotation and
+rewrite an index, and nothing written on the client side reaches him.
+
+The sixth one goes after the key itself.
+
+It ships as a parallel track — a new event kind beside the old one — its
+own spec — its own library — nothing in v1 touched. A scope gets a
+random 32-byte root, and every field is encrypted under its own subkey
+derived from that root, with the generation sitting inside the
+derivation.
+
+That is the whole trick. It is what lets one field turn over without
+turning over the root.
+
+A grant carries a subset. The derivation is a pseudorandom function, so
+nothing you can compute from the subkeys in your hand reaches the root,
+or a sibling field, or another generation of the field you were handed.
+
+So revoking one field costs you the holders of that field instead of
+everybody. And field names never touch the wire — each travels under a
+label that changes when the root does.
+
+A subkey is a key. Whoever holds one can hand it on, and nothing sees
+that happen.
+
+What the tree does is make the key smaller — one drawer instead of the
+house — and a small key is the only kind worth handing to software that
+will read it with nobody in the room.
+
+Why should you believe any of it?
+
+Because there are two implementations of this protocol that share
+nothing but the spec — a JavaScript library and a Go command-line tool —
+and thirteen cross-implementation assertions that run the two of them
+against real public relays. Each decrypts the other's scopes through the
+other's grants — reads the sequence the other published — recovers an
+address book out of the other's index — honors an inbox cursor the other
+wrote.
+
+Any proposal touching a field the Go side reads had to land on both
+sides in the same pull request, or the suite went red that afternoon.
+
+That is what keeps a wire format from quietly becoming whatever the
+reference implementation happened to do last Tuesday.
+
+And it produced the cleanest thing in the series. The claim that
+rotating a door's name asks nothing of readers — shown by an unmodified
+Go client following a JavaScript rotation to a brand-new address with
+zero new code, reading the stranded old one as an ordinary supersession.
+
+Grant — to hand a thing over. And, says Oxford, to admit that a thing
+is so.
+
+So hand out the key. Then sit down and write what it costs to hold one.
+
+Not in the blog post — in the normative text, where whoever builds the
+address book and the vault and the tip line and the agent that reads
+your calendar at three in the morning has to read it before he can use
+your work.
+
+I promise you he will build something better on it than the thing you
+had in mind.
