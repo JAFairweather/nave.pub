@@ -93,6 +93,8 @@ jobs:
               -e BRAIN_LEDGER=/state/ledger.json \
               -v "$DEPLOY/brain-state:/state" \
               -v "$DEPLOY/sites/luke/luke-brain.mjs:/app/luke-brain.mjs:ro" \
+              -v "$DEPLOY/sites/luke/voices.mjs:/app/voices.mjs:ro" \
+              -v "$DEPLOY/sites/luke/post-format.mjs:/app/post-format.mjs:ro" \
               -v "$DEPLOY/sites/luke/brief:/app/brief:ro" \
               luke:latest node luke-brain.mjs $FLAG
             echo "── brain done ──"
