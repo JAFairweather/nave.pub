@@ -1,133 +1,226 @@
 # Protocol as Fuel
 
-*How one small nostr primitive — the scoped, revocable data grant —
-fueled a whole portfolio of applications, and what that says about
-building on protocols instead of platforms.*
+There is a red plastic can on the shelf over my workbench with a yellow
+spout, and I am fonder of it than a man ought to be of a container.
 
----
+Two-stroke mix. Gasoline — a measured pour of oil — the cap back on — then
+you lift the whole thing and rock it slow until the color goes even.
 
-Most software portfolios grow sideways: a company ships a product,
-then ships a second product, and the two share a login page and a
-billing system and not much else. This is a story about a portfolio
-that grew *upward* — seven public repositories, each one standing on the same
-~300-line protocol implementation, each one built because the layer
-below it hit a real wall.
+Fifty to one.
 
-## The primitive
+I love that ratio. And I love that it does not care what you are about to do
+with it.
 
-NIP-DA — Scoped Data Grants — adds one missing thing to nostr. Relays
-are excellent at broadcast and terrible at confidence: DMs are
-snapshots you can never update or retract, and anything more
-sophisticated usually reintroduces the server you were trying to
-escape. NIP-DA's answer is a **scope**: a publisher-owned, encrypted,
-addressable data set (kind 30440) whose key travels to each reader as
-a gift-wrapped **grant** (kind 440 inside 1059). The publisher keeps
-authorship forever; readers dereference the *current* version; and
-revocation is not an ACL edit — it is a **key rotation**. Re-encrypt,
-re-grant the survivors, done. The revoked party's key simply stops
-opening the current ciphertext.
+That can feeds the chainsaw — the string trimmer — the blower — and the
+little generator I drag out when the power goes. Different machines —
+different jobs — limbing a maple off the drive, edging a walk, a night of
+lights in the kitchen — and none of them ever asked the fuel what it was
+for.
 
-![Fig. 2 — Anatomy of a grant](https://raw.githubusercontent.com/JAFairweather/noir/main/docs/figures/fig2-anatomy-of-a-grant.png)
+Nobody designs a chainsaw around a fuel can.
 
-![Fig. 3 — Revocation as rotation](https://raw.githubusercontent.com/JAFairweather/noir/main/docs/figures/fig3-revocation-as-rotation.png)
+You get the fuel right, and the machines show up.
 
-Two design choices made everything after possible:
+[Nscope](https://github.com/JAFairweather/nostr-scoped-data-grants) is the
+fuel. Three hundred lines, give or take, and four kinds of event — the
+encrypted scope — the gift-wrapped grant that carries its key — the
+revocation — and an index of everything you ever handed out, rebuildable
+from your own secret key alone.
 
-- **Honesty.** A revoked reader keeps whatever plaintext they already
-  read, and the protocol says so out loud. No pretend un-sharing.
-- **The signer interface.** Every operation accepts either a raw key
-  or a NIP-07-shaped signer object — so a web page can author scopes
-  and issue grants under a user's real identity without the secret key
-  ever entering the page. This one abstraction was designed in before
-  it was needed. It was needed.
+You publish a slice of your life under your own key, encrypted. You hand the
+key to whoever needs it — wrapped so the relays ferrying it learn nothing.
+And they read your current version, always, because there is only ever a
+current one.
 
-## The portfolio it fueled
+When you want somebody out, you do not edit a row in a table on somebody's
+server. You rotate the key — republish — re-grant everyone still invited —
+and the one you dropped is holding a key that opens nothing.
 
-**[Nontact](https://github.com/JAFairweather/nontact)** came first,
-alongside the [protocol repo](https://github.com/JAFairweather/nostr-scoped-data-grants)
-itself: a contact-card manager.
-Its insight is that an address book shouldn't be an app's database —
-it's an *emergent view*, the sum of what people currently grant you.
-Update your card once; every holder dereferences the new truth. Move,
-change numbers, remarry — one edit, everyone current, and anyone you
-drop simply stops seeing updates.
+The signature is the authorization. The rotation is the revocation.
 
-**[Nvelope](https://github.com/JAFairweather/nvelope)** pushed on scale and lifecycle: live document sharing where
-a shared file is a scope, revocation replaces expiring links, and
-recovery needs only your key. Blobs too large for an event ride
-encrypted on Blossom with the key delivered by grant — same wire,
-bigger cargo.
+Now the part the spec says out loud, in the normative text, where nobody
+skips past it.
 
-**[Nvoy](https://github.com/JAFairweather/nvoy)** made the leap that changed the trajectory: the grantee became
-*software*. Delegating data to an AI agent is the moment access control
-stops being about politeness and starts being about survival — and the
-OAuth world has the wrong shape for it. A bearer token delegates
-*access* into a system that keeps the data; Nvoy delegates *the data*,
-end-to-end encrypted to the agent's key, dereferenced live at run
-time, severable in one keystroke. Revocation surfaces to the agent as
-a clean `NVOY_GRANT_REVOKED` on its next read. Terms — purpose,
-expiry, no-persist — ride the grant and are enforced as *compliance,
-not cryptography*, disclosed honestly; the delegator's real lever is
-always rotation. The agent side mounts as an MCP server, so any
-MCP-speaking framework consumes delegated data with zero nostr
-knowledge.
+Whoever already read it, read it.
 
-The family kept growing on the same fuel, each sibling pointing the
-primitive at a different hard problem.
-**[Nherit](https://github.com/JAFairweather/nherit)** turned it toward
-*time*: a family break-glass legacy vault — one estate record in
-per-beneficiary scopes, heirs holding revocable grants, the whole
-thing reconstituting from a single key printed on paper. No company
-between you and your family.
-**[Ntrigue](https://github.com/JAFairweather/ntrigue)** turned it
-toward *adversaries*: a phones-only party game of secrets, dilemmas,
-and blackmail, where every answer is an encrypted scope and pairwise
-prisoner's-dilemma exchanges decide who sees what. Its design law —
-*you can revoke a secret, but you can't un-tell it* — is the
-protocol's honesty clause played for stakes.
-**[Notegate](https://github.com/JAFairweather/notegate)** turned it
-toward the *newsroom*: serverless tip intake where a tip line is a
-keypair, sources are ephemeral keys with a 12-word phrase as their
-only way back, proof-of-work is the spam toll, and the grant index
-is the case docket.
+No protocol takes a memory back. A rotation stops the next read and only the
+next read, and the honest place for that sentence is the first page — not
+the middle of somebody's divorce.
+[Ntrigue](https://github.com/JAFairweather/ntrigue) is that sentence played
+for money — a phones-only party game where every answer is an encrypted
+scope, and the design law is that you can revoke a secret and still not
+un-tell it.
 
-**[Noir](https://github.com/JAFairweather/noir)**
-([play it](https://jafairweather.github.io/noir/client/)) then asked
-the unreasonable question: can the primitive carry
-*everything*? A whole game — content, permissions, identity, agent
-management, feedback, even payment pointers — with no other trust
-system in the building? It can. Documents are scopes; discovery is a
-grant; betrayal is a rotation; the AI game master is an Nvoy agent
-whose entire authority is a revocable grant from its human master;
-playtest feedback travels back as scopes signed by the master's own
-key; and the newest step delivers entire *worlds* — a steampunk era as
-pure data — over the same wire, gated by a mechanical fairness prover
-before any of it may be played.
+Then the other choice, which I got right for the wrong reason.
 
-![Fig. 1 — The layer cake](https://raw.githubusercontent.com/JAFairweather/noir/main/docs/figures/fig1-layer-cake.png)
+Every operation in the library takes either a raw secret key or an object
+shaped like a signer — give me your public key, decrypt this, sign this. I
+wrote it that way on the first day because it was two extra lines and it
+felt tidy. And it is now the only reason a web page can issue grants as a
+real human being, with the secret never entering the tab.
 
-## The pattern worth stealing
+Designed in before it was needed.
 
-Nothing in this stack was speculative infrastructure. **Each layer was
-pulled into existence by the layer above it hitting a wall.** Contacts
-needed liveness; documents needed scale; agents needed severability;
-the game needed tables; tables needed delegation; generated worlds
-needed a notary. When a protocol is small enough to vendor as one file
-and honest enough to state its own limits, applications compose on it
-the way the applications' *features* usually compose inside a single
-product — except here, the portfolio's products interoperate with no
-adapters at all. Nvoy's console manages Noir's game master without one
-line of Noir-specific code, because "an agent holding a revocable
-grant" is the same object in both worlds.
+Then needed everywhere.
 
-That's what protocol-as-fuel means. Not a platform with an SDK and a
-partnerships team — a primitive with properties, and a family of
-applications that are each, in the end, the same three lines:
+[Nontact](https://github.com/JAFairweather/nontact) went first. An address
+book is not a database — it is the sum of what people currently grant you.
+Update your card once and every holder reads the new truth. Move — change
+your number — drop somebody entirely. One edit.
 
-```
-receive the grants addressed to me
-keep the newest per scope
-dereference and decrypt the current truth
-```
+[Nvelope](https://github.com/JAFairweather/nvelope) carried it to files. A
+shared folder is a scope, so revocation replaces the expiring link and
+recovery needs your key alone. And payloads too fat for an event ride
+encrypted on Blossom with their key delivered by grant — same wire, bigger
+cargo.
 
-Everything else is what you choose to encrypt.
+[Nherit](https://github.com/JAFairweather/nherit) pointed it at time. One
+estate record in per-beneficiary scopes — heirs holding grants you can pull
+back while you are alive — the whole thing reconstituting from a square of
+paper in a fire safe. Nothing between you and your family to be breached, or
+sold, or sunset in thirty years.
+
+[Notegate](https://github.com/JAFairweather/notegate) pointed it at a
+newsroom. A tip line is a keypair. A source is a key her own browser minted,
+whose only way back is twelve words she writes on her hand. And
+proof-of-work is the toll at the door, paid before anything is decrypted,
+and the grant index is the case docket.
+
+[Noir](https://noir.nave.pub) asked whether the primitive could carry a
+whole game with no other trust system in the building. Documents are scopes,
+and discovery is a gift wrap. A burned contact is a key rotated past you,
+and you feel it. And whole eras arrive as pure data over the same wire,
+gated by a prover that makes the game prove itself fair before it deals a
+card.
+
+[Nvoy](https://nvoy.nave.pub) is where the grantee stopped being a person.
+Handing your calendar to software is the moment permission stops being
+manners and starts being survival, and a token has the wrong shape for it —
+it delegates access into a system that keeps your data. Nvoy delegates the
+data — encrypted to the agent's own key — dereferenced live at run time —
+severable in one keystroke. And the agent finds out on its next read. So it
+mounts as an MCP server, and anything that speaks MCP reads a grant knowing
+nothing about nostr.
+
+Terms ride along on the grant — purpose, expiry, do not persist — and those
+are asked for, not enforced by arithmetic. But the lever that is actually
+yours is the rotation. That is written down too.
+
+Then the other direction, because seeing is only half of what you delegate.
+[Nact](https://nact.nave.pub) is the half about doing. An agent drafts an
+action, you look at it, you tap — and your signature is the thing that puts
+it on the wire. Its runtime, Nactor, keeps credentials in memory and hands
+one out against a signature, so an agent invokes a key it never holds. Every
+live credential in the fleet arrived as a grant. And the engine running the
+models holds none of them.
+
+Then the arrow turned around, which I did not see coming.
+
+[Ngage](https://ngage.nave.pub) is a desk where my agent grants drafts to
+me. Each post it writes is a scope in a draft namespace, gift-wrapped to my
+identity — and it reaches the desk only after the seal's verified signer
+matches the author named inside — the scope is a draft and nothing else —
+the grant came first-hand — and that hand is on a list I keep myself.
+
+An empty list shows me nothing.
+
+Then I read the exact note. Then my key signs it.
+
+Nothing my agent writes can speak in my voice until my own hand moves.
+
+[warm.contact](https://warm.contact) is the one that started before the
+protocol did. People wave at you, their card lands in your book, and the
+relay only ever brokers ciphertext — it cannot read who is contacting whom,
+structurally, not as a promise. But the half that stalls is the reply.
+Everybody has that list.
+
+Quill writes the first draft of every one of them. Not a shared assistant
+holding one big key — an agent minted for you, under your own identity —
+carrying your voice and your credentials in a bundle you signed over —
+drafting on your own machine, so your people's names never cross anybody's
+infrastructure. And it knows who has been waiting longest. It refuses to
+invent a history it was not given. And it never presses send. So you read
+it, fix the one word that is not yours, and it leaves from your Messages
+under your name.
+
+The drafting is done and tested. The identity it runs under is the next
+thing I build.
+
+It is Luke, for everyone.
+
+Cockpit and Console are the two rooms where my agent's whole life is legible
+— his beats, his activity, every file he loads and the order he loads them
+in. Neither has a password, because neither has anywhere to type one. A gate
+that opens on one signature, and it has only ever opened on mine. Nops is
+that idea turned on the box underneath — deploys, secrets, health —
+authorized by a scoped grant of allowed verbs and a signed approval instead
+of a key parked in a CI vault. It is drawn and proposed, not built. What
+runs today is the right shape over the wrong transport, and I would rather
+say so.
+
+Three boxes carry all of it. One management key opens them — passwords are
+off everywhere — and the sovereign key lives alone in a bunker on its own
+machine, encrypted, lending out signatures and never leaving.
+
+On the twentieth of July a stale firewall rule woke up on that box, flushed
+Docker's own chains on reload, and took the bunker down. And then Docker
+would not start at all. The fix was not a better rule — firewalld is gone
+from every Docker host I own, replaced by a firewall that lives on the box
+and asks a hosting panel for nothing, with the ban written down where the
+next man has to read it.
+
+So what does one bearer key cost?
+
+A design review of the spec — filed in the same repository as the spec it
+criticizes — came back with six weaknesses. Real ones. And every one traces
+to a sentence at the bottom of the design: a scope is protected by one
+symmetric key, handed to grantees as a bearer token.
+
+That bet is why the thing runs today, on stock public relays, without anyone
+agreeing to anything first.
+
+And the six proposals are what it looks like to read a bill line by line —
+verify who authored a grant instead of trusting the wrapper — put a second
+counter outside the envelope, so a withholding relay cannot hand you last
+week quietly — reach back behind your own cursor, because gift wraps are
+backdated on purpose and a friend lands in the gap — rotate the address
+alongside the key, so a stable name stops being a countable series — keep
+your phone and your laptop from rotating past each other — and split a scope
+into per-field keys, so revoking one drawer costs you the drawer and not the
+house.
+
+All six are in the spec now. Five rewrote its normative text, and the sixth
+ships beside it — a new kind of event, its own document, its own library —
+so nothing already running had to move.
+
+And two implementations that share nothing but that document — a JavaScript
+library and a Go command-line tool — run thirteen assertions against each
+other on live public relays, each reading the other's scopes through the
+other's grants. That is what keeps a wire format from becoming whatever the
+reference implementation did last Tuesday.
+
+The same discipline is queued on the action side. Freeze what will be signed
+the moment it is proposed, and re-check its fingerprint before a key touches
+it. Render it faithfully — the kind, the tags, the hidden characters
+somebody slipped in. And make the dangerous kinds cost more than one
+careless thumb.
+
+Then Buzz, which is the next room and not yet a room of mine. A workspace
+where people and agents sit in the same channels on a relay you own, every
+message and every review and every commit landing as a signed event in one
+log. Same identity model. Same audit trail. Whether or not the author
+breathes.
+
+And I forked it because that is where I want all of this to end up. My
+people and my agents in one place, with the can already mixed.
+
+So mix the fuel first.
+
+Get the small thing right — write down what it cannot do while you are still
+proud of it — and then go watch what other people bolt onto it. They will
+bring machines you never imagined, and never once thank the can.
+
+That is how you know it worked.
+
+And whoever you have been meaning to write back for a month is still
+waiting. Do that part in your own hand.
