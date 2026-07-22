@@ -10,50 +10,43 @@ anything cross-posted to Substack.
 - **`articles/`** — essays and articles (Markdown). Source of truth; cross-post to Substack from here.
 - **`artifacts/`** — decks and documents (`.pptx`, `.docx`, `.pdf`).
 
-## Published
-
-- **Protocol as Fuel** — <https://jafairweather.substack.com/p/protocol-as-fuel> · 2026-07-13
-
 ## Articles
 
-_(the five most recent drafts — pending import, see **Importing** below)_
-
-| Title | File | Source draft |
-|---|---|---|
-| Scoped Autonomy | `articles/scoped-autonomy.md` | `article1scopedautonomy.md` |
-| The Firewall That Melted Docker | `articles/firewall-melted-docker.md` | `article2firewalldmelteddocker.md` |
-| Quill — the Per-User Agent | `articles/quill-per-user-agent.md` | `article3quillperuseragent.md` |
-
-> There are **earlier drafts too** (the Director recalls "a bunch before this").
-> As they surface, add them here the same way and list them above.
+| Title | File | About | Status |
+|---|---|---|---|
+| **Protocol as Fuel** | [`articles/protocol-as-fuel.md`](articles/protocol-as-fuel.md) | How one small nostr primitive — the scoped, revocable data grant — fuels the whole ecosystem | **Published** — [Substack](https://jafairweather.substack.com/p/protocol-as-fuel) (2026-07-13) |
+| **Scoped autonomy: one nostr primitive, a whole ecosystem** | [`articles/scoped-autonomy.md`](articles/scoped-autonomy.md) | How one signed, revocable grant became contacts, files, secure intake, a legacy vault, two games, and an agent runtime | Draft |
+| **Quill: giving every person their own agent, not a shared one** | [`articles/quill-per-user-agent.md`](articles/quill-per-user-agent.md) | An agent minted for you, holding only what you gave it, that never presses send | Draft |
+| **The day firewalld melted Docker** | [`articles/firewall-melted-docker.md`](articles/firewall-melted-docker.md) | A self-hosting war story: a stale rule, a wedged daemon, and the debugging arc | Draft |
+| **Noir: An Architecture** | [`articles/noir-architecture.md`](articles/noir-architecture.md) | How a mystery game became the proving ground for an entire protocol | Draft |
+| **Cryptographic Boundary Conditions for World Models** | [`articles/cryptographic-boundary-conditions.md`](articles/cryptographic-boundary-conditions.md) | Letting a language model build worlds without letting it cheat | Draft |
 
 ## Artifacts
 
-| Artifact | File | Source |
-|---|---|---|
-| Nave — State of the Ecosystem | `artifacts/nave-state-of-the-ecosystem.docx` | `NaveStateoftheEcosystem.docx` |
-| Nave — Protocol, Apps & Infra | `artifacts/nave-protocol-apps-infra.pptx` | `NaveProtocolAppsInfra.pptx` |
+| Artifact | File |
+|---|---|
+| Nave — State of the Ecosystem | [`artifacts/nave-state-of-the-ecosystem.docx`](artifacts/nave-state-of-the-ecosystem.docx) |
+| Nave — Protocol, Apps & Infra | [`artifacts/nave-protocol-apps-infra.pptx`](artifacts/nave-protocol-apps-infra.pptx) |
+
+## Provenance & one open duplication
+
+The last three articles above came from **`noir/docs/articles/`**, where they were
+originally drafted. That directory *also* holds rendered `.html` copies and a
+sibling `docs/figures/` — those were **left in place deliberately**, since removing
+them could break anything already linking to the rendered pages. The Markdown here
+is now the source of truth; the noir copies are renderings.
+
+> **Open decision for the Director:** consolidate serving too (move/redirect the
+> noir `.html` + figures), or leave noir serving its rendered copies. Until then,
+> edit the Markdown *here* and re-render, so the two don't drift.
 
 ## Related narrative (technical docs, cross-referenced not duplicated)
 
 - [`../docs/JOURNEY.md`](../docs/JOURNEY.md) — the build narrative
 - [`../docs/ECOSYSTEM-HUB.md`](../docs/ECOSYSTEM-HUB.md) — the hub & how the pieces fit
-- [`../docs/SIDE-QUESTS.md`](../docs/SIDE-QUESTS.md) — incidents (incl. the firewall/Docker one)
+- [`../docs/SIDE-QUESTS.md`](../docs/SIDE-QUESTS.md) — incidents (incl. the firewall/Docker one this library also covers as an essay)
 
-## Importing
+## Adding to the library
 
-The recent drafts live on the Director's Desktop (`~/Desktop/Recents/`), which
-automation can't read (macOS privacy protection). From a terminal **with Desktop
-access**, copy them into place, then commit:
-
-```bash
-cd /Users/fairwja/Projects/nave-spine/nave.pub/library
-cp ~/Desktop/Recents/article1scopedautonomy.md      articles/scoped-autonomy.md
-cp ~/Desktop/Recents/article2firewalldmelteddocker.md articles/firewall-melted-docker.md
-cp ~/Desktop/Recents/article3quillperuseragent.md   articles/quill-per-user-agent.md
-cp ~/Desktop/Recents/NaveStateoftheEcosystem.docx   artifacts/nave-state-of-the-ecosystem.docx
-cp ~/Desktop/Recents/NaveProtocolAppsInfra.pptx     artifacts/nave-protocol-apps-infra.pptx
-```
-
-Once they're in this folder, they're readable — hand it back and the titles/index
-get finalized and committed.
+Drop the Markdown in `articles/` (or the file in `artifacts/`), add a row above,
+and note its status. If it gets published, link it in the Status column.
