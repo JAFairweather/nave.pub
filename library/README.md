@@ -20,6 +20,8 @@ anything cross-posted to Substack.
 | **The day firewalld melted Docker** | [`articles/firewall-melted-docker.md`](articles/firewall-melted-docker.md) | A self-hosting war story: a stale rule, a wedged daemon, and the debugging arc | Draft |
 | **Noir: An Architecture** | [`articles/noir-architecture.md`](articles/noir-architecture.md) | How a mystery game became the proving ground for an entire protocol | Draft |
 | **Cryptographic Boundary Conditions for World Models** | [`articles/cryptographic-boundary-conditions.md`](articles/cryptographic-boundary-conditions.md) | Letting a language model build worlds without letting it cheat | Draft |
+| **Hardening a protocol in public** | [`articles/hardening-a-protocol-in-public.md`](articles/hardening-a-protocol-in-public.md) | The P-series: six weaknesses as the itemized cost of one deliberate bet, and what hardening could and couldn't pay down | Draft |
+| **The zero-knowledge address book** | [`articles/zero-knowledge-address-book.md`](articles/zero-knowledge-address-book.md) | warm.contact's shipped architecture: one envelope implemented twice, a relay that structurally cannot read, and the Swift grant plane | Draft |
 
 ## Artifacts
 
