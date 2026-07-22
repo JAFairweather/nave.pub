@@ -30,6 +30,12 @@ anything cross-posted to Substack.
 | Nave — State of the Ecosystem | [`artifacts/nave-state-of-the-ecosystem.docx`](artifacts/nave-state-of-the-ecosystem.docx) |
 | Nave — Protocol, Apps & Infra | [`artifacts/nave-protocol-apps-infra.pptx`](artifacts/nave-protocol-apps-infra.pptx) |
 
+Both artifacts also have **extracted-text companions** beside them —
+[`nave-state-of-the-ecosystem.extracted.md`](artifacts/nave-state-of-the-ecosystem.extracted.md) and
+[`nave-protocol-apps-infra.extracted.md`](artifacts/nave-protocol-apps-infra.extracted.md) — so their
+substance is searchable and can be written against. The binaries remain the artifacts;
+the extracts are read-only companions, regenerated rather than edited.
+
 ## Provenance & one open duplication
 
 The last three articles above came from **`noir/docs/articles/`**, where they were
