@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="118" fill="#160f08"/>
+  <rect x="16" y="16" width="480" height="480" rx="104" fill="#1d140b"/>
+  <rect x="30" y="30" width="452" height="452" rx="92" fill="none" stroke="#d9b06a" stroke-opacity=".22" stroke-width="2"/>
+  <!-- nib: leaf silhouette pointing down, vent hole + slit -->
+  <g>
+    <path d="M256 108
+             C 196 150, 168 224, 196 314
+             C 214 372, 238 412, 256 436
+             C 274 412, 298 372, 316 314
+             C 344 224, 316 150, 256 108 Z"
+          fill="#e7cd93"/>
+    <path d="M256 108
+             C 196 150, 168 224, 196 314
+             C 214 372, 238 412, 256 436
+             C 274 412, 298 372, 316 314
+             C 344 224, 316 150, 256 108 Z"
+          fill="none" stroke="#d9b06a" stroke-width="3" stroke-opacity=".5"/>
+    <circle cx="256" cy="246" r="21" fill="#1d140b"/>
+    <path d="M256 267 L256 434" stroke="#1d140b" stroke-width="9" stroke-linecap="round"/>
+  </g>
+  <!-- a single ink dot: the mark it leaves -->
+  <circle cx="256" cy="462" r="7" fill="#d9b06a" fill-opacity=".7"/>
+</svg>
