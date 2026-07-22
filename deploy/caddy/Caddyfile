@@ -114,6 +114,15 @@ nact.nave.pub {
 		encode gzip zstd
 		@mjs path *.mjs
 		header @mjs Content-Type "text/javascript; charset=utf-8"
+		# The same guard the (app) snippet carries. nact can't `import app nact`
+		# — it needs its own handle blocks for the /api routes above — so it
+		# silently missed the fix that came out of the 2026-07-21 nvoy incident,
+		# and had NO Cache-Control at all. Same failure, same cause: app.html,
+		# its import map, lib/*.mjs and the vendored bundle must move as ONE
+		# unit, and a cached page paired with fresh modules dies at
+		# module-resolution time — which here is the sign-in path.
+		# "no-cache" means revalidate, not don't-store; unchanged files 304.
+		header Cache-Control "no-cache"
 		file_server
 	}
 }
