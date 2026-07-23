@@ -7,7 +7,7 @@
     "nactor":    "20d4f68158d7a633fff5166f36e23ee62b3135b01567bb20114f288e92857df6",
     "nact_jaf":  "bb4ff7defbcdb189ae36ea2dad8e2402b81f00ee5c478e834606dcf4e6b6f97f",
     "noir":      "61c360eff984c56adce1c4a0735326b2a67e7f6dd65c17cd9dcdb9e18afbfc6a",
-    "sovereign": "REPLACE_WITH_JAF_DEQUALSF_HEX",
+    "sovereign": "4010ac438206dc10018b814be3ea01ca6c92bcc22e9719e841d2413b287ea84d",
     "operator":  "a7744c7e53490dcbccd20a9cd63cfcd8474f4536841e87dcf9e985f2059bbbe9"
   },
   "allowKinds": [24133],
