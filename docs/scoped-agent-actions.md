@@ -304,6 +304,62 @@ keys. (The full build brief lives with that track; this is only the protocol sea
 
 ---
 
+## Part II·6 — The action-grant scope schema (workstream B — draft to freeze)
+
+The **standing authorization** for a class of actions, distinct from a single
+invocation. NWC's parallel is exact: a *connection* carries permissions + budget;
+a *request* is one `pay_invoice` under it. Here a **`capability:<actuator>` scope
+grant** (AD-8 namespace) carries the standing authority; an **Action Proposal**
+(`scoped-action-approvals.md`) is one invocation under it. Freeze the grant shape
+first — the actuator contract (II·5) and the relocation track both bind to it.
+
+The grant is a NIP-DA scope, gift-wrapped to the agent's npub, revocable by
+rotation:
+
+```jsonc
+{
+  "cap": "draft",                    // actuator: draft | publish | exec | connector:mail | …
+  "verbs": ["reply", "post", "pr"],  // allow-listed verbs within it (NWC request_methods, generalized)
+  "pin": { "surface": ["reconnect","post"], "approver": "<jaf-npub>" },
+                                      // target fixed BY THE GRANT, never the request body
+                                      // (connectors.md invariant); approver = who signs
+  "budget": { "max": 20, "per": "daily" },   // rate/spend cap (NWC max_amount + budget_renewal)
+  "expires": 1793000000,             // NIP-40 expiration (NWC expires_at) — always time-boxed
+  "tier": "normal"                   // risk tier; "critical" ⇒ no one-tap (threat-model, nact#9)
+}
+```
+
+- **`cap` + `verbs`** — the actuator and its allowed verbs. Verbs are *structural*:
+  an actuator exposes only what it implements (`connectors.md` — "no write verb
+  exists in the code"); the grant narrows within that.
+- **`pin`** — the grant, not the caller, fixes the target (host / mailbox / relay /
+  approver npub); a caller can never repoint egress. On the director path
+  `pin.approver` is the Director's npub, and *that is the whole security of the
+  path* — the draft is gift-wrapped to it, so only he can approve, by encryption.
+- **`budget`** — a rate cap for unmetered actuators (posts/day), a spend cap for
+  metered ones (the Cashu/402 path). One field, two readings.
+- **`expires`** — NIP-40 TTL. An action grant is *always* bounded — the NIP-26
+  lesson (never an unbounded delegation).
+- **`tier`** — from the threat model; `critical` verbs (key rotation, grant
+  issuance) can't be one-tap-approved (nact#9). The grant declares the tier so the
+  approval surface enforces it.
+
+**Revocation = rotation.** Rotate the scope key → the grant and every verb it
+authorized die at once (NIP-DA 441). One blast radius.
+
+**Attenuation / re-grant.** A grantee may issue an **attenuated** sub-grant
+(nvoy#1 cascade): `verbs ⊆ parent`, `budget ≤ parent`, `expires ≤ parent`, `pin`
+only narrowed — never widened; root rotation cascades. This is the capability-token
+attenuation property (biscuit/macaroon) expressed as a NIP-DA re-grant — POLA by
+construction.
+
+**Standardizable vs app-interim.** Only the **proposal/approval handshake** and the
+`["approval"]` provenance tag are NIP candidates. The scope *schema* stays
+**`capability:*` app-interim** (AD-8) until cross-client demand appears — freeze it
+in our runtime now, propose later.
+
+---
+
 ## Part III — The research plan (all aspects, to a robust design)
 
 Organized as workstreams. Each names concrete targets and the decision it feeds.
@@ -331,8 +387,8 @@ Organized as workstreams. Each names concrete targets and the decision it feeds.
   agent-to-agent actuators.
 
 ### B. Design questions to resolve (the open decisions)
-1. **Scope schema** — the action-grant object: `{ actuator, verbs, egress-pin,
-   budget/rate, expires, approver-set, tier }`. Borrow NWC/NIP-67 shape.
+1. **Scope schema** — the action-grant object: `{ cap, verbs, pin, budget,
+   expires, tier }`. **Drafted in Part II·6 (freeze pending review).**
 2. **Event kinds** — proposal / approval inner kinds (the sketch's placeholders);
    coordinate ranges with the DVM/registry to avoid collisions.
 3. **Attenuation & re-grant cascade** — reconcile with nvoy#1's pinned cascade
@@ -403,7 +459,7 @@ Organized as workstreams. Each names concrete targets and the decision it feeds.
    gate (our handler) + a NIP-46 signer adapter are the known deltas. Transport
    candidate settled.
 2. **Freeze the scope schema** (from NWC/NIP-67) → unblocks the actuator contract.
-   **Now the gating step.**
+   **Drafted (Part II·6); freeze pending Director review.**
 3. **Generalize the actuator interface** in Nactor (publish/exec/connector →
    `actuator(template, grant)`), drafting as the newest instance.
 4. **Threat-model + WYSIWYS-per-actuator** (chains nact#7–#11).
