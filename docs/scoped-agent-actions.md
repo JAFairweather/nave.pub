@@ -241,6 +241,67 @@ settle**. That is what "the research decides" resolves to.
   brokered egress = capability-not-secret; **add** the actuator-as-NCP-tool
   surface (Scoped Agent Actions) as the new act-side half.
 
+### Spike result — ContextVM, from source (2026-07-23, workstream A)
+
+Read against `ContextVM/sdk` v0.13.10 (active; last commit 2026-07-22; LGPL-3.0).
+Verdict: **adopt-with-wrapper.** Against the three invariants:
+
+- **(a) scoped access by pubkey/grant — NATIVE.** `allowedPublicKeys` (static) +
+  an async `isPubkeyAllowed(pubkey)` callback (query the grant store per call).
+  *Open by default if neither is set — must opt in.*
+- **(b) gift-wrapped, no metadata leak — NATIVE (opt-in).** `encryptionMode`
+  defaults to OPTIONAL/plaintext; set **REQUIRED** → NIP-59 wrap (kind 1059/21059),
+  NIP-44 inner, a fresh key per wrap, so relays see only ciphertext + the recipient
+  `p`-tag — the requester's pubkey is hidden.
+- **(c) propose→approve→sign gate — NOT provided, does NOT conflict.** Execution is
+  autonomous; the gate lives in *our tool handler* (return a draft; human signs
+  out-of-band). ContextVM is agnostic to handler return values, so it layers on top.
+
+Frictions to plan for: only an in-process `PrivateKeySigner` ships (**no NIP-46** —
+keeping the acting key off-box needs a custom NIP-46 signer adapter that also does
+`nip44` to decrypt wraps); discovery uses custom kinds **11316–11320**, *not*
+NIP-89; transport kind is **25910**; payment is Lightning/NWC (CEP-8), bolt11 only
+(no Cashu/L402). **Net:** viable transport for NCP's MCP doorway with a thin wrapper
+(our human gate + a NIP-46 adapter). Workstream A is answered; the schema freeze
+(B) is now the gating step.
+
+---
+
+## Part II·5 — The director-path actuator contract (the seam the drafting relocation plugs into)
+
+*Grounded in what shipped: `nact` PR #31 (`lib/routing.mjs`) already models the
+"Ngage draft-grant" channel type and binds `jaf`/Quill to it exclusively (AD-10).
+This pins the contract a Mac-resident drafter must satisfy to fill that path.*
+
+**The uniform actuator.** Every actuator is `actuator(template, grant) → result`.
+For drafting, `result` is a **draft**, never a signed post.
+
+**The director path (the one Quill fills):**
+1. Read `credential:anthropic` as a **grant-to-app** scope (AD-6 — voice and content
+   never transit shared Nave infra); key in Keychain `WhenUnlockedThisDeviceOnly`.
+2. Produce a `template` = `{ surface, target, content, context }`, where `surface` ∈
+   {reconnect-reply, post, pr, …} is a **parameter, not a fork**.
+3. Emit the draft as a **`draft:post/*` scope, gift-wrapped (NIP-59) to the
+   Director's npub.** Only he can decrypt it → *"only the Director may approve" is
+   enforced by encryption, not policy.* This is exactly the "Ngage draft-grant"
+   channel type the routing board renders — a type that **carries no on-box secret**
+   (the approver npub *is* the config; `routing.mjs` `needs-secret = false`).
+4. The Director signs **in his own hand** (NIP-46 / local). The **drafting key
+   cannot post.**
+5. Steering returns over the same wire as a **`steer:draft` grant** (per-identity),
+   editable with no deploy.
+
+**Provenance — the one asymmetry between paths.** On the *box* path an agent drafts
+and a human approves, so the enacted event carries `["approval", <id>, <approver>]`
+— public proof of the tap. On the *director* path the Director is *both* approver
+and signer, so his own signature is the proof; no separate approval tag is needed.
+The provenance atom matters where signer and approver differ; here they don't.
+
+**Conformance checklist for the drafting-relocation track:** emit `draft:post/*`
+gift-wrapped to `jaf`'s npub; never sign a post; read `credential:anthropic`
+grant-to-app; surface as a `template` parameter; one persona, per-device Keychain
+keys. (The full build brief lives with that track; this is only the protocol seam.)
+
 ---
 
 ## Part III — The research plan (all aspects, to a robust design)
@@ -252,9 +313,10 @@ Organized as workstreams. Each names concrete targets and the decision it feeds.
   read the maintainer threads); NIP-26 deprecation rationale; NIP-46/59/44/40/17
   (the primitives the handshake composes); NIP-89 handler ads (discovery);
   NIP-47 + NIP-67 permission model in full.
-- **MCP-over-nostr:** ContextVM `sdk` + `proxy-cli` **source** (auth, encryption,
-  whitelisting, human-in-loop — the docs are silent, read the code); the archived
-  DVMCP for its lessons; any DVM encrypted-params / gift-wrapped-request work.
+- **MCP-over-nostr:** ContextVM `sdk` + `proxy-cli` **source** — **DONE 2026-07-23
+  (see Part II spike result): adopt-with-wrapper.** Remaining threads: the archived
+  DVMCP for its lessons; any DVM encrypted-params / gift-wrapped-request work; and
+  ContextVM's CEP spec repo for the discovery-kind divergence.
 - **MCP standard:** the authorization spec (OAuth 2.1, PRM, resource indicators)
   — to argue the divergence deliberately, not by omission.
 - **Broader agent interop:** A2A capability-based auth (a2aproject discussion
@@ -337,9 +399,11 @@ Organized as workstreams. Each names concrete targets and the decision it feeds.
   what was requested, by whom, or what was approved.
 
 ### H. Sequencing / decision gates
-1. **Spike ContextVM** (compose with grant+approval? gift-wrap? whitelist?) →
-   decides transport.
+1. **Spike ContextVM — DONE (2026-07-23, Part II):** adopt-with-wrapper; the human
+   gate (our handler) + a NIP-46 signer adapter are the known deltas. Transport
+   candidate settled.
 2. **Freeze the scope schema** (from NWC/NIP-67) → unblocks the actuator contract.
+   **Now the gating step.**
 3. **Generalize the actuator interface** in Nactor (publish/exec/connector →
    `actuator(template, grant)`), drafting as the newest instance.
 4. **Threat-model + WYSIWYS-per-actuator** (chains nact#7–#11).
