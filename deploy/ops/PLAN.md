@@ -94,6 +94,27 @@ allowed verbs as a scoped grant, executes on signed approval — no SSH/CI. -->
       expired `dotty_ssh` keys removed). **relay/bunker** DONE — verified
       2026-07-21: exactly `nave-mgmt` + forced-command `nave-ci-relay` remain.
 
+### 🟡 Addendum 2026-07-23 — channel + serving learnings (the voice sessions)
+
+- [x] **nact vhost cache guard** (nave.pub#51) — `nact.nave.pub` had NO
+      Cache-Control (it can't `import app nact`; needs its own handle blocks for
+      `/api`), so browsers held stale pages "after" green deploys, twice.
+      Guard added inline + module URLs versioned app-side (nact#29). **Rule:
+      any vhost that can't use the `(app)` snippet must carry the guard
+      inline — check this on every new special-cased vhost.**
+- [x] **Brain workflow mounts complete** (nave.pub#50) — `luke-brain.yml`
+      mounts the brain's source over the image; its imports (`voices.mjs`,
+      `post-format.mjs`) are now mounted too, so a between-deploys run can't
+      pair new code with stale modules.
+- [ ] **Runner→main-box SSH flakiness** — intermittent dial timeouts while the
+      box is provably healthy; the action's single retry usually covers it.
+      If it recurs at higher frequency, consider a self-hosted runner or
+      moving ops dispatch to the Nops grant path (the real fix).
+- [ ] **nave.pub#37 — the relay write-allowlist rejects NIP-59 gift wraps**
+      (ephemeral authors). The grant plane — Ngage drafts, steering grants,
+      credential grants — rides public relays only until this lands. Ranked
+      ahead of new feature work (INVENTORY §5 frontier).
+
 ## Standing up a NEW box (the unified path)
 
 1. Create the box. Open the **provider console**.

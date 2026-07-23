@@ -1,10 +1,12 @@
-# Quill — the warm.contact reconnect agent
+# Quill — the warm.contact reconnect agent, and the Director's drafting hand
 
-*Status: 🟡 the drafting **engine** is shipped; the **per-user identity** it will
-run under is the design below. Grounded in a full read of `warm.contact`
-(`WarmCore/Rekindle.swift`, `Reconnect.swift`, `ReconnectPriority.swift`,
-`docs/NAVE-INTEGRATION-REVIEW.md`, `SPEC-ADDENDUM-v0.5-History.md §10`) and the
-Nave credential model (AD-6). 2026-07-20.*
+*Status: 🟡 the drafting **engine** is shipped; the **per-user identity** design
+below stands; and as of 2026-07-22→23 Quill has a **second, live role**: James's
+Quill is becoming the Director's own drafting agent (§9). Grounded in a full
+read of `warm.contact` (`WarmCore/Rekindle.swift`, `Reconnect.swift`,
+`ReconnectPriority.swift`, `docs/NAVE-INTEGRATION-REVIEW.md`,
+`SPEC-ADDENDUM-v0.5-History.md §10`) and the Nave credential model (AD-6).
+2026-07-20; §9 added 2026-07-23.*
 
 **One line:** Quill is a per-user agent — its own nostr identity, minted for that
 user — that drafts warm, personal reconnection replies in the user's voice from a
@@ -195,6 +197,48 @@ as **AD-8** in `nave-architecture-decisions.md`; James can override):
   is the mechanism). What still gates the Quill bootstrap (warm.contact#5): the
   live one-hop user→Quill **prototype** + revocation-cascade semantics (nvoy#1)
   and the M2 delivery reader (nact#1).
+
+## 9 · 2026-07-22→23 addendum — James's Quill, the Director's drafting hand
+
+The architecture revisit that followed Ngage going live settled Quill's second
+role, and it is the same pattern pointed the other way.
+
+**The problem it solves.** Luke was carrying two jobs on one approval path:
+drafting as *himself* (Telegram approval, box-signed) and drafting *for James*
+(who signs in his own hand). An agent that is sometimes a persona and sometimes
+a ghostwriter, on one route, is the overloaded-agent condition — and Luke's own
+charter draws the line already: *"never speak as him or post for him."*
+
+**The decision (AD-10).** Drafting-for-the-Director is **Quill's job**, not
+Luke's. Each identity binds to one approval path chosen by where its signing
+key lives: box-custodied keys → Nactor → Telegram; the Director's drafts →
+**Ngage**, delivered as `draft:post/*` gift-wrapped grants only his npub can
+read, signed by his own hand. Steering comes back the other way as a
+`steer:draft` grant — editable per identity, no deploy.
+
+**Why Quill and not a second box agent.** Two keys wearing one name are not one
+agent. Quill already *is* the per-person drafting pattern with a Keychain-held
+key that never leaves the device — running the Director's drafting there makes
+"approval happens where the signing key lives" literal: the drafts are prepared
+on the same machine that holds the key that signs them.
+
+**State of the port (the build queue, issues-first):**
+- ✅ The interim scribe runs the flow end-to-end from the box (drafts → Ngage →
+  first sovereign post signed 2026-07-22; steering grant honored, with
+  `brief/jaf.md` — the evidence-based voice file — as the standing default).
+- ✅ **`canonical-quill` identity minted** (npub in `IDENTITY-REGISTRY.md`);
+  its sealed env lives with the deploy secrets, **never in the app repo** — the
+  repo's ignore rule is now pattern-based so no future identity slips past it.
+- ⬜ Mac-side port: Quill drafts locally under launchd, Anthropic access via a
+  `credential:anthropic` scoped grant, key in the Keychain
+  (`WhenUnlockedThisDeviceOnly`), draft-grants issued to the Director's npub.
+- ⬜ Ngage as a first-class Nact channel type, so the routing board shows this
+  path the way it shows Telegram (AD-10 formalization).
+
+**The through-line, updated.** Luke is the pattern Quill generalizes — and the
+Director is now Quill user #1: the reconnect agent that drafts *your* replies in
+*your* voice under *your* revocable grant is the exact machinery that drafts his
+public posts. One design, both directions, no new trust anywhere.
 
 ## 8 · The one-paragraph pitch
 

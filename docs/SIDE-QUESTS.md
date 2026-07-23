@@ -67,6 +67,75 @@ scoped grants. What we did here is the proto over the "wrong transport." -->
   wood-burning-stove brand icon.
 - **Caddy `--watch` broke 443** on the relay box → reverted to image default.
 
+## The voice-and-sovereign-hand sessions (2026-07-21 → 23)
+
+- **The stacked-rebase cascade ate P3–P6.** The P-series spec PRs were stacked;
+  rebase-merging the base rewrote SHAs underneath the rest, and four "MERGED"
+  PRs left main at P2. Nothing failed loudly — the tracker said done, the tree
+  said otherwise. Recovered by `git rebase --onto origin/main` and re-landing
+  P3–P6 as **one linear PR (spec #17)**. **Lessons: never stack rebase-merges;
+  when a stack exists, merge the tip and close the rest as included; verify the
+  TREE, not the PR badge.** (The same trap was dodged live on luke#14/#15.)
+- **Silent push failures (×3).** Piping `git push` through `| tail -1` swallowed
+  rejections; success was reported while commits sat local. Recovered by
+  cherry-pick each time. **Lesson: never filter push output; check `status -sb`
+  after.**
+- **A local `main` tracking the wrong upstream.** `git pull` on luke's main was
+  silently pulling `origin/widen-topics` — work "vanished" until the tracking
+  ref was repointed. **Lesson: `git status -sb` shows the truth; `##
+  main...origin/widen-topics` is a five-second catch.**
+- **The missing-COPY crash-loop, again.** A new module (`post-format.mjs`)
+  imported by shipped code wasn't COPY'd into the Dockerfile → deploy
+  crash-looped luke in production (502). Same class repeated later in the brain
+  workflow, which mounts `luke-brain.mjs` from the box but didn't mount its new
+  imports — new brain code could pair with a stale module. **Lesson: a file must
+  ship everywhere its importer ships; grep the Dockerfile AND the workflow
+  mounts on every new module.**
+- **The Nact stale-cache double incident.** "The app isn't updated" twice after
+  green deploys — the box was right, the browser wasn't. (1) `nact.nave.pub`
+  served **no Cache-Control at all**: it can't use the shared `(app)` snippet
+  (needs its own handle blocks for `/api`), so it silently missed the fix from
+  the 07-21 nvoy incident (nave.pub#51). (2) The header alone still wasn't
+  enough: a fresh page paired with an **already-cached** bundle and died at
+  module resolution — in the sign-in path. Only a changed URL reaches an entry
+  a browser already holds → versioned module URLs in the importmap, bare
+  specifiers keep the token in one block (nact#29). **Lesson: HTML + importmap
+  + modules move as one unit; headers govern new responses only.**
+- **A control plane that invented approvals.** Nact's app shipped fabricated
+  pending approvals, history, channels, and a named Director as seed data —
+  rendered identically to real state (nact#27). **Lesson: disconnected means
+  empty; "demo mode" may never be indistinguishable from production. An
+  approval queue that invents approvals is the one thing it must never do.**
+- **The voice profile was guessed — twice.** The posting corpus described
+  Luke as "wry, deferring" (his own charter says *"have a spine … a yes-man is
+  worthless"*) and had the creed wrong (**discipline = freedom**, not "focus");
+  an early Director profile was derived from an AI-assisted essay — a feedback
+  loop. Both caught by James asking one question: *"what did you use as
+  samples?"* Fixed by AD-9: evidence-only voice sources, structurally isolated
+  per identity (luke#15). **Lesson: voice is data, not vibes — and never train
+  a voice on your own generated output.**
+- **An overclaiming draft.** A generated post said a review "tried to break it
+  and mostly couldn't" — the review found six real weaknesses. Caught pre-post;
+  "no overclaims about our own work" is now written into the shared steering.
+- **`ssh-keygen` answered "y" wrote a private key named `y`** — into a PUBLIC
+  repo's working tree, one `git add -A` from history. Confirmed authorized
+  nowhere (all three boxes, GitHub, deploy keys) before deletion; broad ignore
+  patterns added. Companion incident: a second identity's sealed env slipped
+  past warm.contact's name-based ignore rule → **rule generalized to patterns**
+  (`*.nave.env*`, `*.npub.txt`). **Lesson: guards must be patterns, not names.**
+- **Ops-channel friction, mapped.** `ops.yml`'s custom-task input is `command`
+  (not `cmd` — a wrong name 422s); the CI runner's SSH to the main box
+  intermittently times out **while the box is healthy** (public 200s, port 22
+  open) — retry or use the direct mgmt path; a remote `cat` of several files
+  can trip the permission classifier where `scp` to a scratchpad reads clean.
+- **SOPS, twice.** `--extract` syntax doesn't apply to dotenv files (use
+  `--input-type dotenv` + grep); and the age key must be the one the file was
+  sealed to — `age-keygen -y` against the recipient answers it in seconds.
+- **Model-strength ≠ depth.** "Are the posts shallow because of the model?" —
+  partly, but the fix that mattered was **feeding real material** (essay bodies,
+  key-doc excerpts) and demanding a developed thought, plus the per-identity
+  split. The strongest model on thin signals still writes headlines.
+
 ## Meta
 
 - **Docker on warm.contact?** Considered, declined: 1 GB box, single app, native

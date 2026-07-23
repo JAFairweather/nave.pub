@@ -22,6 +22,12 @@ health endpoint and the minted operator key.
 | **nact_jaf** | Approvals owner (Nact channel) | `npub1hd8l0hhmekccnt3kagk6mr3yq2up7q8wt3rcaq6xqmw0fe4kl9lsgmkmrh` | `bb4ff7defbcd` | SOPS |
 | **noir** | Legacy hub identity (superseded by nave.pub) | `npub1v8pkpmlesnzk4h8pcjs8x5exk2n8ulmd6ewp0nvaeku7rzhml34qjqa5fz` | `61c360eff984` | SOPS |
 | **operator** | Relay operator / bunker signer #2 | `npub15a6ycljnfyxuhnxjp2wdv08umpr573fkss0g0h8eaxzlypvmh05sn47lel` | `a7744c7e5349` | **Bunker** |
+| **canonical-quill** | Quill — the canonical (first) instance; becoming the Director's drafting hand (`quill.md` §9) | `npub1jp4aykaleyndasdzp6nsvafxddpc8x9ys2073ptmz3m5dln7p8ysz2rgr3` | — | Sealed age env **with the deploy secrets** — never in the warm.contact app repo (its `.gitignore` bans identity files by pattern: `*.nave.env*`, `*.npub.txt`) |
+
+> **Not identities:** Ngage is an *app* (the Director's posting desk), not a key
+> — its drafts are signed by the Director's own hand; its drafting is done by an
+> agent identity (today the scribe under luke's key, next James's Quill). The
+> approval-path binding per identity is AD-10.
 
 > ⚠️ **The roster may be incomplete.** The "7+ Nvoy agents" you referenced live
 > in the Nvoy ledger (`nvoy_agents`), which can hold identities beyond this fleet

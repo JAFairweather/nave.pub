@@ -38,10 +38,26 @@ SOPS / secrets & deploy:
 CI ops channels (GitHub Actions in `nave.pub`):
 - **`fleet-ops.yml`** — run a command on `main` or `warmcontact` (full CI key).
 - **`relay-ops.yml`** — RESTRICTED verb channel for the bunker box (allowlist only; can't read the sovereign `.env`).
-- **`ops.yml`** — main-box curated tasks / run-script.
+- **`ops.yml`** — main-box curated tasks / run-script. The custom task's input
+  is **`command`** (`-f task=custom -f command='…'`); a wrong input name fails
+  with `HTTP 422: Unexpected inputs`. Main-box paths are **flip-aware**: check
+  for the deploy flip marker to pick the live deploy root before pathing.
 - **`probe.yml`** — external read-only probe (endpoints, cert, port seals).
 - **`verify.yml`** — post-deploy health harness. `deploy.yml` / `smoke.yml` — deploy + smoke.
 - Per-box CI keys: `nave_ci_relay` (restricted), `nave_ci_warm`; main uses `github-deploy`. Secrets live in the **`nave.pub` repo** (VPS_*, RELAY_SSH_*, WARM_SSH_*).
+
+Channel reliability (learned 2026-07-22→23):
+- The runner's SSH to the main box **intermittently times out while the box is
+  healthy** (public endpoints 200, port 22 reachable from the Mac). The action
+  retries once; if both dials fail, re-dispatch or fall back to the direct
+  mgmt path below. A deploy's verify step can also read a container
+  mid-restart as down (a 502 ✗ on a service that is healthy seconds later) —
+  re-verify before treating a red deploy as a real outage.
+- **Direct mgmt path:** `nave_mgmt` from the Mac opens every box and is faster
+  for reads. Prefer `scp` of specific files to a scratchpad over long remote
+  `cat` pipelines. Luke's OpenClaw workspace (`SOUL.md` etc.) lives under the
+  deploy root's `openclaw-state/` — deliberately gitignored, **box-only**;
+  private files there (MEMORY/DREAMS) stay on the box.
 
 ## The fleet (roles — IPs live in Bitwarden, not here)
 

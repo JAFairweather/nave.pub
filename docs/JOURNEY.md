@@ -85,6 +85,44 @@ products* to *operating a living system*:
 nave.pub's own hub doc names the pivot: *"This is no longer a build project; it
 is a publishing project."*
 
+### Movement 4 · Hardening, voice, and the sovereign hand (Jul 19–23)
+
+Three arcs, braided:
+
+- **The protocol grows armor.** An external design review names six weaknesses;
+  the **P-series** pays each down in the spec — grant authentication,
+  anti-rollback, multi-device consistency, incremental inbox, per-field key
+  trees (kind 31440), metadata hardening. The landing itself teaches a lesson:
+  a stacked-rebase cascade silently drops four of six, and the recovery
+  (one linear PR, verify the tree not the badge) goes straight into
+  `SIDE-QUESTS.md`. warm.contact ships its Swift grant plane in parallel.
+- **The voice becomes evidence.** The posting loop gets its house rules
+  (always nave.pub + the named app's link, a card graphic, real hashtags) —
+  and then the Director asks the question that reframes everything: *"what did
+  you use as samples of my own writing?"* The answer was inference and one
+  AI-assisted essay. The correction becomes doctrine (AD-9): voice files built
+  only from evidence — his from twelve hand-written essays, measured;
+  Luke's from his own box-side `SOUL.md` — one steering file per identity, one
+  drafting pass per identity, structurally unable to see another's. The old
+  averaged corpus had even gotten the creed wrong; it is **discipline =
+  freedom**. Silence becomes a valid run.
+- **The arrow reverses.** Until now every flow was *agent proposes → Director's
+  tap → box signs*. **Ngage** inverts it: the agent gift-wraps a draft TO the
+  Director as a `draft:post/*` scope, and he signs **in his own hand** — the
+  drafting key cannot post; only his npub can even read the draft. Steering
+  flows back the same wire as a `steer:draft` grant. The first sovereign post
+  is signed 2026-07-22, and the doctrine lands as AD-10: **approval happens
+  where the signing key lives.** Luke's overloaded double-role (himself + 
+  ghostwriter) dissolves; drafting-for-the-Director becomes Quill's second job
+  (`quill.md` §9). The fleet's sign-in unifies along the way (AD-11) — Nact's
+  superior handshake promoted into the shared module rather than levelled down,
+  its fabricated demo queue deleted, its cache discipline fixed.
+
+The library (`library/`) consolidates the public writing — eight essays, the
+deck and the state-of-ecosystem doc with searchable extracts — and the
+revoicing programme (`library/ROADMAP.md`) begins rewriting everything in the
+real voice before anything else ships.
+
 ---
 
 ## The pieces — by layer
@@ -255,10 +293,13 @@ mystery-meat.*
 
 ## Where it stands, in one breath
 
-A draft NIP with two live implementations and an open PR; seven applications
-(two of them games) shipped as pure clients of it; a branded platform and design
-system unifying them; a self-hosted, upgradable, dreaming agent running a live
-posting loop and daily briefs under a nostr-signed gate; a credential runtime
-holding secrets in RAM and handing them out by signature; three essays written
-and a publishing runway ahead — all in ten days, all in the open, all answering
-to one set of keys.
+A hardened draft NIP with two live implementations and an open PR — six
+review-found weaknesses paid down in the spec; eight applications (two of them
+games) shipped as pure clients of it, the newest one reversing the arrow so the
+agent drafts and the Director signs in his own hand; a branded platform, one
+shared sign-in, and a design system unifying them; a self-hosted, upgradable,
+dreaming agent running a live posting loop under a nostr-signed gate, each
+identity drafting in its own evidence-built voice; a credential runtime holding
+secrets in RAM and handing them out by signature; a library of essays being
+rewritten in the owner's real voice — all in two weeks, all in the open, all
+answering to one set of keys.

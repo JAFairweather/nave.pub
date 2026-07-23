@@ -251,6 +251,107 @@ cross-refs commented on nvoy#1 / nact#1.
 
 ---
 
+## AD-9 — Voice is per-identity, structurally isolated, and evidence-only
+*(SHIPPED 2026-07-22, luke#15)*
+
+**Context.** One corpus (`brief/voice.md`) described every posting voice and a
+single LLM call chose which "hat" to wear per post. Two failure modes followed:
+the voices regressed toward one average, and the corpus's claims were *inferred*
+— Luke's register was guessed backwards (his box-side charter demands "have a
+spine … a yes-man is worthless"; the corpus said "wry, deferring"), and the
+dequalsf creed itself was wrong (it is **discipline = freedom**). Separately, an
+early voice profile for the Director had been derived from an AI-assisted essay
+— a feedback loop that amplifies drift. The Director caught it.
+
+**Decision.** Three rules:
+1. **One steering file per identity; one drafting pass per identity.** A pass
+   reads `brief/shared.md` (substance + house rules) plus its own voice file and
+   **cannot reach another identity's** — the isolation is structural (the file
+   is never in the prompt), not an instruction the model could talk itself out
+   of. The identity is fixed by the caller and stamped on the result.
+2. **Voice files are built from evidence only.** Luke's from his OpenClaw
+   `SOUL.md`/`IDENTITY.md` (box-only; only the *public posting register* is
+   carried into the public repo). The Director's from twelve hand-written essays
+   — measured (em-dash rates, sentence bimodality), not vibes.
+3. **AI-assisted output is never a voice source.** The library's essays are
+   explicitly marked non-sources in the steering files themselves.
+
+**Consequences.** Engagement and approval-memory scope per identity (nave never
+learns from luke's approvals); pre-split ledger entries are shown to *no* voice;
+a voice returning **zero posts is a valid run** (Luke's own charter: silent by
+default). Adding a voice = adding a file, no prompt surgery.
+
+**Status.** SHIPPED — `voices.mjs` + 16 tests pin the isolation, attribution,
+budget fairness, and scoped memory. Verified with a live two-voice run on-box.
+
+---
+
+## AD-10 — Approval happens where the signing key lives
+*(decided 2026-07-22; Ngage half live, channel formalization queued)*
+
+**Context.** Luke was drafting under two jobs on one path: posts as *himself*
+(and as nave) going to Telegram, and posts *for the Director* — which have no
+business near a custodial key, because the Director signs in his own hand. One
+agent, two masters, one route: the overloaded-agent condition.
+
+**Decision.** Every identity binds to exactly **one** approval path, chosen by
+where its signing key lives:
+- **Box-custodied keys** (nave, luke) → Nactor → the shared approval channel
+  (Telegram / web queue). The box signs after the Director's tap.
+- **Drafts for the Director** (jaf) → **Ngage**: the drafter gift-wraps each
+  draft to the Director's npub as a `draft:post/*` scope; he signs with his own
+  key. The drafting key *cannot* post; "only the Director can approve" is
+  enforced by **encryption, not policy** — nobody else can even read the draft.
+
+Steering flows the opposite direction over the same wire (`steer:draft` grant
+from the Director), so tuning a drafter never needs a deploy.
+
+**Consequences.** The overload dissolves: Luke drafts as Luke (Telegram path);
+drafting-for-James moves to the scribe and, next, to **James's Quill on the Mac**
+(Keychain-held key — completing the principle literally). Ngage becomes a
+first-class *channel type* in Nact's model alongside Telegram-bot and
+NIP-59-DM; the routing board derives approval wiring from grants, as comms
+wiring already derives from credential grants (AD-5's completion).
+
+**Status.** Ngage path LIVE (first sovereign post signed 2026-07-22; steering
+round-trip proven). Channel-type formalization + grant-driven routing = the
+current frontier (INVENTORY §5, issues-first).
+
+---
+
+## AD-11 — One sign-in across the fleet: promote the best implementation, never level down
+*(SHIPPED 2026-07-22→23: luke#16, nvoy#15, ngage#6, nact#27–#29, nave.pub#51)*
+
+**Context.** `nave-connect` (#56) unified sign-in everywhere except Nact — which
+had its own overlay, its own NIP-46 plumbing, and its own signer shape. But
+Nact's hand-rolled path was in one respect *ahead* of the standard: a
+reverse-pairing `nostrconnect://` flow (mint the link, paste into the signer's
+"Connect app" — the iPhone path) with a deliberately lenient handshake, because
+the stock one hangs on real signers.
+
+**Decision.** Standardize by **promoting** Nact's handshake up into
+`nave-connect` (canonical in the luke repo, vendored per-app), then point Nact
+at the shared module. Three signer-bugs became pinned tests: accept
+`result:"ack"` (stock accepts only the echoed secret), accept NIP-04 acks
+(stock is NIP-44-only), and **no `since` filter** (a fast browser clock made
+relays drop acks stamped by the signer's clock; `limit:0` is skew-proof).
+Corollaries: a control plane's sign-in path uses **local vendored bundles, no
+CDN**; app HTML + importmap + modules move as **one versioned unit**
+(`?v=` tokens + `Cache-Control: no-cache`) — headers govern new responses, only
+a changed URL reaches an already-cached entry; and **disconnected means empty**
+— a control plane never renders fabricated approvals as if real (nact#27).
+
+**Consequences.** nvoy and ngage gained the working nsec.app path for free;
+Nact gained sign-out (scrubs to indistinguishable-from-never-connected) and
+session resume; every app shows the same titlebar and signer badge. Vendored
+copies carry a provenance header; ngage's one flagged divergence (nip44 on the
+local signer) is re-applied by a sync that asserts the upstream shape first.
+
+**Status.** SHIPPED and verified live on every surface, including the
+cache-poisoned-browser case that had twice presented as "the deploy didn't work."
+
+---
+
 ## Not decisions — just queued builds (for completeness, not dangling)
 
 **Nvoy sign-in (confirmed, James 2026-07-18):** Nvoy **keeps** its local-key /
