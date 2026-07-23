@@ -1,5 +1,5 @@
 {
-  "_comment": "Fleet pubkeys (hex) permitted to write to the Nave relay. The write-policy plugin accepts events only from these authors (plus NIP-46 kind 24133 from anyone — encrypted transport). Add the operator + sovereign keys once minted; keep partners (e.g. warm.contact) OFF this list — they use public relays.",
+  "_comment": "Fleet pubkeys (hex) permitted to write to the Nave relay. The write-policy plugin accepts: events from these authors; allowKinds from anyone (NIP-46 transport 24133 — encrypted); recipientKinds (NIP-59 gift wraps, 1059) when ADDRESSED to a fleet key via a p tag — wraps have ephemeral authors by design, so the grant plane needs recipient-based admission (nave.pub#37). Add the operator + sovereign keys once minted; keep partners (e.g. warm.contact) OFF this list — they use public relays.",
   "allow": {
     "nave":      "d8de5184a096e49b3f79730258c05f8ffb56cdf138c08b3c7b0b0685a0fb963e",
     "luke":      "f938026f5e12f026f8dc9f032cb672e946fa1b631a197dc06e635d46f014665a",
@@ -10,5 +10,6 @@
     "sovereign": "REPLACE_WITH_JAF_DEQUALSF_HEX",
     "operator":  "a7744c7e53490dcbccd20a9cd63cfcd8474f4536841e87dcf9e985f2059bbbe9"
   },
-  "allowKinds": [24133]
+  "allowKinds": [24133],
+  "recipientKinds": [1059]
 }

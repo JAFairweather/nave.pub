@@ -2,9 +2,17 @@
 
 A private nostr relay for the Nave fleet, on its own small VPS. Writes are
 restricted to fleet identities (`allowlist.json`); the NIP-46 transport kind
-(24133) is open so the bunker's ephemeral client keys get through. This removes
-the fleet's dependency on public relays for grants, entitlements, endpoint
-adverts, and profiles — and hosts the bunker's signing transport.
+(24133) is open so the bunker's ephemeral client keys get through; and NIP-59
+gift wraps (1059) are admitted **by recipient** — accepted only when a `p` tag
+names a fleet key, because wraps are authored by single-use ephemeral keys by
+design (nave.pub#37 — this is what lets the grant plane ride this relay: draft
+grants, steering grants, credential grants). A wrap addressed to a stranger is
+still rejected. This removes the fleet's dependency on public relays for
+grants, entitlements, endpoint adverts, and profiles — and hosts the bunker's
+signing transport.
+
+Tests: `python3 write-policy.test.py` (offline; drives the plugin over the
+exact strfry line protocol).
 
 See `../../docs/sovereign-signing.md` for the why.
 
