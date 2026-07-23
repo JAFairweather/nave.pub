@@ -124,21 +124,25 @@ exceed its implementation is thesis debt. Skeleton in `docs/INVENTORY.md` §5;
 this is the ordering. Check items off as they land; every item is
 issue-bookended (issues-first, Director 2026-07-23).*
 
-### Phase 1 — Trust debt (all small; do first)
-- [ ] **nave.pub#37 — relay accepts the grant plane.** The write-allowlist
-      rejects NIP-59 gift wraps (ephemeral authors), so Ngage drafts, steering
-      and credential grants ride PUBLIC relays only. "One box, one front door"
-      is hollow at the transport layer until this lands. *Pending a Director
-      call: allowlist wraps by `#p`-to-fleet-npubs (tighter, recommended) vs
-      accept all kind-1059 rate-limited (simpler).*
-- [ ] **nact#7 — hardening P1.** Freeze `created_at` at propose; re-verify the
-      event-id fingerprint before signing. The signing path runs twice daily in
-      production; WYSIWYS is the product's core claim. Biggest live gap on the
-      act side (independently confirmed by a cold-read audit).
-- [ ] **nvoy#9 — console bug.** Pending access requests intermittently never
-      surface. A live bug in the daily-use trust surface outranks features.
-- [ ] **warm.contact#23 — verify the Apple id_token signature.** An auth check
-      that doesn't check, on a product with a launch runway.
+### Phase 1 — Trust debt (all small; do first) — ✅ COMPLETE 2026-07-23
+- [x] **nave.pub#37 — relay accepts the grant plane.** Recipient-based
+      admission: kind 1059 accepted when a `p` tag names a fleet key (the
+      narrow option). Deployed to the relay box; live-verified (fleet wrap
+      accepted, stranger rejected, plain kind-1 still rejected, read-back
+      holds). 15 offline tests. PR #54.
+- [x] **nact#7 — hardening P1.** The fingerprint is now re-verified BEFORE the
+      signer sees the bytes (a bunker signing tampered bytes leaves a real
+      signature in the world even if broadcast is refused). `created_at` freeze
+      pinned by test; tamper test proves the signer is never invoked. 5 tests.
+      nact PR #30, deployed.
+- [x] **nvoy#9 — console bug.** Root-caused to both theorized mechanisms:
+      un-paginated inbox query vs relay newest-N caps (a back-fuzzed fresh
+      wrap fell off the window) → paginate with `until`; and silent bulk-
+      decrypt failures → counted and surfaced ("N wraps could not be opened").
+      4 tests incl. the exact burial repro. nvoy PR #16.
+- [x] **warm.contact#23 — verify the Apple id_token.** Full JWKS verify
+      (RS256 signature, iss, aud, exp; rejects alg none/non-RS256). Old
+      decode-only helper deleted. 6 tests, suite 51/51. warm.contact PR #44.
 
 ### Phase 2 — Finish AD-10 (the architecture is half-migrated)
 *Doctrine: approval happens where the signing key lives. Currently true for
