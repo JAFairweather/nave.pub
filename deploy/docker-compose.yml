@@ -118,6 +118,15 @@ services:
       # broker gates on) + NACT_BROKER_URL. Same durability rule as nactor.env.
       - path: ./brain.env
         required: false
+      # quill.env is box-local (gitignored) and holds QUILL_NSEC — JAMES'S QUILL
+      # (npub13uuznpc… / 8f3829871ec5, the Director's OWN instance — NOT canonical
+      # Quill 906bd25bbfc9, though both use QUILL_NSEC; see IDENTITY-REGISTRY.md).
+      # The scribe already loads it (ops/run-scribe.sh); feeding the SAME box key
+      # to Nactor registers `quill` as a box-path identity to activate + route in
+      # the Nact app. required:false → a no-op if absent. Verify the derived npub
+      # is 8f3829871ec5 before activating. Same durability rule as nactor.env.
+      - path: ./quill.env
+        required: false
     environment:
       - NACT_PORT=8791
       - NACT_CONFIG=/data/nact-config.json
