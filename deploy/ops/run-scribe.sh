@@ -12,9 +12,11 @@ if [ -f /root/nave.pub/deploy/.flipped ]; then DEPLOY=/root/nave.pub/deploy; els
 cd "$DEPLOY" 2>/dev/null || { echo "no deploy dir"; exit 1; }
 
 # Same consumer env as the brain: brokered creds stripped. The scribe signs as
-# QUILL — the box-device key of the Quill persona (quill.env, minted by
-# gen-quill-key.sh) — NOT as luke: drafting-for-the-Director is Quill's job
-# (nact#26, AD-10). Regenerate the consumer env from luke.env when present.
+# JAMES'S QUILL (npub13uuznpc…) — the Director's own reconnection-agent instance,
+# already minted + profiled in warm.contact — NOT as luke (nact#26, AD-10) and
+# NOT as any key minted here. quill.env holds James's Quill's QUILL_NSEC, which
+# the Director provides; its sovereign home is the Mac (warm.contact#43).
+# Regenerate the consumer env from luke.env when present.
 CONSUMER="$DEPLOY/luke-consumer.env"
 if [ -f "$DEPLOY/luke.env" ]; then
   grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN)=' "$DEPLOY/luke.env" > "$CONSUMER" && chmod 600 "$CONSUMER"
@@ -32,8 +34,12 @@ fi
 
 QUILLENV="$DEPLOY/quill.env"
 if [ ! -f "$QUILLENV" ]; then
-  echo "✗ no quill.env — the scribe signs as the Quill box-device key now (nact#26)."
-  echo "  Mint it once:  bash deploy/ops/gen-quill-key.sh   (prints only the npub)"
+  echo "✗ no quill.env — the scribe signs as JAMES'S QUILL (npub13uuznpc…), the"
+  echo "  personal instance already minted in warm.contact (scripts/mint-quill-identity.sh)."
+  echo "  Its key is the Director's; it is NEVER minted here. To run the interim box"
+  echo "  scribe, the Director drops James's Quill's nsec into $QUILLENV as QUILL_NSEC."
+  echo "  The sovereign home for this identity is the Mac (warm.contact#43), where its"
+  echo "  key lives — the box path is an opt-in interim, not a new key."
   exit 1
 fi
 
