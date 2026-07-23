@@ -222,10 +222,11 @@ key that never leaves the device — running the Director's drafting there makes
 "approval happens where the signing key lives" literal: the drafts are prepared
 on the same machine that holds the key that signs them.
 
-**Build Quill's drafter as an *actuator*, not a Mac script.** Under NCP
-(`nact/docs/ncp.md`) reads are data grants (MCP resources) and verbs are Scoped
-Action Approvals (`nact/docs/scoped-action-approvals.md`, MCP tools). Drafting is
-one such verb: `actuator(template, grant) → draft`, a sibling of
+**Build Quill's drafter as an *actuator*, not a Mac script.** The frame is
+`docs/scoped-agent-actions.md` (the act-side microstandard) over NCP
+(`nact/docs/ncp.md`, reads = data grants / MCP resources) and Scoped Action
+Approvals (`nact/docs/scoped-action-approvals.md`, verbs = MCP tools). Drafting is
+one actuator: `actuator(template, grant) → draft`, a sibling of
 `publish`/`exec`/`connector`. Factor it so the **surface** — a reconnect reply, a
 social post, a PR body — is a *parameter, not a fork*. That boundary is what makes
 Quill portable beyond reconnect replies and keeps this from being a one-off; a
