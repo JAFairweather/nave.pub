@@ -360,6 +360,65 @@ in our runtime now, propose later.
 
 ---
 
+## Part II·7 — Threat model for the generic actuator (workstream C)
+
+`nact/docs/threat-model.md` develops WYSIWYS deeply — but **for one actuator**
+(`publish`: the bytes you sign are a NIP-01 event id). Generalizing to
+`exec`/`connector`/`draft`/`pr` does **not** inherit that guarantee; it must be
+re-established per actuator.
+
+**1. WYSIWYS is actuator-specific — the headline.** "Render the action, freeze it,
+bind approval to its hash" (threat-model Rules 0–1) is sound, but the *hash* is a
+NIP-01 id only for nostr events. Each actuator must define its own **faithful
+render** and **fingerprint**:
+
+| actuator | the "action" | faithful render must show | fingerprint |
+|---|---|---|---|
+| `publish` | a nostr event | kind + all tags + hidden/bidi flags (as today) | NIP-01 event id |
+| `exec` (Nops) | a shell command | the **exact** argv; arg-injection & hidden-char flags | sha256 of the argv |
+| `connector:*` | verb + params | verb, pinned host/mailbox, params; that it's read-only | sha256 of {verb,params,pin} |
+| `draft` / `pr` | text to send/commit | the exact text; target (recipient/branch); that it's a *draft* | sha256 of the rendered artifact |
+
+**Rule:** an actuator without a defined WYSIWYS render + frozen fingerprint cannot
+be granted. No actuator reuses another's hash.
+
+**2. Confused deputy / egress repoint.** The actuator holds real capability (a
+credential, box `exec`, a relay). The template must never widen the grant — egress
+is pinned by the grant's `pin`, verbs by its `verbs` (both structural,
+`connectors.md`); a template naming a different host/mailbox/branch is refused.
+
+**3. Cross-actuator approval replay.** The proposal MUST commit to `{cap, verbs,
+fingerprint}` so an approval for a `draft` can't be replayed to authorize an
+`exec`. The `["approval", id, approver]` tag references that specific proposal.
+
+**4. Request-metadata leak — gift-wrap the *request*, not just the reply.** The
+request contains *what you're about to do* (a shell command; a draft prompt with
+private content). Stock DVM/ContextVM default to plaintext (spike); our invariant
+sets `encryptionMode: REQUIRED`. The adversarial-observer test applies to the
+request, not just the result.
+
+**5. The autonomous-execution footgun (spike).** ContextVM runs a tool handler
+autonomously — the propose→approve→sign gate is **not** transport-enforced. Rule:
+**an actuator is structurally incapable of enacting** — it returns a proposal and
+holds no signing/enact capability; the gate is a property of the code, not a
+discipline.
+
+**6. Supply chain of actuator code.** An actuator acts with real capability, so a
+compromised implementation is a confused deputy at the source. First-party +
+reviewed + verb-structural today; any third-party actuator needs sandboxing *and*
+the grant/approval gate before it touches a credential.
+
+**7. Off-box key on a portable device (director path).** Portability spreads a
+signing key across surfaces. Keychain `WhenUnlockedThisDeviceOnly` + per-device
+keys (no key copied) bound the blast radius; the ContextVM NIP-46 adapter (spike
+delta) keeps the *acting* key off a shared box entirely.
+
+This *extends* `threat-model.md`: its approver-binding ceremony (channel authority
+as a scoped grant) covers *who* approves; this covers *what* is enacted once
+actuators are plural.
+
+---
+
 ## Part III — The research plan (all aspects, to a robust design)
 
 Organized as workstreams. Each names concrete targets and the decision it feeds.
@@ -409,7 +468,8 @@ Organized as workstreams. Each names concrete targets and the decision it feeds.
    private wiring.
 
 ### C. Threat model & formal analysis
-- Extend `nact/docs/threat-model.md` to the generic actuator: **confused-deputy**
+- **Worked in Part II·7** (WYSIWYS-per-actuator + the new cross-actuator threats).
+  Remaining: extend `nact/docs/threat-model.md` to the generic actuator: **confused-deputy**
   (actuator tricked into acting outside scope), **egress repointing**, **approval
   replay / substitution**, **template/rendered mismatch** (WYSIWYS across
   actuators, not just nostr events — a shell command and a PR body each need a
