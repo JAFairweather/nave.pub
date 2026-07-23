@@ -6,9 +6,10 @@ nsec appears in this file** (it's a public repo); npubs and hex pubkeys are
 public and safe. Copy nsecs from their custody source (SOPS / bunker) into
 Bitwarden yourself.
 
-Source of truth for the pubkeys below: `deploy/relay/allowlist.json` (verified
-2026-07-20). `nactor` and `operator` npubs cross-check against the live nactor
-health endpoint and the minted operator key.
+Sources of truth: `deploy/relay/allowlist.json` for the **fleet write-keys**;
+the **Nvoy ledger (`nvoy_agents`) + `.well-known/nostr.json`** for the agent
+identities (the Quill instances, the Buzz nest, partners). `nactor` / `operator`
+cross-check against the live nactor health endpoint and the minted operator key.
 
 ## The roster
 
@@ -22,21 +23,23 @@ health endpoint and the minted operator key.
 | **nact_jaf** | Approvals owner (Nact channel) | `npub1hd8l0hhmekccnt3kagk6mr3yq2up7q8wt3rcaq6xqmw0fe4kl9lsgmkmrh` | `bb4ff7defbcd` | SOPS |
 | **noir** | Legacy hub identity (superseded by nave.pub) | `npub1v8pkpmlesnzk4h8pcjs8x5exk2n8ulmd6ewp0nvaeku7rzhml34qjqa5fz` | `61c360eff984` | SOPS |
 | **operator** | Relay operator / bunker signer #2 | `npub15a6ycljnfyxuhnxjp2wdv08umpr573fkss0g0h8eaxzlypvmh05sn47lel` | `a7744c7e5349` | **Bunker** |
-| **canonical-quill** | Quill — the canonical (first) instance; becoming the Director's drafting hand (`quill.md` §9) | `npub1jp4aykaleyndasdzp6nsvafxddpc8x9ys2073ptmz3m5dln7p8ysz2rgr3` | — | Sealed age env **with the deploy secrets** — never in the warm.contact app repo (its `.gitignore` bans identity files by pattern: `*.nave.env*`, `*.npub.txt`) |
-| **mydude** | Buzz nest — maker and verifier (builds the tooling, then tries to break its own claims) | `npub1p28qwgxra3fvd07euf296csv7k8zarfhzfzz2hhuu0wa27aq5vkq05erd2` | `0a8e0720c3ec` | **Agent-held** — Buzz Desktop runtime, never in SOPS (see below) |
-| **kerouac** | Buzz nest — drafting hand; holds the `steer:draft` voice grant | `npub1advxk85uy9xpqa32esxaf4pg4jg4ds5yzchjm8wvnptzuezdwxjsfs6j2q` | `eb586b1e9c21` | **Agent-held** — Buzz Desktop runtime, never in SOPS (see below) |
-| **dennis** | Buzz nest — research; holds the `bumble-research-corpus` grant | `npub1ngrnqrfjjhee9554ek8h8j8360rjtqym9eg0c55ptkuxsthegzjsgvmpsw` | `9a07300d3295` | **Agent-held** — Buzz Desktop runtime, never in SOPS (see below) |
+| **Quill (canonical)** | The canonical (first) Quill instance — the warm.contact reconnect agent. **Distinct from James's Quill** (below) and from the drafting hand (`kerouac`). | `npub1jp4aykaleyndasdzp6nsvafxddpc8x9ys2073ptmz3m5dln7p8ysz2rgr3` | `906bd25bbfc9` | Sealed age env **with the deploy secrets** — never in the warm.contact app repo (its `.gitignore` bans identity files by pattern: `*.nave.env*`, `*.npub.txt`) |
+| **James's Quill** | The Director's own (personal) Quill instance — his reconnect agent (`quill.md` §9). **Distinct from the canonical instance.** | `npub13uuznpc7chk4mlcmve2d8j5832slgvffdre33vvtzk8pmyls5dlsezdfj8` | `8f3829871ec5` | Device-held — Mac Keychain (`WhenUnlockedThisDeviceOnly`); never in SOPS |
+| **mydude** | The Director's **proving hand** (Buzz nest) — maker & verifier: builds the tooling, then tries to break its own claims. Nvoy grantee | `npub1p28qwgxra3fvd07euf296csv7k8zarfhzfzz2hhuu0wa27aq5vkq05erd2` | `0a8e0720c3ec` | **Agent-held** — Buzz Desktop runtime, never in SOPS (see below) |
+| **kerouac** | The Director's **drafting hand** (Buzz nest) — holds the `steer:draft` voice grant (Nvoy); drafts for review, never posts | `npub1advxk85uy9xpqa32esxaf4pg4jg4ds5yzchjm8wvnptzuezdwxjsfs6j2q` | `eb586b1e9c21` | **Agent-held** — Buzz Desktop runtime, never in SOPS (see below) |
+| **dennis** | The Director's **foraging hand** (Buzz nest) — research; holds the `bumble-research-corpus` grant (Nvoy) | `npub1ngrnqrfjjhee9554ek8h8j8360rjtqym9eg0c55ptkuxsthegzjsgvmpsw` | `9a07300d3295` | **Agent-held** — Buzz Desktop runtime, never in SOPS (see below) |
+| **warm.contact** | **Partner** — the zero-knowledge contact app's central identity; holds a Director-issued Nvoy grant (the integration). Own `wc1` crypto; **off** the fleet relay allowlist (public relays only) | `npub17fc8tle34k50gvl9ysmz9yeyyjjzaanre3hry9thgyejqarqg0tqlqsldk` | `f27075ff31ad` | **Partner-held** — warm.contact's own custody; never in SOPS/bunker |
 
 > **Not identities:** Ngage is an *app* (the Director's posting desk), not a key
 > — its drafts are signed by the Director's own hand; its drafting is done by an
-> agent identity (today the scribe under luke's key, next James's Quill). The
-> approval-path binding per identity is AD-10.
+> agent identity (**`kerouac`**, the drafting hand, holding the `steer:draft`
+> grant). The approval-path binding per identity is AD-10.
 
-> ⚠️ **The roster may be incomplete.** The "7+ Nvoy agents" you referenced live
-> in the Nvoy ledger (`nvoy_agents`), which can hold identities beyond this fleet
-> write-allowlist. **Open task:** enumerate the full Nvoy roster (paste the npubs
-> or let me pull them via the ops channel) and add any missing rows here — this
-> is the same roster the relay allowlist + relay.nave.pub rollout needs.
+> ✅ **Roster reconciled against the Nvoy ledger (2026-07-23).** The Buzz-nest
+> agents (`kerouac`, `dennis`, `mydude`), **James's Quill**, and the
+> **warm.contact** partner identity are now listed alongside the fleet keys.
+> Going forward: when a new agent is minted, re-check `nvoy_agents` and add its
+> row here (npub / role / custody only — never an nsec).
 
 ## Custody map
 
