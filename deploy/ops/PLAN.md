@@ -147,11 +147,20 @@ issue-bookended (issues-first, Director 2026-07-23).*
 ### Phase 2 — Finish AD-10 (the architecture is half-migrated)
 *Doctrine: approval happens where the signing key lives. Currently true for
 approval, false for drafting — the interim scribe still runs under a box key.*
-- [ ] **nact#26** — Ngage as a first-class channel type + grant-driven routing
-      board (approval wiring derived from grants, as comms already is).
+- [x] **nact#26, the nact-repo half — SHIPPED 2026-07-23 (nact PR #31,
+      deployed + live-verified).** Ngage is a first-class approval path:
+      `lib/routing.mjs` (the tested AD-10 model, 8 tests), the board split into
+      🛡 box gate vs ✋ Ngage with a per-identity path badge, EXCLUSIVE binding
+      (a cell click MOVES the identity's single path), and an
+      "Ngage draft-grant" channel type that carries no on-box secret. #26 stays
+      open for the coupled remainder: the scribe signing as Quill (luke repo,
+      tied to #43) and the steering UI (ngage#1).
 - [ ] **warm.contact#43** — port the scribe to the Mac: James's Quill drafts
       locally, Keychain key, `credential:anthropic` grant, launchd cadence.
-      *Drafted; awaiting Director approval.*
+      *The Director's build brief is attached to the issue (2026-07-23),
+      reframing it as the NCP drafting ACTUATOR — actuator(template, grant) →
+      draft, surface as a parameter — per docs/scoped-agent-actions.md (landed
+      via #56). Held for his explicit go: it runs on his machine, holds his key.*
 - [ ] **ngage#1** — the steering settings UI ("the voice drafter"): per-identity
       steering editable where the approving happens; later extends to
       nave/luke steering over the same wire.
