@@ -326,6 +326,9 @@ family (#19 capability grants, #20 contact-access grants, #42 steering +
 voice-from-own-writing) · nact M-series close-out issues (#3/#4) stay open
 pending the quiet week, by design.
 
+**The full backlog is sequenced into phases — order and reasons — in
+[`deploy/ops/PLAN.md`](../deploy/ops/PLAN.md) ("The sequenced roadmap").**
+
 ## 6 · Going-forward conventions
 - **Issues-first, restored (Director, 2026-07-23).** Work = GitHub issues per
   repo, drafted for approval before code; **every commit is bookended by the

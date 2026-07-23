@@ -115,6 +115,82 @@ allowed verbs as a scoped grant, executes on signed approval — no SSH/CI. -->
       credential grants — rides public relays only until this lands. Ranked
       ahead of new feature work (INVENTORY §5 frontier).
 
+## The sequenced roadmap (2026-07-23) — what's next, in order, with reasons
+
+*The fleet backlog (~63 open issues across the repos) sequenced into phases.
+The organizing rule: **close the gaps under what's already live before adding
+anything new** — the thesis is trust, and every place where the system's claims
+exceed its implementation is thesis debt. Skeleton in `docs/INVENTORY.md` §5;
+this is the ordering. Check items off as they land; every item is
+issue-bookended (issues-first, Director 2026-07-23).*
+
+### Phase 1 — Trust debt (all small; do first)
+- [ ] **nave.pub#37 — relay accepts the grant plane.** The write-allowlist
+      rejects NIP-59 gift wraps (ephemeral authors), so Ngage drafts, steering
+      and credential grants ride PUBLIC relays only. "One box, one front door"
+      is hollow at the transport layer until this lands. *Pending a Director
+      call: allowlist wraps by `#p`-to-fleet-npubs (tighter, recommended) vs
+      accept all kind-1059 rate-limited (simpler).*
+- [ ] **nact#7 — hardening P1.** Freeze `created_at` at propose; re-verify the
+      event-id fingerprint before signing. The signing path runs twice daily in
+      production; WYSIWYS is the product's core claim. Biggest live gap on the
+      act side (independently confirmed by a cold-read audit).
+- [ ] **nvoy#9 — console bug.** Pending access requests intermittently never
+      surface. A live bug in the daily-use trust surface outranks features.
+- [ ] **warm.contact#23 — verify the Apple id_token signature.** An auth check
+      that doesn't check, on a product with a launch runway.
+
+### Phase 2 — Finish AD-10 (the architecture is half-migrated)
+*Doctrine: approval happens where the signing key lives. Currently true for
+approval, false for drafting — the interim scribe still runs under a box key.*
+- [ ] **nact#26** — Ngage as a first-class channel type + grant-driven routing
+      board (approval wiring derived from grants, as comms already is).
+- [ ] **warm.contact#43** — port the scribe to the Mac: James's Quill drafts
+      locally, Keychain key, `credential:anthropic` grant, launchd cadence.
+      *Drafted; awaiting Director approval.*
+- [ ] **ngage#1** — the steering settings UI ("the voice drafter"): per-identity
+      steering editable where the approving happens; later extends to
+      nave/luke steering over the same wire.
+
+### Phase 3 — Publish (the declared movement; the voice work was done FOR this)
+- [ ] Finish the revoicing programme (`library/ROADMAP.md`: 5 upgrades + 4 new
+      pieces remain) — nothing else ships in the averaged AI voice.
+- [ ] **nave.pub#15** — publish essays 2+3; cross-post the set to nostr.
+- [ ] **nave.pub#14** — ECOSYSTEM-HUB build-out.
+- [ ] **spec#1** — shepherd nostr-protocol/nips#2411 *with* the published
+      material: the P-series and Ngage's reversed arrow are the novel content,
+      and a PR thread is more persuadable with prose than with commits.
+
+### Phase 4 — warm.contact runway (the product bet: "Luke, for everyone")
+- [ ] Quill grant family — **#19 #20 #42** (converges with Phase 2's Mac port;
+      same machinery, build once).
+- [ ] Security-before-launch — **#22** (gate SMS explicitly) · **#25** (rate
+      limiter → shared store) · **#31** (pin/SRI the page bundle) · **#32**
+      (reserved names / brand gating).
+- [ ] Launch ops — **#33 #34 #35** — only when the security basket is green:
+      launching before it is how you earn the wrong launch story.
+
+### Parked, with reasons (so they don't nag)
+- **noir#1 (M3 AI Director)** — a creative epic; deserves a dedicated block,
+  not interleaving.
+- **nact#12/#13/#14 (NCP gate, read path, Nops spike)** — Nops rides exactly
+  the grant machinery Phase 2 finishes; build it after nact#26, once.
+- **nact#15 (James→Nact_jaf delegation)** — signature-gated, Director-only;
+  widen delegated approval only after hardening #7–#9.
+- **nact#3/#4 (M-series close-out)** — on the quiet-week timer by design.
+- **Hygiene basket** — nave.pub#6–#13 small verifications, warm.contact#27
+  (commit the v0.4 spec doc), nherit#1 (mostly the Director's 30 minutes) —
+  fit in the cracks between phases.
+- **Keyless boot (AD-4)** — north star; unchanged.
+
+### Process rules (from the incident ledger)
+- **WIP limit: two tracks** — one Phase-1 item + one Phase-2 item in flight,
+  nothing else. The 07-21→23 failure modes (stacked-merge cascade, silent
+  pushes) all correlate with parallelism.
+- **Issues-first** — every commit bookended by its issue(s); check for an
+  existing ticket before filing (the queue is real; duplicates are worse than
+  none). Verify the tree, not the PR badge.
+
 ## Standing up a NEW box (the unified path)
 
 1. Create the box. Open the **provider console**.

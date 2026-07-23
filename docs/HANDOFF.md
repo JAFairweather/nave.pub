@@ -14,7 +14,9 @@ sessions wrote them for exactly this):
 - **docs/INVENTORY.md** — the master map: the spine (perceive vs act), the
   protocol (NIP-DA, P-series hardened), both app families (Ngage included),
   the runtimes, Nfra+Nops, and the live backlog + reconciled frontier (§5).
-- **deploy/ops/PLAN.md** — the live fleet status board.
+- **deploy/ops/PLAN.md** — the live fleet status board **and the sequenced
+  roadmap** (four phases, ordered, with reasons — start there for "what's
+  next").
 - **docs/JOURNEY.md** — the full history and thesis, four movements.
 - **docs/quill.md** — the per-user reconnect agent — and, since 07-23, the
   Director's own drafting hand (§9).
