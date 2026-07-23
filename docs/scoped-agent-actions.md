@@ -419,6 +419,50 @@ actuators are plural.
 
 ---
 
+## Part II·8 — Interop: align, don't invent (workstream D)
+
+The interop spike (2026-07-23) found the field **converging on exactly our thesis**
+— an append-only, signed, offline-verifiable record binding a *human authorization*
+to a delegation chain — and one effort, **HDP (Human Delegation Provenance**, IETF
+`draft-helixar-hdp`, arXiv 2604.04522), is essentially our idea in MCP/A2A
+vocabulary. Neighbours:
+
+- **AIP** (Agent Identity Protocol, IETF `draft-prakash-aip`): delegation as
+  Invocation-Bound Capability Tokens (Ed25519 / JWT / Biscuit), rooted in a named
+  human principal — human as chain *root*, not per-action approver.
+- **ACP** (Agent Control Protocol): temporal admission control + an append-only,
+  Ed25519-signed **audit ledger** — but the signer is the *institution*, not a human.
+- **A2A**: `TASK_STATE_AUTH_REQUIRED` exists, but no signed "approved_by" record;
+  discussion **#1404** is moving toward task-scoped capability grants + offline-
+  verifiable decision records (proposal, unmerged).
+- **MCP**: **elicitation** is transient client-side UX — no signature, no artifact.
+
+**Verdict: align, don't invent.** Our `["approval", id, approver]` is the same shape
+as an HDP human-authorization hop / AIP human root — the only mismatch is substrate
+(they use Ed25519/JWT/Biscuit + DID roots; we use secp256k1 schnorr + a relay-hosted
+event: an *encoding* difference, not conceptual). So:
+
+- **Don't propose a novel primitive cold** — HDP already owns "human delegation
+  provenance," with a draft + SDK; proposing ours would duplicate it.
+- **Our genuinely novel edge is public, relay-discoverable, third-party-checkable
+  provenance** — theirs travels point-to-point inside the call; ours is broadcast
+  and anyone can verify it against the relay. *That* is the contribution to push.
+- **Engagement shifts accordingly** (revises §F): engage the **HDP draft** and
+  **A2A #1404**, positioning Nostr as a *transport/anchoring layer* for an HDP-style
+  claim, rather than opening a standalone act-side NIP first.
+
+**Bridge (both directions):** emit the Nostr approval inside a provenance field —
+`{"scheme":"nostr","approval_event":"<id>","approver":"<pubkey>","bound_hash":"<hash>"}`
+— verifiers fetch the event and check the schnorr signature over the bound hash;
+conversely a Nostr approval event carries an `["a2a-task", <id>]` / `["hdp",
+<token-hash>]` tag, so the same fact resolves from either side.
+
+*(Caveat: arXiv was proxy-blocked during the spike; token field-schemas are from
+IETF drafts + web extractions, not line-verified — confirm HDP/AIP field names
+against the drafts before building the bridge.)*
+
+---
+
 ## Part III — The research plan (all aspects, to a robust design)
 
 Organized as workstreams. Each names concrete targets and the decision it feeds.
@@ -480,6 +524,8 @@ Organized as workstreams. Each names concrete targets and the decision it feeds.
   bound approval").
 
 ### D. Interop strategy
+- **Answered in Part II·8: align with HDP / A2A #1404, don't invent; our edge is
+  public verifiability.** The remaining threads:
 - Can the `["approval", …]` provenance tag **travel** into MCP/A2A land — e.g.,
   as an admission-control record an ACP-style gate recognizes? Prototype a bridge:
   an A2A/MCP action that carries a nostr approval proof.
@@ -493,9 +539,12 @@ Organized as workstreams. Each names concrete targets and the decision it feeds.
 ### F. Community engagement (leverage others' experience)
 - **Who:** the nostr-protocol/nips maintainers (fiatjaf et al.) for the
   microstandard framing; **gzuuus** (DVMCP/ContextVM) on MCP-over-nostr auth;
-  **benthecarman** (NIP-47/67) on the permission object; the **A2A** and **MCP**
-  auth working groups for cross-ecosystem interop; **OpenSats** (nostr grants) for
-  funding/socialization; the biscuit/UCAN communities on attenuation.
+  **benthecarman** (NIP-47/67) on the permission object; **OpenSats** (nostr grants)
+  for funding/socialization; the biscuit/UCAN communities on attenuation.
+- **Act-side alignment (from II·8, now primary):** the **HDP** draft
+  (`draft-helixar-hdp`, Helixar-AI/HDP) and **A2A discussion #1404** — position our
+  public relay-anchored approval as a transport for an HDP-style claim, rather than
+  a cold act-side NIP. Engage these *before* proposing anything standalone.
 - **How (the estate's playbook):** build the generic actuator + approval path as
   working software first; publish the **hardening-in-public** essay and an
   Ngage/Quill demo; float the `["approval"]` provenance tag as a small, isolated
