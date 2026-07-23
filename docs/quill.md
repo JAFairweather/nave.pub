@@ -222,6 +222,15 @@ key that never leaves the device — running the Director's drafting there makes
 "approval happens where the signing key lives" literal: the drafts are prepared
 on the same machine that holds the key that signs them.
 
+**Build Quill's drafter as an *actuator*, not a Mac script.** Under NCP
+(`nact/docs/ncp.md`) reads are data grants (MCP resources) and verbs are Scoped
+Action Approvals (`nact/docs/scoped-action-approvals.md`, MCP tools). Drafting is
+one such verb: `actuator(template, grant) → draft`, a sibling of
+`publish`/`exec`/`connector`. Factor it so the **surface** — a reconnect reply, a
+social post, a PR body — is a *parameter, not a fork*. That boundary is what makes
+Quill portable beyond reconnect replies and keeps this from being a one-off; a
+second stubbed surface ("draft a post") is the cheapest proof it holds.
+
 **State of the port (the build queue, issues-first):**
 - ✅ The interim scribe runs the flow end-to-end from the box (drafts → Ngage →
   first sovereign post signed 2026-07-22; steering grant honored, with
@@ -229,11 +238,21 @@ on the same machine that holds the key that signs them.
 - ✅ **`canonical-quill` identity minted** (npub in `IDENTITY-REGISTRY.md`);
   its sealed env lives with the deploy secrets, **never in the app repo** — the
   repo's ignore rule is now pattern-based so no future identity slips past it.
-- ⬜ Mac-side port: Quill drafts locally under launchd, Anthropic access via a
-  `credential:anthropic` scoped grant, key in the Keychain
-  (`WhenUnlockedThisDeviceOnly`), draft-grants issued to the Director's npub.
-- ⬜ Ngage as a first-class Nact channel type, so the routing board shows this
-  path the way it shows Telegram (AD-10 formalization).
+- ✅ **Ngage is a first-class approval path in Nact** (nact#31, 2026-07-22): the
+  routing board binds each identity to exactly one path and shows Quill's as
+  ✋ Ngage — the Director's own hand — beside the box gate (AD-10, `lib/routing.mjs`).
+- ⬜ **Mac-side port (warm.contact#43)** — Quill drafts locally under launchd;
+  Anthropic access via a `credential:anthropic` scoped grant (not a pasted key);
+  key in the Keychain (`WhenUnlockedThisDeviceOnly`), nsec never surfaced;
+  draft-grants (`draft:post/*`) to the Director's npub. **Held for the Director's
+  explicit go — it runs on his machine and holds his key material.**
+- ⬜ **Swift grant plumbing (warm.contact#6)** — NIP-44 decrypt + NIP-98 sign
+  (`swift-secp256k1`); a grant-backed `SecretVault` source ("fetch + decrypt the
+  grant for this Quill's npub") with **zero calling-code change** — SecretVault
+  is already the indirection. Prove revocation-by-rotation and adversarial-observer
+  (Nave learns nothing of the prompt) in tests.
+- One persona, **per-device keys** — Mac-when-awake and box-when-not both draft,
+  each device holding its own Keychain key; no key is ever copied.
 
 **The through-line, updated.** Luke is the pattern Quill generalizes — and the
 Director is now Quill user #1: the reconnect agent that drafts *your* replies in
