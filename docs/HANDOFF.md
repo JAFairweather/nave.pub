@@ -99,3 +99,11 @@ the revocation."* Two corollaries now carry equal weight:
 - The drafting house rules ride every public post: a nave.pub link (+ the
   named app's own link), a card graphic, real hashtags — asked of the model,
   **enforced deterministically** in `post-format.mjs`.
+- **External-post voice (standing rule, Director 2026-07-23).** When posting in
+  my name *outside* the fleet — spec forums, third-party repos (IETF/HDP, A2A) —
+  speak in the **first person singular** and **represent me, not Nostr or any
+  community**: my own ideas, which I've been expressing using the Nostr protocol.
+  Attribution follows the disclosure rules above (the PR-body footer / the
+  `post-format.mjs` post disclosure); and **never overclaim** — distinguish what
+  is *shipped* from what is *designed* (e.g. the grants + approval flow are live;
+  the `["approval"]` provenance tag is design-stage).
