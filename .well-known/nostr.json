@@ -9,7 +9,10 @@
     "nact_jaf": "bb4ff7defbcdb189ae36ea2dad8e2402b81f00ee5c478e834606dcf4e6b6f97f",
     "warmcontact": "f27075ff31ada8f433e5243622932424a42ef663cc6e321577413320746043d6",
     "warm.contact": "f27075ff31ada8f433e5243622932424a42ef663cc6e321577413320746043d6",
-    "quill": "906bd25bbfc926dec1a20ea70675266b438398a4829fe8857b147746fe7e09c9"
+    "quill": "906bd25bbfc926dec1a20ea70675266b438398a4829fe8857b147746fe7e09c9",
+    "mydude": "0a8e0720c3ec52c6bfd9e2545d620cf58e2e8d371244255efce3ddd57ba0a32c",
+    "kerouac": "eb586b1e9c214c10762acc0dd4d428ac9156c284162f2d9dcc98562e644d71a5",
+    "dennis": "9a07300d3295f392d295cd8f73c8f1d3c725809b2e50fc52815db8682ef940a5"
   },
   "relays": {
     "d8de5184a096e49b3f79730258c05f8ffb56cdf138c08b3c7b0b0685a0fb963e": [
@@ -43,6 +46,21 @@
       "wss://relay.primal.net"
     ],
     "906bd25bbfc926dec1a20ea70675266b438398a4829fe8857b147746fe7e09c9": [
+      "wss://relay.damus.io",
+      "wss://nos.lol",
+      "wss://relay.primal.net"
+    ],
+    "0a8e0720c3ec52c6bfd9e2545d620cf58e2e8d371244255efce3ddd57ba0a32c": [
+      "wss://relay.damus.io",
+      "wss://nos.lol",
+      "wss://relay.primal.net"
+    ],
+    "eb586b1e9c214c10762acc0dd4d428ac9156c284162f2d9dcc98562e644d71a5": [
+      "wss://relay.damus.io",
+      "wss://nos.lol",
+      "wss://relay.primal.net"
+    ],
+    "9a07300d3295f392d295cd8f73c8f1d3c725809b2e50fc52815db8682ef940a5": [
       "wss://relay.damus.io",
       "wss://nos.lol",
       "wss://relay.primal.net"
