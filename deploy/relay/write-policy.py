@@ -6,11 +6,22 @@
 #   in : {"type":"new","event":{...},"sourceType":...,"sourceInfo":...}
 #   out: {"id":"<event id>","action":"accept"|"reject","msg":"..."}
 #
-# Policy: accept events authored by a fleet pubkey (allowlist.json), plus the
-# NIP-46 transport kind (24133) from anyone — those are end-to-end encrypted, so
-# an open transport kind leaks nothing but timing and lets the bunker's ephemeral
-# client keys through. Everything else is rejected. Read-only to the allowlist
-# file; reload is a plugin restart (strfry respawns it).
+# Policy, in order:
+#   1. accept events AUTHORED by a fleet pubkey (allowlist.json `allow`);
+#   2. accept `allowKinds` from anyone (NIP-46 transport 24133 — end-to-end
+#      encrypted, leaks nothing but timing; lets the bunker's ephemeral client
+#      keys through);
+#   3. accept `recipientKinds` (NIP-59 gift wraps, 1059) when ADDRESSED to a
+#      fleet pubkey — any `p` tag naming an allowlisted key. Wraps are authored
+#      by single-use ephemeral keys BY DESIGN, so author-based admission can
+#      never pass them; recipient-based admission is what matches the
+#      protocol's semantics. This is what lets the grant plane — draft grants,
+#      steering grants, credential grants — ride the fleet's own relay
+#      (nave.pub#37). Spam control is preserved: a wrap to a stranger is still
+#      rejected, and rate/size limits stay strfry's job (strfry.conf).
+#
+# Everything else is rejected. Read-only to the allowlist file; reload is a
+# plugin restart (strfry respawns it).
 import json
 import os
 import sys
@@ -25,10 +36,19 @@ def load():
     allow = {v.lower() for k, v in (c.get("allow") or {}).items()
              if isinstance(v, str) and not v.startswith("REPLACE_")}
     kinds = set(c.get("allowKinds") or [])
-    return allow, kinds
+    rkinds = set(c.get("recipientKinds") or [])
+    return allow, kinds, rkinds
 
 
-ALLOW, ALLOW_KINDS = load()
+ALLOW, ALLOW_KINDS, RECIPIENT_KINDS = load()
+
+
+def addressed_to_fleet(ev):
+    for tag in ev.get("tags") or []:
+        if isinstance(tag, list) and len(tag) >= 2 and tag[0] == "p" \
+                and isinstance(tag[1], str) and tag[1].lower() in ALLOW:
+            return True
+    return False
 
 
 def decide(ev):
@@ -37,7 +57,9 @@ def decide(ev):
         return "accept", ""
     if ev.get("kind") in ALLOW_KINDS:
         return "accept", ""
-    return "reject", "restricted relay: author not in the Nave fleet allow-list"
+    if ev.get("kind") in RECIPIENT_KINDS and addressed_to_fleet(ev):
+        return "accept", ""
+    return "reject", "restricted relay: author not in the Nave fleet allow-list (and not a wrap addressed to it)"
 
 
 for line in sys.stdin:
