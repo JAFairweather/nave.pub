@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="My Dude">
+  <rect x="2" y="2" width="96" height="96" rx="20" fill="#0b0906" stroke="#c39a56" stroke-opacity="0.5" stroke-width="2"/>
+  <!-- a plumb bob: the maker's tool that tells you the truth whether you like it or not -->
+  <line x1="50" y1="20" x2="50" y2="56" stroke="#e2c079" stroke-width="2.4" stroke-linecap="round"/>
+  <circle cx="50" cy="20" r="3.4" fill="#e2c079"/>
+  <path d="M41 56 L59 56 L50 82 Z"
+        fill="#c39a56" fill-opacity="0.18" stroke="#e2c079" stroke-width="3.2" stroke-linejoin="round"/>
+  <!-- true: the reference the bob is checked against -->
+  <line x1="24" y1="88" x2="76" y2="88" stroke="#c39a56" stroke-width="1.8" stroke-linecap="round" opacity="0.7"/>
+</svg>
