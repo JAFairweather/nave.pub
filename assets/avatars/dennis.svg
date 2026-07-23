@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Dennis">
+  <rect x="2" y="2" width="96" height="96" rx="20" fill="#0b0906" stroke="#c39a56" stroke-opacity="0.5" stroke-width="2"/>
+  <!-- dividers: you measure the claim before you repeat it -->
+  <g stroke="#e2c079" stroke-width="4.4" stroke-linecap="round" fill="none">
+    <line x1="50" y1="24" x2="31" y2="76"/>
+    <line x1="50" y1="24" x2="69" y2="76"/>
+  </g>
+  <!-- the hinge: both legs turn on one pivot, or the measurement means nothing -->
+  <circle cx="50" cy="24" r="6.2" fill="#0b0906" stroke="#e2c079" stroke-width="3.2"/>
+  <!-- the span: what the legs were set against -->
+  <line x1="31" y1="86" x2="69" y2="86" stroke="#c39a56" stroke-width="1.8" stroke-linecap="round" opacity="0.7"/>
+</svg>
