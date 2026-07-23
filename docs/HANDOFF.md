@@ -28,6 +28,9 @@ sessions wrote them for exactly this):
   AD-1…11. AD-9 (evidence-only per-identity voice), AD-10 (approval happens
   where the signing key lives), and AD-11 (one sign-in, promote-don't-level)
   are the newest doctrine.
+- **docs/ONBOARDING.md** — the human-scale developer tour; **docs/PROJECTS.md**
+  — the flat registry of every project (repo, subdomain, status). Point a new
+  human developer here first.
 - **library/** — the public writing: essays, artifacts, and the revoicing
   programme (`library/ROADMAP.md`).
 

@@ -9,7 +9,12 @@ Statuses: ✅ built · 🟡 partial/live-with-gaps · ⬜ open/intended ·
 may **see** and what it may **do**, with your nostr signature as the only root of
 authority and revocation-by-key-rotation throughout.
 
+**New to Nave?** Start with `ONBOARDING.md` (the human tour) and `PROJECTS.md`
+(the flat registry of every project + repo + status). This file is the deep
+handbook behind them.
+
 This file is the master index; deep docs it points to:
+`ONBOARDING.md` (the developer tour) · `PROJECTS.md` (the project registry) ·
 `HANDOFF.md` (the session-onboarding prompt, versioned) · `NOPS.md` (ops) ·
 `IDENTITY-REGISTRY.md` (keys + Bitwarden) · `SIDE-QUESTS.md` (incidents) ·
 `quill.md` (the reconnect agent — and now the Director's drafting agent) ·
