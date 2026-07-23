@@ -11,9 +11,10 @@ FLAG="${1:-}"
 if [ -f /root/nave.pub/deploy/.flipped ]; then DEPLOY=/root/nave.pub/deploy; else DEPLOY=/root/noir/deploy; fi
 cd "$DEPLOY" 2>/dev/null || { echo "no deploy dir"; exit 1; }
 
-# Same consumer env as the brain: brokered creds stripped; LUKE_NSEC stays
-# (the scribe signs scopes/wraps as luke — an on-box role key, NOT the
-# Director's). Regenerate from luke.env when present.
+# Same consumer env as the brain: brokered creds stripped. The scribe signs as
+# QUILL — the box-device key of the Quill persona (quill.env, minted by
+# gen-quill-key.sh) — NOT as luke: drafting-for-the-Director is Quill's job
+# (nact#26, AD-10). Regenerate the consumer env from luke.env when present.
 CONSUMER="$DEPLOY/luke-consumer.env"
 if [ -f "$DEPLOY/luke.env" ]; then
   grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN)=' "$DEPLOY/luke.env" > "$CONSUMER" && chmod 600 "$CONSUMER"
@@ -29,9 +30,16 @@ else
   echo "⚠ no brain.env — no LLM path in the consumer env; run ops/gen-brain-key.sh"
 fi
 
+QUILLENV="$DEPLOY/quill.env"
+if [ ! -f "$QUILLENV" ]; then
+  echo "✗ no quill.env — the scribe signs as the Quill box-device key now (nact#26)."
+  echo "  Mint it once:  bash deploy/ops/gen-quill-key.sh   (prints only the npub)"
+  exit 1
+fi
+
 mkdir -p "$DEPLOY/brain-state"
 echo "── jaf-scribe ${FLAG:-(LIVE — issuing draft grants)} @ $(date -u +%FT%TZ) ──"
-docker run --rm --env-file "$CONSUMER" $BRAINENV $NETARG \
+docker run --rm --env-file "$CONSUMER" --env-file "$QUILLENV" $BRAINENV $NETARG \
   -e SCRIBE_LEDGER=/state/scribe-ledger.json \
   -v "$DEPLOY/brain-state:/state" \
   luke:latest node jaf-scribe.mjs $FLAG

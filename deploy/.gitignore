@@ -6,6 +6,7 @@ luke.env        # transition alias of nave.env (kept while consumers still refer
 luke-consumer.env # transition alias of nave-consumer.env
 nactor.env      # Nactor's own grantee key (NACTOR_NSEC), minted on the box by ops/gen-nactor-key.sh
 brain.env       # brain identity (BRAIN_NSEC) + NACT_BROKER_URL, minted on the box by ops/gen-brain-key.sh
+quill.env       # Quill BOX-DEVICE key (QUILL_NSEC) — minted by ops/gen-quill-key.sh; per-device, never copied
 brain-state/    # box-local continuity ledger for luke-brain (proposed/approved/passed) — survives redeploys
 luke-state/     # box-local pending-proposal store (pending.json) for luke-poster — survives redeploys
 openclaw.env    # the self-hosted openclaw service's env (ANTHROPIC_API_KEY, TZ) — box-local, no gateway token
