@@ -38,7 +38,16 @@ fi
 
 echo "### HARDENING BASELINE"
 echo "fail2ban: $(systemctl is-active fail2ban 2>/dev/null || echo none)"
-echo "auto-updates: $(systemctl is-enabled unattended-upgrades 2>/dev/null || systemctl is-enabled dnf-automatic.timer 2>/dev/null || echo none)"
+# Alma-aware (#9): `systemctl is-enabled <missing-unit>` prints not-found on
+# STDOUT while failing, so the old `a || b || echo none` chain mangled the
+# fallback's answer on dnf hosts. Probe each known unit; report the first that
+# actually exists, whatever its state — "disabled" is inventory too.
+au="none"
+for u in unattended-upgrades dnf-automatic.timer dnf-automatic-install.timer; do
+  s=$(systemctl is-enabled "$u" 2>/dev/null)
+  case "$s" in ""|not-found) continue ;; *) au="$u: $s"; break ;; esac
+done
+echo "auto-updates: $au"
 
 echo "### SSH POSTURE"
 sshd -T 2>/dev/null | grep -Ei 'passwordauthentication|permitrootlogin|pubkeyauthentication' | sed 's/^/  /'
