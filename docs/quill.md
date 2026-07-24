@@ -217,10 +217,36 @@ read, signed by his own hand. Steering comes back the other way as a
 `steer:draft` grant — editable per identity, no deploy.
 
 **Why Quill and not a second box agent.** Two keys wearing one name are not one
-agent. Quill already *is* the per-person drafting pattern with a Keychain-held
-key that never leaves the device — running the Director's drafting there makes
-"approval happens where the signing key lives" literal: the drafts are prepared
-on the same machine that holds the key that signs them.
+agent — **James's Quill is ONE identity, ONE key** (`npub13uuznpc…`, its published
+kind-0 + `jaf-quill@dequalsf.com` NIP-05). Every drafter signs as that one key.
+
+**Custody — RESOLVED 2026-07-24 (supersedes the "per-device keys" model below).**
+This section originally proposed *per-device keys* (a Keychain key per device, no
+key copied) AND, one line up, "one identity, one key." Those contradicted, and it
+cost a session's confusion. The resolution follows the Nave pattern already blessed
+for the **sovereign** key (`sovereign-signing.md`: *"the key lives in the bunker,
+encrypted; apps borrow signatures over NIP-46; the key never leaves the box"*) and
+named as the actuator threat-model mitigation (`scoped-agent-actions.md` II·7·7:
+*"the NIP-46 adapter keeps the acting key off a shared box entirely"*):
+
+> **One jaf-quill key. It lives only in Bunker46 — the sole custody and arbiter.
+> Every drafter (Mac, box, any future host) borrows signatures over a scoped NIP-46
+> connection (draft kinds 30440/1059/13 only, no kind-1). No drafter holds the key;
+> no key is ever copied.**
+
+Why the pivot from Keychain-local: a Mac Keychain key is **extractable by
+user-level malware** (the drafter reads it out to sign), and an always-on box
+drafter needs the key reachable without placing it on shared infra (AD-10). The
+bunker resolves both — best-available at-rest custody, off every drafting host,
+per-connection revocation per drafter, key rotation as the identity-level kill.
+The trade accepted: a drafter must reach the bunker to sign (no offline local
+signing), and the bunker's `.env`/store must be backed up (else key loss) — the
+nsec also lives in Bitwarden as the escape hatch.
+
+AD-10 still holds: the *approval* (the Director signing the published kind-1) is
+his **sovereign** key, which already lives in the same bunker and which he invokes
+by hand. The drafting key living beside it, scoped to draft kinds and unable to
+post, changes nothing about who approves.
 
 **Build Quill's drafter as an *actuator*, not a Mac script.** The frame is
 `docs/scoped-agent-actions.md` (the act-side microstandard) over NCP
@@ -242,18 +268,17 @@ second stubbed surface ("draft a post") is the cheapest proof it holds.
 - ✅ **Ngage is a first-class approval path in Nact** (nact#31, 2026-07-22): the
   routing board binds each identity to exactly one path and shows Quill's as
   ✋ Ngage — the Director's own hand — beside the box gate (AD-10, `lib/routing.mjs`).
-- ⬜ **Mac-side port (warm.contact#43)** — Quill drafts locally under launchd;
-  Anthropic access via a `credential:anthropic` scoped grant (not a pasted key);
-  key in the Keychain (`WhenUnlockedThisDeviceOnly`), nsec never surfaced;
-  draft-grants (`draft:post/*`) to the Director's npub. **Held for the Director's
-  explicit go — it runs on his machine and holds his key material.**
-- ⬜ **Swift grant plumbing (warm.contact#6)** — NIP-44 decrypt + NIP-98 sign
-  (`swift-secp256k1`); a grant-backed `SecretVault` source ("fetch + decrypt the
-  grant for this Quill's npub") with **zero calling-code change** — SecretVault
-  is already the indirection. Prove revocation-by-rotation and adversarial-observer
-  (Nave learns nothing of the prompt) in tests.
-- One persona, **per-device keys** — Mac-when-awake and box-when-not both draft,
-  each device holding its own Keychain key; no key is ever copied.
+- ✅ **Mac-side port (warm.contact#43, first light 2026-07-24)** — Quill drafts
+  via `warm quill-draft`; Anthropic access via a `credential:anthropic` scoped
+  grant (not a pasted key); draft-grants (`draft:post/*`) to the Director's npub,
+  pen-verified on the desk (nact#44 / ngage#11).
+- ✅ **Swift grant plumbing (warm.contact#6)** — NIP-44 decrypt + NIP-98 sign +
+  the grant-backed `SecretVault` source, shipped and cross-tested.
+- ✅ **NIP-46 remote signing (nvoy#30, warm.contact#48, luke#26)** — the Mac and
+  the box drafter both sign over a scoped bunker connection; no key on either host.
+- One persona, **one bunker-custodied key** (custody note above) — Mac and box both
+  draft by borrowing signatures over NIP-46; the key never leaves Bunker46, and is
+  never copied to a drafting host.
 
 **The through-line, updated.** Luke is the pattern Quill generalizes — and the
 Director is now Quill user #1: the reconnect agent that drafts *your* replies in
