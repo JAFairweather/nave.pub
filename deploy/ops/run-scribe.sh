@@ -18,18 +18,48 @@
 #   SCRIBE_ALLOW_BOX=1 bash run-scribe.sh --dry-run   # break-glass only
 set -u
 FLAG="${1:-}"
+if [ -f /root/nave.pub/deploy/.flipped ]; then DEPLOY=/root/nave.pub/deploy; else DEPLOY=/root/noir/deploy; fi
 
+# --- BUNKER MODE (luke#25): the sanctioned always-on drafter -----------------
+# If quill-bunker.env is present, the scribe signs as jaf-quill-bunker over a
+# scoped NIP-46 connection to Bunker46 (SCRIBE_SIGNER=nip46 + SCRIBE_BUNKER_URI
+# in that sealed env). The key NEVER touches this host — so this is a first-class
+# run (typically scheduled by Luke from OpenClaw), not break-glass, and needs no
+# quill.env and no SCRIBE_ALLOW_BOX. This is the path that resolves the AD-10
+# objection that retired the raw-key scribe.
+BUNKERENV="$DEPLOY/quill-bunker.env"
+if [ -f "$BUNKERENV" ]; then
+  cd "$DEPLOY" 2>/dev/null || { echo "no deploy dir"; exit 1; }
+  CONSUMER="$DEPLOY/luke-consumer.env"
+  [ -f "$DEPLOY/luke.env" ] && grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN)=' "$DEPLOY/luke.env" > "$CONSUMER" && chmod 600 "$CONSUMER"
+  [ -f "$CONSUMER" ] || { echo "no consumer env ($CONSUMER) — run a deploy first"; exit 1; }
+  BRAINENV=""; NETARG=""
+  if [ -f "$DEPLOY/brain.env" ]; then
+    BRAINENV="--env-file $DEPLOY/brain.env"
+    NET=$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}' deploy-nactor-1 2>/dev/null)
+    [ -n "$NET" ] && NETARG="--network $NET"
+  fi
+  mkdir -p "$DEPLOY/brain-state"
+  echo "── jaf-scribe ${FLAG:-(LIVE)} @ $(date -u +%FT%TZ) [BUNKER — jaf-quill-bunker, key in Bunker46] ──"
+  docker run --rm --env-file "$CONSUMER" --env-file "$BUNKERENV" $BRAINENV $NETARG \
+    -e SCRIBE_LEDGER=/state/scribe-ledger.json \
+    -v "$DEPLOY/brain-state:/state" \
+    luke:latest node jaf-scribe.mjs $FLAG
+  echo "── scribe done (bunker) ──"
+  exit 0
+fi
+
+# --- RAW-KEY-ON-BOX (retired; break-glass only) ------------------------------
 if [ "${SCRIBE_ALLOW_BOX:-}" != "1" ]; then
-  echo "✗ the box scribe is RETIRED (2026-07-24). James's Quill drafts on the Mac now —"
-  echo "  run 'warm quill-draft' there (warm.contact#43). The drafting key does not belong"
-  echo "  on the box (AD-10). Break-glass, if the Mac is truly unavailable and the Director"
-  echo "  chooses to place his key here for one run: SCRIBE_ALLOW_BOX=1 bash run-scribe.sh"
+  echo "✗ the raw-key box scribe is RETIRED (2026-07-24). Configure BUNKER mode instead"
+  echo "  (drop quill-bunker.env with SCRIBE_SIGNER=nip46 + SCRIBE_BUNKER_URI — the key stays"
+  echo "  in Bunker46, luke#25), or draft on the Mac ('warm quill-draft', warm.contact#43)."
+  echo "  Raw key on the box is break-glass only: SCRIBE_ALLOW_BOX=1 bash run-scribe.sh"
   exit 1
 fi
 
-echo "⚠ BREAK-GLASS: running the retired box scribe. This places James's Quill's key on"
-echo "  shared infrastructure. The sovereign home is the Mac (warm.contact#43)."
-if [ -f /root/nave.pub/deploy/.flipped ]; then DEPLOY=/root/nave.pub/deploy; else DEPLOY=/root/noir/deploy; fi
+echo "⚠ BREAK-GLASS: running the retired RAW-KEY box scribe. This places James's Quill's key on"
+echo "  shared infrastructure. Prefer BUNKER mode (quill-bunker.env) or the Mac (warm.contact#43)."
 cd "$DEPLOY" 2>/dev/null || { echo "no deploy dir"; exit 1; }
 
 # Same consumer env as the brain: brokered creds stripped. The scribe signs as
