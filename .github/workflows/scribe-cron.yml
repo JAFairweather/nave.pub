@@ -25,14 +25,13 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             set -e
-            # Drop only OUR managed line, keep everything else (brain schedule,
-            # CRON_TZ). If no CRON_TZ exists yet, add one so the times below
-            # are America/New_York regardless of install order.
-            crontab -l 2>/dev/null | grep -v '# jaf-scribe-schedule' > /tmp/ct || true
-            grep -q '^CRON_TZ=' /tmp/ct || echo 'CRON_TZ=America/New_York' >> /tmp/ct
-            echo '0 9,13,19 * * * MAX_DRAFTS=2 bash /root/nave.pub/deploy/ops/run-scribe.sh >> /var/log/jaf-scribe.log 2>&1 # jaf-scribe-schedule' >> /tmp/ct
+            # Drop our managed line AND any stray CRON_TZ (this box's Debian
+            # cron IGNORES CRON_TZ — see the brain entry: times must be UTC).
+            # 13,17,23 UTC = 09:00/13:00/19:00 EDT; adjust at DST (EST=UTC-5).
+            crontab -l 2>/dev/null | grep -vE '# jaf-scribe-schedule|^CRON_TZ=' > /tmp/ct || true
+            echo '0 13,17,23 * * * MAX_DRAFTS=2 bash /root/nave.pub/deploy/ops/run-scribe.sh >> /var/log/jaf-scribe.log 2>&1 # jaf-scribe-schedule (9am/1pm/7pm ET)' >> /tmp/ct
             crontab /tmp/ct
             rm -f /tmp/ct
             echo "── installed schedule ──"
             crontab -l
-            echo "scribe drafts ≤2 at 09:00, 13:00, 19:00 America/New_York; log: /var/log/jaf-scribe.log"
+            echo "scribe drafts ≤2 at 13,17,23 UTC (9am/1pm/7pm EDT); log: /var/log/jaf-scribe.log"
