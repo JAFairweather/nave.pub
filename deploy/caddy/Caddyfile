@@ -112,6 +112,10 @@ nact.nave.pub {
 	handle {
 		root * /srv/apps/nact
 		encode gzip zstd
+		# Extensionless pages resolve to their .html file — the Mini-App is
+		# documented (and will be linked from Telegram) as bare /sign?p=…,
+		# which 404'd while only /sign.html resolved (nave.pub#67).
+		try_files {path} {path}.html
 		@mjs path *.mjs
 		header @mjs Content-Type "text/javascript; charset=utf-8"
 		# The same guard the (app) snippet carries. nact can't `import app nact`
