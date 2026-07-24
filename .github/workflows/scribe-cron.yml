@@ -1,0 +1,38 @@
+name: Quill — install thrice-daily scribe schedule
+
+# Installs (idempotently) the Director's drafting cadence: the bunker-mode
+# jaf-scribe runs LIVE at 09:00, 13:00 and 19:00 America/New_York, drafting at
+# most 2 candidates per run (MAX_DRAFTS=2 → ≤6 offers/day on the Ngage desk).
+# The key stays in Bunker46; the scribe only ever *offers* — nothing publishes
+# without the Director's own signature. Re-run any time to refresh the
+# schedule; it never touches the luke-brain entry.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-nave
+  cancel-in-progress: false
+
+jobs:
+  install-cron:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install crontab over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            # Drop only OUR managed line, keep everything else (brain schedule,
+            # CRON_TZ). If no CRON_TZ exists yet, add one so the times below
+            # are America/New_York regardless of install order.
+            crontab -l 2>/dev/null | grep -v '# jaf-scribe-schedule' > /tmp/ct || true
+            grep -q '^CRON_TZ=' /tmp/ct || echo 'CRON_TZ=America/New_York' >> /tmp/ct
+            echo '0 9,13,19 * * * MAX_DRAFTS=2 bash /root/nave.pub/deploy/ops/run-scribe.sh >> /var/log/jaf-scribe.log 2>&1 # jaf-scribe-schedule' >> /tmp/ct
+            crontab /tmp/ct
+            rm -f /tmp/ct
+            echo "── installed schedule ──"
+            crontab -l
+            echo "scribe drafts ≤2 at 09:00, 13:00, 19:00 America/New_York; log: /var/log/jaf-scribe.log"

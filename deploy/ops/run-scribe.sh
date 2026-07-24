@@ -40,8 +40,12 @@ if [ -f "$BUNKERENV" ]; then
     [ -n "$NET" ] && NETARG="--network $NET"
   fi
   mkdir -p "$DEPLOY/brain-state"
-  echo "── jaf-scribe ${FLAG:-(LIVE)} @ $(date -u +%FT%TZ) [BUNKER — jaf-quill-bunker, key in Bunker46] ──"
-  docker run --rm --env-file "$CONSUMER" --env-file "$BUNKERENV" $BRAINENV $NETARG \
+  # The scheduler caps drafts per run (MAX_DRAFTS) — forward it only when the
+  # caller sets it, so ad-hoc runs keep the scribe's own default.
+  MAXARG=""
+  [ -n "${MAX_DRAFTS:-}" ] && MAXARG="-e MAX_DRAFTS=$MAX_DRAFTS"
+  echo "── jaf-scribe ${FLAG:-(LIVE)} @ $(date -u +%FT%TZ) [BUNKER — key in Bunker46${MAX_DRAFTS:+, max $MAX_DRAFTS drafts}] ──"
+  docker run --rm --env-file "$CONSUMER" --env-file "$BUNKERENV" $BRAINENV $NETARG $MAXARG \
     -e SCRIBE_LEDGER=/state/scribe-ledger.json \
     -v "$DEPLOY/brain-state:/state" \
     luke:latest node jaf-scribe.mjs $FLAG
