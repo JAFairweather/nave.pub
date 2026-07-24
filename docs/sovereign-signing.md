@@ -53,6 +53,23 @@ interactive logins.
 > not "is this literally the sovereign." I recommend the distinct operator
 > identity; keep NIP‑26 in reserve for cases that must read as the sovereign.
 
+## Host firewalling — firewalld is BANNED on these boxes
+
+Learned the hard way (2026-07-20, full relay/bunker outage): **firewalld fights
+Docker** on these hosts — it owns the `docker` zone and flushes Docker's
+iptables chains on reload, which took down the bunker (502) and then Docker
+itself (`INVALID_ZONE: docker` at daemon start). It is **removed, not
+reconfigured**, fleet-wide, and `newbox.sh` deliberately never installs it.
+
+What replaces it, in order of authority:
+
+1. **On-box `firewall.sh`** (called by `harden.sh`) — nftables INPUT baseline
+   plus a DOCKER-USER seal for published ports, written to coexist with
+   Docker's own chains (that coexistence is the exact thing firewalld broke).
+2. **The provider edge firewall** (22/80/443 only) as belt-and-suspenders.
+
+Full incident chain + recovery: `deploy/ops/PLAN.md` (incident reference).
+
 ## The bunker — separate VPS, as cheap as possible
 
 - **Box:** the smallest tier anywhere — **1 vCPU / 1 GB / ~$4–5/mo** (Hetzner
