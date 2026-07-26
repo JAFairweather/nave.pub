@@ -11,15 +11,25 @@
 // the desk without a paste. Left un-wired on purpose — untested relay/bunker crypto
 // shipped as "working" is exactly what this estate refuses to do.
 
+import { renderTitlebar, updateTitlebar } from './components/nave-titlebar.mjs'
+
 const $ = (id) => document.getElementById(id)
 const els = {
   src: $('src'), out: $('out'), file: $('file'), register: $('register'), intent: $('intent'),
   revoice: $('revoice'), preview: $('preview'), toNgage: $('toNgage'), copy: $('copy'),
   st1: $('st1'), st2: $('st2'), srcCount: $('srcCount'), outCount: $('outCount'),
-  signin: $('signin'), me: $('me'), akey: $('akey'), model: $('model'), dirnpub: $('dirnpub'),
+  akey: $('akey'), model: $('model'), dirnpub: $('dirnpub'),
   cfg: $('cfg'), openCfg: $('openCfg'), tmpl: $('tmpl'),
   bunker: $('bunker'), connectBunker: $('connectBunker'), stBunker: $('stBunker'),
 }
+
+// Nscribe's seal — a quill nib in its ink accent (favicon = header logo = grid icon).
+const QUILL_SEAL = `<svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+  <circle cx="16" cy="16" r="15" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+  <path d="M23 9 L13 21 L11 23 L10.2 20.4 Z" fill="none" stroke="var(--accent-bright)" stroke-width="1.4" stroke-linejoin="round"/>
+  <path d="M13 21 L16 24" stroke="var(--accent-bright)" stroke-width="1.4" stroke-linecap="round"/>
+</svg>`
+let directorSigner = null
 
 const words = (s) => (s.trim() ? s.trim().split(/\s+/).length : 0)
 const setCount = (t, el) => { el.textContent = `${words(t)} words` }
@@ -247,17 +257,34 @@ async function toNgage() {
   if (!(bunkerSigner && recipient)) status(els.st2, 'Draft copied and Ngage opened — paste it and sign in your own hand. (Connect your jaf-quill bunker + set your npub in settings to auto-seal instead.)', 'ok')
 }
 
-// --- sign-in (v1: optional convenience via NIP-07; no hard dependency) ---
-async function signIn() {
+// --- Director sign-in via the shared nave-connect + titlebar (AD-11) ---------
+// This is the APPROVAL end (Ngage). Drafting is jaf-quill's job (the Cloud
+// Drafter, in settings). nave-connect is lazy-loaded so the page can't fail to
+// load on a bundle issue; the titlebar itself is dependency-free.
+async function signInDirector() {
   try {
-    const n = window.nostr
-    if (!n) { openSettings(); return status(els.st2, 'No extension found — you don\'t need to sign in for v1. Paste your credential in settings and re-voice; sign on your own desk in Ngage.') }
-    if (typeof n.enable === 'function') { try { await n.enable() } catch { return status(els.st2, 'Sign-in declined.', 'err') } }
-    const pk = await n.getPublicKey()
-    els.me.innerHTML = `<span class="badge">extension</span><span class="pill" title="${pk}">${pk.slice(0, 8)}…${pk.slice(-4)}</span>`
-    if (!els.dirnpub.value.trim()) els.dirnpub.value = pk   // you are the recipient / approver
-    status(els.st2, 'Signed in as the Director — this is the approval end (Ngage). Drafting is jaf-quill\'s job: connect the Cloud Drafter in settings.', 'ok')
-  } catch (e) { status(els.st2, String(e.message || e), 'err') }
+    const nc = await import('./vendor/nave-connect.mjs')
+    let signer
+    if (window.nostr) {
+      signer = nc.nip07Signer()
+    } else {
+      const uri = prompt('No extension found. Paste a bunker:// or nostrconnect:// to sign in as the Director:')
+      if (!uri) return
+      signer = nc.nip46Signer(uri)
+    }
+    const pk = await signer.getPublicKey()
+    const { nip19 } = await import('nostr-tools')
+    const npub = nip19.npubEncode(pk)
+    directorSigner = signer
+    if (!els.dirnpub.value.trim()) els.dirnpub.value = npub   // you are the recipient / approver
+    updateTitlebar('#titlebar', { npub, kind: signer.kind, onLogout: signOutDirector, onSignIn: null })
+    status(els.st2, 'Signed in as the Director — the approval end (Ngage). Drafting is jaf-quill: connect the Cloud Drafter in settings.', 'ok')
+  } catch (e) { status(els.st2, 'Sign-in failed: ' + String(e.message || e), 'err') }
+}
+function signOutDirector() {
+  directorSigner = null
+  updateTitlebar('#titlebar', { npub: null, kind: null, onSignIn: signInDirector })
+  status(els.st2, 'Signed out.', '')
 }
 
 function openSettings() { els.cfg.open = true }
@@ -267,6 +294,11 @@ els.preview.addEventListener('click', preview)
 els.copy.addEventListener('click', copyOut)
 els.toNgage.addEventListener('click', toNgage)
 els.connectBunker.addEventListener('click', connectBunker)
-els.signin.addEventListener('click', signIn)
+
+// Mount the shared identity bar signed-out; sign-in swaps it to the Director pill.
+renderTitlebar('#titlebar', {
+  appName: 'Nscribe', tagline: 'say it in your hand', sealSvg: QUILL_SEAL,
+  npub: null, onSignIn: signInDirector, signInLabel: 'Sign in as Director',
+})
 
 setCount('', els.srcCount); setCount('', els.outCount); syncOutButtons()
