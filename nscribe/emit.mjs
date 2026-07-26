@@ -180,6 +180,59 @@ export async function discoverDrafters(relay, signer) {
   return drafters
 }
 
+// ---- the connection, remembered as a self-grant -----------------------------
+//
+// The bunker connection to your pen, stored the SAME way your credential is: a
+// secret, encrypted to your own key, on your own relays — so a reload or a
+// different device reconnects with nothing pasted. It follows your identity, not
+// your browser. We persist the pen's pubkey, its relays, and the STABLE client
+// transport key — NOT the one-time bunker secret: once paired, Bunker46 binds to
+// the client key and reconnect needs no secret. A NIP-78 replaceable app-data
+// event (kind 30078), separate from the Nvoy-managed Grant Index so neither
+// clobbers the other; content NIP-44'd to self, same trust model as the
+// credential and scope keys already on your relays.
+export const KIND_APP_DATA = 30078
+const CONN_D = 'nscribe:connections'
+
+/** Load your saved pen connections: { [penPubHex]: { relays, clientSecretHex, updated_at } }. */
+export async function loadConnections(relay, signer) {
+  const self = await signer.getPublicKey()
+  const [event] = await relay.query({ kinds: [KIND_APP_DATA], authors: [self], '#d': [CONN_D] })
+  if (!event) return {}
+  try {
+    const obj = JSON.parse(await signer.nip44Decrypt(self, event.content))
+    return obj && typeof obj === 'object' ? obj : {}
+  } catch { return {} }
+}
+
+/**
+ * Remember (or replace) the connection to one pen, merging with any others.
+ * `signer` is your own sign-in (it self-encrypts). Returns the publish receipt.
+ */
+export async function saveConnection(relay, signer, { penPub, relays: bunkerRelays, clientSecretHex }) {
+  const self = await signer.getPublicKey()
+  const all = await loadConnections(relay, signer)
+  all[penPub] = {
+    relays: [...new Set(bunkerRelays || [])],
+    clientSecretHex,
+    updated_at: Math.floor(Date.now() / 1000),
+  }
+  const event = await signer.signEvent({
+    kind: KIND_APP_DATA,
+    created_at: Math.floor(Date.now() / 1000),
+    tags: [['d', CONN_D]],
+    content: await signer.nip44Encrypt(self, JSON.stringify(all)),
+  })
+  return relay.publish(event)
+}
+
+/** Rebuild a bunker:// pointer for a saved connection — pen + relays, no secret
+ *  (the session is already bound to the persisted client key). */
+export function connectionUri(penPub, saved) {
+  const relays = (saved?.relays || []).map(r => `relay=${encodeURIComponent(r)}`).join('&')
+  return `bunker://${penPub}?${relays}`
+}
+
 /**
  * Resolve display names for pubkeys from their published kind-0 profiles, so the
  * discovered pen shows as "James's Quill", not a hex string. Best-effort: a
