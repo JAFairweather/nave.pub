@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Neil">
+  <rect x="2" y="2" width="96" height="96" rx="20" fill="#0b0906" stroke="#c39a56" stroke-opacity="0.5" stroke-width="2"/>
+  <!-- a stone arch bridge: Neil carries the nest west and back, and never holds a key that crosses it -->
+  <g stroke="#e2c079" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" fill="none">
+    <!-- the deck: the span the others walk across without leaving home -->
+    <line x1="14" y1="42" x2="86" y2="42"/>
+    <!-- the arch that carries the load across the divide -->
+    <path d="M22 70 A 28 28 0 0 1 78 70"/>
+    <!-- abutments, footed on the near bank and the far -->
+    <line x1="22" y1="70" x2="22" y2="79"/>
+    <line x1="78" y1="70" x2="78" y2="79"/>
+  </g>
+  <!-- keystone: the shared root that holds the span; the bridge routes on it but never keeps it -->
+  <path d="M45 42 L55 42 L53 52 L47 52 Z" fill="#c39a56" fill-opacity="0.25" stroke="#e2c079" stroke-width="3" stroke-linejoin="round"/>
+  <!-- the water it crosses -->
+  <line x1="20" y1="84" x2="80" y2="84" stroke="#c39a56" stroke-width="1.8" stroke-linecap="round" opacity="0.7"/>
+</svg>
