@@ -228,7 +228,16 @@ async function connectBunker() {
   status(els.stBunker, 'Connecting to your drafter…')
   try {
     const { nip46Signer } = await import('./vendor/nave-connect.mjs')
-    const signer = nip46Signer(uri)
+    // Persist the NIP-46 transport key (per bunker host) so a reload re-pairs to
+    // the SAME session — a fresh key against a reused bunker:// looks like a
+    // stranger with a spent invite and hangs. This is the client's own connection
+    // identity, not any Nave key; standard NIP-46 client behaviour to persist it.
+    let host = ''
+    try { host = new URL(uri).hostname } catch { /* validated inside the signer */ }
+    const ckKey = `nscribe:nip46-client:${host}`
+    const clientSecret = (() => { try { return localStorage.getItem(ckKey) || undefined } catch { return undefined } })()
+    const signer = nip46Signer(uri, { clientSecret })
+    try { localStorage.setItem(ckKey, signer.clientSecretHex) } catch { /* private mode — session-only */ }
     const pk = await signer.getPublicKey()   // lazily performs the NIP-46 connect
     // Verify the connection lands on the pen your steering record names — a
     // bunker for some OTHER key is not your drafter, discovered or not.

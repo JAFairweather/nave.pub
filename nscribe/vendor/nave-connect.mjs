@@ -58,32 +58,83 @@ export function localSigner(sk) {
 
 // --- NIP-46 (bunker — the iPhone path) ---
 // bunkerInput: a bunker:// URI from the Bunker46 dashboard. clientSecret (hex):
-// persist the ephemeral client key so a reload re-pairs to the SAME bunker
-// session instead of prompting again. Connect is lazy (first use), so building
-// the signer is cheap. _BunkerSigner/_parseBunkerInput are injectable for tests.
+// persist the transport key so a reload re-pairs to the SAME bunker session
+// instead of looking like a new stranger. Connect is lazy (first use).
+//
+// Hand-rolled client, proven against Bunker46 on the wire (jaf-scribe.mjs,
+// 2026-07-24), REPLACING nostr-tools' BunkerSigner — which fails Bunker46 two
+// ways and surfaces as "Cannot read properties of undefined (reading 'pubkey')":
+//   1. Bunker46 answers in nip44; BunkerSigner listens in nip04, so its requests
+//      land but it never hears the replies, and getPublicKey resolves undefined.
+//   2. subscribeMany takes ONE filter object, not an array — an array silently
+//      matches nothing.
+// The transport key must be STABLE when reusing a bunker:// (the bunker binds the
+// session to the client pubkey; a fresh throwaway on reconnect looks like a
+// stranger with a spent invite and hangs) — hence clientSecret persistence. The
+// export contract is unchanged, so this drops straight back into the fleet's
+// other vendored nave-connect copies. _BunkerSigner/_parseBunkerInput are kept
+// in the signature for call-site/test compatibility; the guts no longer use them.
 export function nip46Signer(bunkerInput, {
   clientSecret, onAuthUrl,
-  _BunkerSigner = BunkerSigner, _parseBunkerInput = parseBunkerInput,
+  _BunkerSigner = BunkerSigner, _parseBunkerInput = parseBunkerInput, _pool,
 } = {}) {
-  const local = clientSecret ? fromHex(clientSecret) : generateSecretKey()
-  let signer = null, pk = null
-  async function ready() {
-    if (signer) return signer
-    const pointer = await _parseBunkerInput(bunkerInput)
-    if (!pointer) throw new Error('nip46Signer: not a valid bunker:// / nostrconnect:// URI')
-    signer = new _BunkerSigner(local, pointer, { onauth: onAuthUrl })
-    await signer.connect()
-    pk = await signer.getPublicKey()
-    return signer
+  const clientKey = clientSecret ? fromHex(clientSecret) : generateSecretKey()
+  const clientPk = pkFromSk(clientKey)
+
+  const uri = new URL(bunkerInput)
+  const remotePk = (uri.hostname || uri.pathname.replace(/^\/\//, '')).toLowerCase()
+  const relays = [...new Set(uri.searchParams.getAll('relay'))]
+  const secret = uri.searchParams.get('secret') || ''
+  if (!/^[0-9a-f]{64}$/.test(remotePk)) throw new Error('nip46Signer: not a valid bunker:// URI (no remote pubkey)')
+  if (!relays.length) throw new Error('nip46Signer: bunker:// carries no relay')
+
+  const convKey = nip44.v2.utils.getConversationKey(clientKey, remotePk)
+  const pool = _pool || new SimplePool()
+  const pending = new Map()
+  let subbed = false, connectedP = null, pk = null
+
+  const ensureSub = () => {
+    if (subbed) return
+    subbed = true
+    // SINGLE filter object — subscribeMany does NOT take an array of filters.
+    pool.subscribeMany(relays, { kinds: [24133], authors: [remotePk], '#p': [clientPk] }, {
+      onevent(e) {
+        let m
+        try { m = JSON.parse(nip44.v2.decrypt(e.content, convKey)) } catch { return } // not for us
+        const p = pending.get(m.id)
+        if (!p) return
+        // An auth_url challenge keeps the request pending; surface the link and wait.
+        if (m.result === 'auth_url') { try { onAuthUrl?.(m.error) } catch { /* display is caller's */ } return }
+        pending.delete(m.id)
+        if (m.error) p.reject(new Error(`bunker: ${m.error}`))
+        else p.resolve(m.result)
+      },
+    })
   }
+  const rpc = (method, params, timeoutMs = 60_000) => new Promise((resolve, reject) => {
+    ensureSub()
+    const id = crypto.randomUUID()
+    pending.set(id, { resolve, reject })
+    const ev = finalizeEvent({
+      kind: 24133, created_at: Math.floor(Date.now() / 1000), tags: [['p', remotePk]],
+      content: nip44.v2.encrypt(JSON.stringify({ id, method, params }), convKey),
+    }, clientKey)
+    Promise.allSettled(pool.publish(relays, ev))
+    setTimeout(() => { if (pending.delete(id)) reject(new Error(`nip46 ${method} timed out after ${timeoutMs}ms`)) }, timeoutMs)
+  })
+  // connect is best-effort: a fresh pairing needs it (the secret auto-creates the
+  // connection), an established one answers RPCs without it — so a rejected or
+  // ignored connect must not block an already-active connection.
+  const ready = () => (connectedP ??= rpc('connect', [remotePk, secret], 15_000).catch(() => 'ack'))
+
   return {
     kind: 'nip46',
-    clientSecretHex: toHex(local),   // persist in `remember` to keep the pairing
-    getPublicKey: async () => { await ready(); return pk },
-    signEvent: async (e) => { await ready(); return signer.signEvent(e) },
-    nip44Encrypt: async (p, t) => { await ready(); return signer.nip44Encrypt(p, t) },
-    nip44Decrypt: async (p, c) => { await ready(); return signer.nip44Decrypt(p, c) },
-    close: async () => { try { await signer?.close?.() } catch { /* best effort */ } },
+    clientSecretHex: toHex(clientKey),   // persist in `remember` to keep the pairing
+    getPublicKey: async () => { await ready(); return (pk ??= await rpc('get_public_key', [])) },
+    signEvent: async (e) => { await ready(); return JSON.parse(await rpc('sign_event', [JSON.stringify(e)])) },
+    nip44Encrypt: async (p, t) => { await ready(); return rpc('nip44_encrypt', [p, t]) },
+    nip44Decrypt: async (p, c) => { await ready(); return rpc('nip44_decrypt', [p, c]) },
+    close: async () => { try { pool.close(relays) } catch { /* best effort */ } },
   }
 }
 
