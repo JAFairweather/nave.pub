@@ -1,15 +1,17 @@
 // Nscribe — paste anything, get it back in your voice, send it to your desk to sign.
 //
-// v1 critical path is deliberately dependency-free (fetch + optional window.nostr),
-// so the app can NEVER fail to load on a missing bundle. The re-voicing is a
-// grant-to-app Anthropic call (your credential, in memory only). The Ngage handoff
-// is copy-and-open — you sign on your own desk.
+// Nothing is typed (AD-2). You sign in with your own key; Nscribe reads YOUR OWN
+// steering record — the kind-10440 Grant Index Ngage wrote when you trusted a pen
+// and published steering — and DISCOVERS your drafting hand from it (emit.mjs
+// discoverDrafters). No "Director" to configure, no drafter npub to paste: your
+// pen is metadata, discovered from published state. It then drafts from its own
+// credential:anthropic grant (readAnthropicCredential) and seals the result as a
+// `draft:post/*` scope gift-wrapped to your npub (publishDraft), pen-attested, so
+// it lands on your Ngage desk where only your signature publishes it.
 //
-// TIER 2 (next increment, needs your live infra to verify): connect your jaf-quill
-// bunker (vendor/nave-connect.mjs) and auto-publish the draft as a `draft:post/*`
-// scope gift-wrapped to your npub (vendor/nipxx.mjs), pen-attested, so it lands on
-// the desk without a paste. Left un-wired on purpose — untested relay/bunker crypto
-// shipped as "working" is exactly what this estate refuses to do.
+// The re-voice path stays dependency-free (fetch + optional window.nostr) so the
+// page can never fail to load; the discovery/seal path lazy-loads the heavier
+// modules only when you sign in and connect.
 
 import { renderTitlebar, updateTitlebar } from './components/nave-titlebar.mjs'
 
@@ -19,7 +21,7 @@ const els = {
   revoice: $('revoice'), preview: $('preview'), toNgage: $('toNgage'), copy: $('copy'),
   st1: $('st1'), st2: $('st2'), srcCount: $('srcCount'), outCount: $('outCount'),
   akey: $('akey'), model: $('model'), dirnpub: $('dirnpub'),
-  cfg: $('cfg'), openCfg: $('openCfg'), tmpl: $('tmpl'),
+  cfg: $('cfg'), openCfg: $('openCfg'), tmpl: $('tmpl'), penInfo: $('penInfo'),
   bunker: $('bunker'), connectBunker: $('connectBunker'), stBunker: $('stBunker'),
 }
 
@@ -30,6 +32,9 @@ const QUILL_SEAL = `<svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
   <path d="M13 21 L16 24" stroke="var(--accent-bright)" stroke-width="1.4" stroke-linecap="round"/>
 </svg>`
 let directorSigner = null
+// Discovered from your own steering record after sign-in — never typed.
+// { drafters: hex[], names: {hex: name|null}, npub: string } | null
+let discovery = null
 
 const words = (s) => (s.trim() ? s.trim().split(/\s+/).length : 0)
 const setCount = (t, el) => { el.textContent = `${words(t)} words` }
@@ -106,12 +111,16 @@ function actuatorTemplate() {
   }
 }
 
-// --- the re-voice call: the AD-10 director path -----------------------------
-// jaf-quill (the Cloud Drafter) drafts from its OWN credential:anthropic grant;
-// the draft then routes to the Director's Ngage desk to sign. The Director never
-// drafts with his own key. A pasted key is a fallback only.
+// --- the re-voice call --------------------------------------------------------
+// Your discovered pen drafts from its OWN credential:anthropic grant; the draft
+// then routes to your Ngage desk to sign. You never draft with your own key —
+// the pen proposes, you approve. A pasted key is a fallback only.
 
-// Resolve the drafting credential — jaf-quill's grant first, paste as fallback.
+// The discovered pen's display name (or a neutral fallback) for user-facing copy —
+// so the app never hardcodes an identity it claims to discover.
+const penName = () => (discovery?.drafters?.length && discovery.names[discovery.drafters[0]]) || 'your pen'
+
+// Resolve the drafting credential — the discovered pen's grant first, paste as fallback.
 async function resolveDraftKey() {
   if (bunkerSigner) {   // the Cloud Drafter is connected → read jaf-quill's grant
     const [{ readAnthropicCredential }, { LiveRelay }] = await Promise.all([
@@ -128,12 +137,13 @@ async function resolveDraftKey() {
 
 // Precise, per-failure diagnostics so a live miss says exactly which prereq is off.
 function credErr(e) {
+  const pen = penName()
   switch (e?.code) {
-    case 'DECRYPT_REFUSED': return 'Connected as jaf-quill, but the bunker refused to decrypt the grant — the Bunker46 connection needs nip44Decrypt permission, not just draft-kind signing. Widen it in the bunker console.'
-    case 'NO_GRANT': return `Connected as jaf-quill, but no credential:anthropic grant reached this key. Issue it in the Nvoy console (＋ grant → jaf-quill → credential:anthropic).${e.seen?.length ? ' Scopes it CAN see: ' + e.seen.join(', ') + '.' : ''}`
-    case 'STALE': return 'The credential:anthropic grant is stale/rotated — re-issue it to jaf-quill in Nvoy.'
+    case 'DECRYPT_REFUSED': return `Connected to ${pen}, but the bunker refused to decrypt the grant — the connection needs nip44Decrypt permission, not just draft-kind signing. Widen it in the bunker console.`
+    case 'NO_GRANT': return `Connected to ${pen}, but no credential:anthropic grant reached this key. Issue it in the Nvoy console (＋ grant → ${pen} → credential:anthropic).${e.seen?.length ? ' Scopes it CAN see: ' + e.seen.join(', ') + '.' : ''}`
+    case 'STALE': return `The credential:anthropic grant is stale/rotated — re-issue it to ${pen} in Nvoy.`
     case 'SHAPE': return 'Found the credential:anthropic grant, but its payload has no string .value — check how it was issued in Nvoy.'
-    default: return "Reading jaf-quill's credential grant failed: " + String(e?.message || e)
+    default: return `Reading ${pen}'s credential grant failed: ` + String(e?.message || e)
   }
 }
 
@@ -165,19 +175,19 @@ async function revoice() {
   if (!src) return status(els.st1, 'Paste or upload some text first.', 'err')
   els.revoice.disabled = true
   try {
-    status(els.st1, bunkerSigner ? "jaf-quill is reading its credential grant (the Cloud Drafter)…" : 'Re-voicing…')
+    status(els.st1, bunkerSigner ? `${penName()} is reading its credential grant…` : 'Re-voicing…')
     let resolved
     try { resolved = await resolveDraftKey() }
     catch (e) { return status(els.st1, credErr(e), 'err') }
     if (!resolved) {
       openSettings()
-      return status(els.st1, 'Connect your jaf-quill bunker — the Cloud Drafter — in settings. It drafts from its own credential:anthropic grant (no key to paste), then seals to your Ngage desk. A pasted key is a fallback only.', 'err')
+      return status(els.st1, `Connect ${penName()} in settings — it drafts from its own credential:anthropic grant (no key to paste), then seals to your Ngage desk. A pasted key is a fallback only.`, 'err')
     }
     const spec = await voiceSpec()
-    status(els.st1, resolved.via === 'grant' ? 'Drafting as jaf-quill from the credential grant…' : 'Re-voicing (pasted-key fallback)…')
+    status(els.st1, resolved.via === 'grant' ? `Drafting as ${penName()} from the credential grant…` : 'Re-voicing (pasted-key fallback)…')
     const text = await callAnthropic(resolved.key, spec, els.register.value, src)
     els.out.value = text; setCount(text, els.outCount); syncOutButtons()
-    const via = resolved.via === 'grant' ? "via jaf-quill's credential grant — no key pasted" : 'via the pasted-key fallback'
+    const via = resolved.via === 'grant' ? `via ${penName()}'s credential grant — no key pasted` : 'via the pasted-key fallback'
     status(els.st1, `Drafted (${via})${spec ? ' against your steering file' : ''}. Read it, tweak it, then Send to Ngage to sign in your own hand.`, 'ok')
   } catch (err) {
     status(els.st1, String(err.message || err), 'err')
@@ -214,18 +224,28 @@ let bunkerSigner = null
 
 async function connectBunker() {
   const uri = els.bunker.value.trim()
-  if (!uri) return status(els.stBunker, 'Paste your jaf-quill bunker:// connection first (draft kinds only).', 'err')
-  status(els.stBunker, 'Connecting to the bunker…')
+  if (!uri) return status(els.stBunker, 'Paste the connection to your discovered drafter (draft kinds only).', 'err')
+  status(els.stBunker, 'Connecting to your drafter…')
   try {
     const { nip46Signer } = await import('./vendor/nave-connect.mjs')
     const signer = nip46Signer(uri)
     const pk = await signer.getPublicKey()   // lazily performs the NIP-46 connect
+    // Verify the connection lands on the pen your steering record names — a
+    // bunker for some OTHER key is not your drafter, discovered or not.
+    if (discovery?.drafters?.length && !discovery.drafters.includes(pk)) {
+      bunkerSigner = null
+      const { nip19 } = await import('nostr-tools')
+      return status(els.stBunker,
+        `That connection is ${nip19.npubEncode(pk).slice(0, 16)}… — not the pen your steering record names. ` +
+        `Connect the discovered drafter, or re-check which key you trusted in Ngage.`, 'err')
+    }
     bunkerSigner = signer
     els.toNgage.textContent = 'Seal to Ngage →'
-    status(els.stBunker, `Cloud Drafter connected — jaf-quill ${pk.slice(0, 8)}…${pk.slice(-4)}. Re-voice now drafts from its credential grant; Send to Ngage auto-seals.`, 'ok')
+    const nm = discovery?.names?.[pk] || 'your pen'
+    status(els.stBunker, `Connected — ${nm} (${pk.slice(0, 8)}…${pk.slice(-4)})${discovery?.drafters?.includes(pk) ? ', verified against your steering record' : ''}. Re-voice now drafts from its credential grant; Send to Ngage auto-seals.`, 'ok')
   } catch (e) {
     bunkerSigner = null
-    status(els.stBunker, 'Bunker connect failed: ' + String(e.message || e), 'err')
+    status(els.stBunker, 'Connect failed: ' + String(e.message || e), 'err')
   }
 }
 
@@ -233,7 +253,7 @@ async function toNgage() {
   const text = els.out.value.trim()
   if (!text) return
   const recipient = els.dirnpub.value.trim()
-  // Auto-seal: a connected jaf-quill bunker pens the draft straight to the desk.
+  // Auto-seal: the connected pen pens the draft straight to your desk.
   if (bunkerSigner && recipient) {
     status(els.st2, 'Sealing the draft to your desk…')
     try {
@@ -254,21 +274,23 @@ async function toNgage() {
   // Fallback: copy the draft and open the desk, where you paste and sign.
   try { await navigator.clipboard.writeText(text) } catch { /* non-fatal */ }
   window.open('https://ngage.nave.pub', '_blank', 'noopener')
-  if (!(bunkerSigner && recipient)) status(els.st2, 'Draft copied and Ngage opened — paste it and sign in your own hand. (Connect your jaf-quill bunker + set your npub in settings to auto-seal instead.)', 'ok')
+  if (!(bunkerSigner && recipient)) status(els.st2, 'Draft copied and Ngage opened — paste it and sign in your own hand. (Sign in and connect your discovered pen to auto-seal instead.)', 'ok')
 }
 
-// --- Director sign-in via the shared nave-connect + titlebar (AD-11) ---------
-// This is the APPROVAL end (Ngage). Drafting is jaf-quill's job (the Cloud
-// Drafter, in settings). nave-connect is lazy-loaded so the page can't fail to
-// load on a bundle issue; the titlebar itself is dependency-free.
-async function signInDirector() {
+// --- Sign in (Alby / your key) then DISCOVER your drafter (AD-2, AD-11) -------
+// Sign in with your own key — you are the desk that approves. Then Nscribe reads
+// your own steering record (the kind-10440 Grant Index Ngage wrote when you
+// trusted a pen and published steering) and discovers your drafting hand from
+// it: no npub typed, no "Director" to configure. nave-connect is lazy-loaded so
+// the page can't fail to load on a bundle issue; the titlebar is dependency-free.
+async function signIn() {
   try {
     const nc = await import('./vendor/nave-connect.mjs')
     let signer
     if (window.nostr) {
       signer = nc.nip07Signer()
     } else {
-      const uri = prompt('No extension found. Paste a bunker:// or nostrconnect:// to sign in as the Director:')
+      const uri = prompt('No extension found. Paste a bunker:// or nostrconnect:// to sign in with your key:')
       if (!uri) return
       signer = nc.nip46Signer(uri)
     }
@@ -276,14 +298,53 @@ async function signInDirector() {
     const { nip19 } = await import('nostr-tools')
     const npub = nip19.npubEncode(pk)
     directorSigner = signer
-    if (!els.dirnpub.value.trim()) els.dirnpub.value = npub   // you are the recipient / approver
-    updateTitlebar('#titlebar', { npub, kind: signer.kind, onLogout: signOutDirector, onSignIn: null })
-    status(els.st2, 'Signed in as the Director — the approval end (Ngage). Drafting is jaf-quill: connect the Cloud Drafter in settings.', 'ok')
+    els.dirnpub.value = npub   // you are the recipient / approver — always, never typed
+    updateTitlebar('#titlebar', { npub, kind: signer.kind, onLogout: signOut, onSignIn: null })
+    status(els.st2, 'Signed in. Reading your steering record to find your drafting hand…', 'ok')
+    await discoverDrafter(signer, npub)
   } catch (e) { status(els.st2, 'Sign-in failed: ' + String(e.message || e), 'err') }
 }
-function signOutDirector() {
+
+// Read your own Grant Index and surface the pen(s) Ngage recorded — nothing typed.
+async function discoverDrafter(signer, npub) {
+  els.penInfo.textContent = 'Discovering your drafting hand from your steering record…'
+  try {
+    const [{ discoverDrafters, resolveNames }, { LiveRelay }, { nip19 }] = await Promise.all([
+      import('./emit.mjs'), import('./vendor/liverelay.mjs'), import('nostr-tools'),
+    ])
+    const relay = new LiveRelay(RELAYS)
+    let drafters, names
+    try {
+      drafters = await discoverDrafters(relay, signer)
+      names = await resolveNames(relay, drafters)
+    } finally { try { relay.close?.() } catch { /* best effort */ } }
+    discovery = { drafters, names, npub }
+    if (!drafters.length) {
+      els.penInfo.textContent =
+        'No drafting pen found in your steering record yet. Trust your pen in Ngage → Settings → ' +
+        'Trusted agents, and publish steering once. That write is what Nscribe reads here — then your ' +
+        'drafter appears with nothing typed.'
+      return
+    }
+    const label = drafters.map(pk => `${names[pk] || 'pen'} — ${nip19.npubEncode(pk)}`).join('\n')
+    const primary = names[drafters[0]] || 'your pen'
+    els.penInfo.textContent =
+      `Your drafting hand (from your steering record — nothing typed):\n${label}\n\n` +
+      `Connect ${primary} in settings to draft; the connection is verified against this discovered key.`
+    // Prime the settings connection field with the discovered pen's name.
+    els.bunker.placeholder = `bunker://… — the live connection to ${primary}. Leave blank to copy-and-open instead.`
+  } catch (e) {
+    els.penInfo.textContent = 'Could not read your steering record (' + String(e.message || e) + '). ' +
+      'You can still connect a drafter manually in settings, or use the paste fallback.'
+  }
+}
+
+function signOut() {
   directorSigner = null
-  updateTitlebar('#titlebar', { npub: null, kind: null, onSignIn: signInDirector })
+  discovery = null
+  els.penInfo.textContent = ''
+  els.dirnpub.value = ''
+  updateTitlebar('#titlebar', { npub: null, kind: null, onSignIn: signIn })
   status(els.st2, 'Signed out.', '')
 }
 
@@ -295,10 +356,10 @@ els.copy.addEventListener('click', copyOut)
 els.toNgage.addEventListener('click', toNgage)
 els.connectBunker.addEventListener('click', connectBunker)
 
-// Mount the shared identity bar signed-out; sign-in swaps it to the Director pill.
+// Mount the shared identity bar signed-out; sign-in swaps it to your pill.
 renderTitlebar('#titlebar', {
   appName: 'Nscribe', tagline: 'say it in your hand', sealSvg: QUILL_SEAL,
-  npub: null, onSignIn: signInDirector, signInLabel: 'Sign in as Director',
+  npub: null, onSignIn: signIn, signInLabel: 'Sign in',
 })
 
 setCount('', els.srcCount); setCount('', els.outCount); syncOutButtons()

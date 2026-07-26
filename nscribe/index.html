@@ -104,9 +104,9 @@
 <main>
   <h1 class="hero">Say it in your hand.</h1>
   <p class="lede">Paste anything — a rough note, an AI draft, a wall of thoughts. Nscribe re-voices it
-  against <b>your own steering file</b> (the twelve essays, measured), drafted by <b>jaf-quill</b> from a
-  credential you granted it, then hands the draft to your <b>Ngage desk</b> so nothing publishes without
-  your signature. The drafter proposes; only you approve.</p>
+  against <b>your own steering file</b> (the twelve essays, measured), drafted by <b>your own pen</b> —
+  discovered from your steering record, not typed — from a credential you granted it, then hands the draft
+  to your <b>Ngage desk</b> so nothing publishes without your signature. The drafter proposes; only you approve.</p>
 
   <div class="grid">
     <div class="panel">
@@ -147,23 +147,26 @@
   </div>
 
   <div class="seams">
-    <b>The route (AD-10):</b> the Director never drafts with his own key. Sign in above as the Director —
-    that’s the <b>approval</b> end (Ngage). Drafting is <b>jaf-quill’s</b> job: connect the Cloud Drafter in
-    <a href="#" id="openCfg">settings</a>, and it drafts from its own <code>credential:anthropic</code> grant
-    (no key to paste), pens the draft, and seals it to your desk.
-    <details id="cfg"><summary>Settings — the Cloud Drafter &amp; targets (in-memory only)</summary>
-      <label class="fld" for="bunker">jaf-quill — the Cloud Drafter (NIP-46 bunker). Drafts from its own credential:anthropic grant AND pens to your Ngage desk. No key to paste.</label>
+    <b>Nothing typed (AD-2):</b> sign in with your key and Nscribe reads <b>your own steering record</b> —
+    the one Ngage wrote when you trusted a pen and published steering — and discovers your drafting hand
+    from it. No npub to paste, no “Director” to configure: your drafter is metadata, discovered from
+    published state. Connect it in <a href="#" id="openCfg">settings</a> and it drafts from its own
+    <code>credential:anthropic</code> grant, then seals the result to your desk, where only your
+    signature publishes it.
+    <div id="penInfo" class="kv"></div>
+    <details id="cfg"><summary>Settings — connect your drafter &amp; targets (in-memory only)</summary>
+      <label class="fld" for="bunker">Your drafter — the connection (NIP-46 bunker). The <em>identity</em> is discovered from your steering record above; this is only the live connection to it. It drafts from its own credential:anthropic grant AND pens to your Ngage desk.</label>
       <div class="row">
-        <input id="bunker" placeholder="bunker://… (scoped to draft kinds 30440/1059/13). Leave blank to copy-and-open instead.">
+        <input id="bunker" placeholder="bunker://… — the connection to your discovered drafter. Leave blank to copy-and-open instead.">
         <button class="btn ghost fixed" id="connectBunker">Connect</button>
       </div>
       <div class="status" id="stBunker"></div>
       <div class="row" style="margin-top:10px">
         <div><label class="fld" for="model">Model</label><input id="model" value="claude-opus-4-8"></div>
-        <div><label class="fld" for="dirnpub">Your npub (draft recipient / Ngage desk)</label><input id="dirnpub" placeholder="npub1… — auto-fills from sign-in"></div>
+        <div><label class="fld" for="dirnpub">Draft recipient — your desk (discovered from sign-in)</label><input id="dirnpub" placeholder="auto — the key you signed in with" readonly></div>
       </div>
-      <label class="fld" for="akey">Anthropic key — FALLBACK only (prefer the Cloud Drafter above). In memory only, never stored.</label>
-      <input id="akey" type="password" placeholder="sk-ant-… — only used if the Cloud Drafter isn't connected. Never stored, never sent anywhere but api.anthropic.com">
+      <label class="fld" for="akey">Anthropic key — FALLBACK only (prefer the discovered drafter above). In memory only, never stored.</label>
+      <input id="akey" type="password" placeholder="sk-ant-… — only used if the drafter isn't connected. Never stored, never sent anywhere but api.anthropic.com">
       <div class="kv" id="tmpl"></div>
     </details>
   </div>
