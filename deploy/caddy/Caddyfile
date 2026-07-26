@@ -94,7 +94,15 @@ nscope.nave.pub {
 	import app nscope
 }
 nscribe.nave.pub {
-	import app nscribe
+	# Nscribe lives INSIDE the nave.pub repo (deploy/sites/nave/nscribe), not its
+	# own repo, so it serves that subdirectory of the hub clone — not /srv/apps/nscribe.
+	# Mirrors the (app) snippet by hand because the snippet hardcodes root to /srv/apps/{name}.
+	root * /srv/apps/nave/nscribe
+	encode gzip zstd
+	@mjs path *.mjs
+	header @mjs Content-Type "text/javascript; charset=utf-8"
+	header Cache-Control "no-cache"
+	file_server
 }
 nact.nave.pub {
 	# /api/proxy/* is Nactor's INTERNAL credential-injecting egress proxy. It must
