@@ -26,7 +26,9 @@ You ─paste/upload─▶ Nscribe ─build {surface:'revoice', register, content
   in the **email** register, never in an essay.
 - **Preview** — see the exact actuator template + system/user prompt with no
   credential and no call.
-- **Send to Ngage** — copies the draft and opens the desk; you paste and sign.
+- **Send to Ngage** — with your **jaf-quill bunker** connected and your npub set, it **auto-seals**
+  the draft as a `draft:post/<id8>` scope gift-wrapped to your npub (pen-attested) so it lands on the
+  desk to sign. Without the bunker it falls back to copy-and-open.
 
 ## The credential (grant-to-app)
 
@@ -46,25 +48,31 @@ sovereign path, and neither could be verified from the build container:
 2. **jaf-quill bunker connection** (NIP-46, draft kinds `30440/1059/13` only) — pens
    the draft scope so the desk verifies the hand. **Not wired in v1 by design.**
 
-## Tier 2 — auto-seal to Ngage (next increment)
+## Auto-seal to Ngage — wired, and round-trip proven
 
-`vendor/nave-connect.mjs` and `vendor/nipxx.mjs` are staged (copied verbatim from
-`luke/` and `ngage/lib/`, "do not edit the copy"). The next increment connects your
-jaf-quill bunker and publishes the re-voiced draft as a `draft:post/<id8>` scope,
-gift-wrapped to your npub and pen-attested (`ngage/drafts.mjs` `pennedDraft`, seal
-author = the pen, `direct:true`), so it lands on the desk without a paste.
+Connect your jaf-quill bunker (`bunker://`, scoped to draft kinds) in settings and **Send
+to Ngage** publishes the re-voiced draft as a `draft:post/<id8>` scope, gift-wrapped to
+your npub and penned by jaf-quill (`ngage/drafts.mjs` `pennedDraft`: seal author = the
+pen, `direct:true`) — no paste. The emit ceremony
+(`publishScopeWithSigner` / `grantWithSigner` / `giftWrapWithSigner`) is lifted **verbatim**
+from `ngage/steering.mjs`; only the `draft:post` payload glue is new.
 
-This is left un-wired **on purpose**: shipping untested relay/bunker gift-wrap crypto
-as "working" is exactly the thing this estate refuses to do (SIDE-QUESTS; "a
-self-reported done isn't done until it's played"). It gets wired and verified against
-your live bunker on your desk, not asserted from a container that can't reach it.
+**Proven, not asserted** — `node nscribe/emit.test.mjs`: a draft published with a local
+signer reads back through nipxx's own `receiveGrants` → `fetchScope` exactly as the
+Director would — the exact text round-trips, the grant author is the pen, and a stranger
+key finds nothing. NIP-46 is a custody swap over the same signer interface, so the only
+thing left is confirming the **live bunker + real relays** on your desk — which no build
+container can reach.
 
 ## Honest status
 
-- ✅ **Built and self-consistent**: static app, real voice spec, real Anthropic call
-  shape, real actuator template. Preview works with zero setup.
-- ⚠️ **Not yet run end-to-end**: no browser/credential/bunker was available here. The
-  first real re-voice and the Ngage handoff are a your-desk verification step.
+- ✅ **Built + the emit path is round-trip proven** (`emit.test.mjs` PASS): the draft
+  seals and reads back through nipxx's own reader as the Director; a stranger gets nothing.
+  Static app, real voice spec, real Anthropic call shape, real actuator template; preview
+  works with zero setup.
+- ⚠️ **Confirm on your desk**: the re-voice needs your credential, and the live NIP-46
+  bunker connect + real relays weren't reachable from the build container. First live
+  re-voice and first live auto-seal are a your-desk step.
 - ⬜ **Not deployed**: `deploy/caddy/Caddyfile` carries `nscribe.nave.pub`; it serves
   once `deploy/sites.sh` clones this path and the deploy runs — your on-box step. When
   it graduates to its own repo (`JAFairweather/nscribe`), update `PROJECTS.md` and
@@ -73,10 +81,14 @@ your live bunker on your desk, not asserted from a container that can't reach it
 ## Files
 
 ```
-index.html          the app (no build; inline styles on the Nave ink/gold surface)
-nscribe.mjs         v1 logic — dependency-free (fetch + optional window.nostr)
+index.html          the app (no build; inline styles on the Nave ink/gold surface) + importmap
+nscribe.mjs         UI logic — the v1 path is dependency-free; auto-seal lazy-loads the heavy modules
+emit.mjs            draft:post publisher (verbatim ceremony from ngage/steering.mjs + the payload glue)
+emit.test.mjs       round-trip proof (node): publish → read back as the Director → stranger gets 0
 voice/jaf-voice.md  your steering file, vendored verbatim (NOT a voice source itself —
                     the essays in library/ are AI-assisted; this file + jamesafairweather.com are)
-vendor/nave-connect.mjs   staged for tier-2 sign-in (from luke/) — do not edit the copy
-vendor/nipxx.mjs          staged for tier-2 draft-scope publishing (from ngage/lib/) — do not edit
+vendor/nave-connect.mjs   sign-in + NIP-46 bunker signer (from luke/) — do not edit the copy
+vendor/nipxx.mjs          scope publish/read (from ngage/lib/) — do not edit
+vendor/liverelay.mjs      relay-pool publish adapter (from ngage/lib/) — do not edit
+vendor/nostr-tools*.mjs   vendored bundles (from ngage/vendor/) — resolved via the importmap
 ```

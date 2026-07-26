@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Nscribe — say it in your hand</title>
 <meta name="description" content="Paste anything. Get it back in your voice. Send it to your own desk to sign.">
+<script type="importmap">
+{ "imports": {
+    "nostr-tools": "./vendor/nostr-tools.mjs",
+    "nostr-tools/pool": "./vendor/nostr-tools-pool.mjs",
+    "nostr-tools/nip46": "./vendor/nostr-tools-nip46.mjs"
+} }
+</script>
 <style>
   /* Nscribe vendors the Nave ink/gold surface (design/tokens.css) with its own accent.
      One accent + one seal per app is the design-system rule; everything else is constant. */
@@ -132,14 +139,22 @@ against <b>your own steering file</b> (the twelve essays, measured), then hands 
   <br>• <b>credential:anthropic</b> (grant-to-app) — powers the re-voicing. Paste it in
   <a href="#" id="openCfg">settings</a>, or point Nscribe at a proxy. Held in memory only, never logged.
   <br>• <b>jaf-quill bunker connection</b> (NIP-46, draft kinds only) — pens the draft scope so the desk
-  verifies the hand. Until it’s connected, “Send to Ngage” falls back to copy-and-open (you paste on the desk).
+  verifies the hand. Connect it and “Send to Ngage” <b>auto-seals</b> the draft straight to your desk
+  (the emit round-trips in <code>emit.test.mjs</code> — the live bunker + relays are yours to confirm on the
+  desk). Leave it blank and it falls back to copy-and-open.
   <details id="cfg"><summary>Settings — credential &amp; targets (in-memory only)</summary>
     <label class="fld" for="akey">Anthropic key (credential:anthropic value)</label>
     <input id="akey" type="password" placeholder="sk-ant-… — stays in this tab, never stored, never sent anywhere but api.anthropic.com">
     <div class="row" style="margin-top:10px">
       <div><label class="fld" for="model">Model</label><input id="model" value="claude-opus-4-8"></div>
-      <div><label class="fld" for="dirnpub">Your npub (draft recipient / Ngage desk)</label><input id="dirnpub" placeholder="npub1… — auto-fills from sign-in"></div>
+      <div><label class="fld" for="dirnpub">Your npub (draft recipient / Ngage desk)</label><input id="dirnpub" placeholder="npub1… — where the draft is sealed"></div>
     </div>
+    <label class="fld" for="bunker">jaf-quill bunker connection (NIP-46) — pens the draft so the desk verifies the hand</label>
+    <div class="row">
+      <input id="bunker" placeholder="bunker://… (scoped to draft kinds 30440/1059/13). Leave blank to copy-and-open instead.">
+      <button class="btn ghost fixed" id="connectBunker">Connect</button>
+    </div>
+    <div class="status" id="stBunker"></div>
     <div class="kv" id="tmpl"></div>
   </details>
 </div>

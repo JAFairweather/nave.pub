@@ -18,6 +18,7 @@ const els = {
   st1: $('st1'), st2: $('st2'), srcCount: $('srcCount'), outCount: $('outCount'),
   signin: $('signin'), me: $('me'), akey: $('akey'), model: $('model'), dirnpub: $('dirnpub'),
   cfg: $('cfg'), openCfg: $('openCfg'), tmpl: $('tmpl'),
+  bunker: $('bunker'), connectBunker: $('connectBunker'), stBunker: $('stBunker'),
 }
 
 const words = (s) => (s.trim() ? s.trim().split(/\s+/).length : 0)
@@ -158,12 +159,54 @@ async function copyOut() {
   try { await navigator.clipboard.writeText(els.out.value); status(els.st2, 'Copied.', 'ok') }
   catch { status(els.st2, 'Copy failed — select the text and copy manually.', 'err') }
 }
+// The auto-seal path lazy-loads the heavier modules (nostr-tools + emit) only
+// when used, so the dependency-free v1 path can never fail to load.
+const RELAYS = ['wss://relay.nave.pub', 'wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.primal.net']
+let bunkerSigner = null
+
+async function connectBunker() {
+  const uri = els.bunker.value.trim()
+  if (!uri) return status(els.stBunker, 'Paste your jaf-quill bunker:// connection first (draft kinds only).', 'err')
+  status(els.stBunker, 'Connecting to the bunker…')
+  try {
+    const { nip46Signer } = await import('./vendor/nave-connect.mjs')
+    const signer = nip46Signer(uri)
+    const pk = await signer.getPublicKey()   // lazily performs the NIP-46 connect
+    bunkerSigner = signer
+    els.toNgage.textContent = 'Seal to Ngage →'
+    status(els.stBunker, `Connected — the pen is ${pk.slice(0, 8)}…${pk.slice(-4)}. "Send to Ngage" now auto-seals.`, 'ok')
+  } catch (e) {
+    bunkerSigner = null
+    status(els.stBunker, 'Bunker connect failed: ' + String(e.message || e), 'err')
+  }
+}
+
 async function toNgage() {
-  // v1: copy the draft and open the desk, where you sign in your own hand.
-  // (tier 2 auto-seals a draft:post/* scope here via your jaf-quill bunker.)
-  try { await navigator.clipboard.writeText(els.out.value) } catch { /* non-fatal */ }
+  const text = els.out.value.trim()
+  if (!text) return
+  const recipient = els.dirnpub.value.trim()
+  // Auto-seal: a connected jaf-quill bunker pens the draft straight to the desk.
+  if (bunkerSigner && recipient) {
+    status(els.st2, 'Sealing the draft to your desk…')
+    try {
+      const [{ publishDraft }, { LiveRelay }] = await Promise.all([
+        import('./emit.mjs'), import('./vendor/liverelay.mjs'),
+      ])
+      const hashtags = (text.match(/#(\w+)/g) || []).map(t => t.slice(1).toLowerCase())
+      const relay = new LiveRelay(RELAYS)
+      const res = await publishDraft(relay, bunkerSigner, recipient, { text, hashtags })
+      try { relay.close?.() } catch { /* best effort */ }
+      status(els.st2, `Sealed as ${res.scopeName}, gift-wrapped to your npub. Open Ngage and sign it in your own hand.`, 'ok')
+      return
+    } catch (e) {
+      status(els.st2, 'Auto-seal failed (' + String(e.message || e) + ') — falling back to copy-and-open.', 'err')
+      // fall through to the copy path
+    }
+  }
+  // Fallback: copy the draft and open the desk, where you paste and sign.
+  try { await navigator.clipboard.writeText(text) } catch { /* non-fatal */ }
   window.open('https://ngage.nave.pub', '_blank', 'noopener')
-  status(els.st2, 'Draft copied and Ngage opened — paste it on your desk and sign in your own hand. (Auto-seal via your jaf-quill bunker is the next increment.)', 'ok')
+  if (!(bunkerSigner && recipient)) status(els.st2, 'Draft copied and Ngage opened — paste it and sign in your own hand. (Connect your jaf-quill bunker + set your npub in settings to auto-seal instead.)', 'ok')
 }
 
 // --- sign-in (v1: optional convenience via NIP-07; no hard dependency) ---
@@ -184,6 +227,7 @@ els.revoice.addEventListener('click', revoice)
 els.preview.addEventListener('click', preview)
 els.copy.addEventListener('click', copyOut)
 els.toNgage.addEventListener('click', toNgage)
+els.connectBunker.addEventListener('click', connectBunker)
 els.signin.addEventListener('click', signIn)
 
 setCount('', els.srcCount); setCount('', els.outCount); syncOutButtons()
