@@ -93,6 +93,9 @@ nherit.nave.pub {
 nscope.nave.pub {
 	import app nscope
 }
+nscribe.nave.pub {
+	import app nscribe
+}
 nact.nave.pub {
 	# /api/proxy/* is Nactor's INTERNAL credential-injecting egress proxy. It must
 	# NEVER be reachable from the internet — the only public path to Nactor is

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nscribe — say it in your hand</title>
+<meta name="description" content="Paste anything. Get it back in your voice. Send it to your own desk to sign.">
+<style>
+  /* Nscribe vendors the Nave ink/gold surface (design/tokens.css) with its own accent.
+     One accent + one seal per app is the design-system rule; everything else is constant. */
+  :root{
+    --ink:#0e1116; --ink-2:#161b22; --panel:#1b2230; --line:#2a3444;
+    --paper:#e9eef5; --muted:#9fb0c3; --soft:#c6d2e0;
+    --accent:#c9a24b;         /* quill gold — Nscribe's accent */
+    --accent-bright:#e6c063; --accent-ink:#1a1406;
+    --gold:#c9a24b;           /* the Nave through-line stays gold */
+    --danger:#e0745b; --ok:#78c091;
+    --mono:'SF Mono',Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--ink);color:var(--paper);font-family:var(--sans);line-height:1.5}
+  body{max-width:920px;margin:0 auto;padding:0 20px 80px}
+  a{color:var(--accent-bright);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code,.mono{font-family:var(--mono)}
+
+  header.bar{display:flex;align-items:center;gap:12px;padding:18px 0;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--ink);z-index:5}
+  .seal{width:30px;height:30px;flex:0 0 auto}
+  .wordmark{font-weight:700;letter-spacing:.2px}
+  .wordmark b{color:var(--accent-bright)}
+  .bar .spacer{flex:1}
+  #me{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+  .pill{font-family:var(--mono);font-size:12px;background:var(--ink-2);border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--soft);cursor:pointer}
+  .badge{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent-ink);background:var(--accent);border-radius:4px;padding:1px 6px;font-weight:700}
+  button{font-family:inherit;cursor:pointer}
+  .btn{background:var(--accent);color:var(--accent-ink);border:none;border-radius:8px;padding:10px 16px;font-weight:700;font-size:15px}
+  .btn:hover{background:var(--accent-bright)}
+  .btn.ghost{background:transparent;color:var(--soft);border:1px solid var(--line)}
+  .btn.ghost:hover{border-color:var(--accent);color:var(--paper)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+
+  h1{font-size:26px;margin:26px 0 4px}
+  .lede{color:var(--muted);margin:0 0 22px;max-width:60ch}
+  .lede b{color:var(--soft);font-weight:600}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:0 0 12px;font-weight:700}
+  textarea,input,select{width:100%;background:var(--ink-2);color:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:15px}
+  textarea{min-height:240px;resize:vertical;line-height:1.55}
+  textarea#out{min-height:240px;background:#12161d}
+  label.fld{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px;text-transform:uppercase;letter-spacing:.4px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .row > *{flex:1}
+  .row .fixed{flex:0 0 auto}
+  .hint{font-size:12px;color:var(--muted);margin-top:8px}
+  .count{font-size:12px;color:var(--muted);text-align:right;margin-top:6px}
+  .actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .note{font-size:13px;color:var(--soft);background:var(--ink-2);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:10px 12px;margin-top:14px}
+  .status{font-size:13px;min-height:18px;margin-top:10px;color:var(--muted)}
+  .status.err{color:var(--danger)}
+  .status.ok{color:var(--ok)}
+  details{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
+  summary{cursor:pointer;color:var(--muted);font-size:13px}
+  .kv{font-family:var(--mono);font-size:12px;color:var(--soft);white-space:pre-wrap;margin-top:10px}
+  .seams{margin-top:26px;font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:14px}
+  .seams b{color:var(--soft)}
+  footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+<header class="bar">
+  <svg class="seal" viewBox="0 0 32 32" aria-hidden="true">
+    <circle cx="16" cy="16" r="15" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+    <!-- a quill nib -->
+    <path d="M23 9 L13 21 L11 23 L10.2 20.4 Z" fill="none" stroke="var(--accent-bright)" stroke-width="1.4" stroke-linejoin="round"/>
+    <path d="M13 21 L16 24" stroke="var(--accent-bright)" stroke-width="1.4" stroke-linecap="round"/>
+  </svg>
+  <span class="wordmark">N<b>scribe</b></span>
+  <span class="spacer"></span>
+  <div id="me"><button class="pill" id="signin">Sign in</button></div>
+</header>
+
+<h1>Say it in your hand.</h1>
+<p class="lede">Paste anything — a rough note, an AI draft, a wall of thoughts. Nscribe re-voices it
+against <b>your own steering file</b> (the twelve essays, measured), then hands the draft to your
+<b>Ngage desk</b> so nothing publishes without your signature. The drafter proposes; only you approve.</p>
+
+<div class="grid">
+  <div class="panel">
+    <h2>Source</h2>
+    <textarea id="src" placeholder="Paste your text here, or upload a .txt / .md file below…"></textarea>
+    <div class="count" id="srcCount">0 words</div>
+    <div class="row" style="margin-top:8px">
+      <label class="btn ghost fixed" for="file" style="text-align:center">Upload .txt / .md
+        <input id="file" type="file" accept=".txt,.md,text/plain,text/markdown" hidden></label>
+      <select id="register" class="fixed" title="Which register?">
+        <option value="post">Nostr post — short, back-loaded</option>
+        <option value="essay">Essay — long-form, by extension</option>
+        <option value="email">Email — warm, brisk (spaced hyphens OK)</option>
+        <option value="reply">Reply / reconnect — one warm beat</option>
+      </select>
+    </div>
+    <label class="fld" for="intent">What is this, in a line? (optional — steers the draft)</label>
+    <input id="intent" placeholder="e.g. announce Nscribe to nostr / thank a maintainer / a note to a friend">
+    <div class="actions">
+      <button class="btn" id="revoice">Re-voice in my hand →</button>
+      <button class="btn ghost" id="preview" title="See the exact prompt + template with no credential">Preview only</button>
+    </div>
+    <div class="status" id="st1"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Draft — in your voice</h2>
+    <textarea id="out" placeholder="The re-voiced draft lands here. Read it, tweak it, then send it to your desk…"></textarea>
+    <div class="count" id="outCount">0 words</div>
+    <div class="actions">
+      <button class="btn" id="toNgage" disabled>Send to Ngage →</button>
+      <button class="btn ghost" id="copy" disabled>Copy</button>
+    </div>
+    <div class="status" id="st2"></div>
+    <p class="hint">Ngage is your sovereign desk — the draft arrives gift-wrapped to your npub, pen-attested,
+      and you sign the published event in your own hand. The drafting key can’t post.</p>
+  </div>
+</div>
+
+<div class="seams">
+  <b>Two seams need your own infrastructure to light up</b> — the same two <code>warm quill-draft</code> has,
+  and Nscribe never holds either secret in a file or in chat:
+  <br>• <b>credential:anthropic</b> (grant-to-app) — powers the re-voicing. Paste it in
+  <a href="#" id="openCfg">settings</a>, or point Nscribe at a proxy. Held in memory only, never logged.
+  <br>• <b>jaf-quill bunker connection</b> (NIP-46, draft kinds only) — pens the draft scope so the desk
+  verifies the hand. Until it’s connected, “Send to Ngage” falls back to copy-and-open (you paste on the desk).
+  <details id="cfg"><summary>Settings — credential &amp; targets (in-memory only)</summary>
+    <label class="fld" for="akey">Anthropic key (credential:anthropic value)</label>
+    <input id="akey" type="password" placeholder="sk-ant-… — stays in this tab, never stored, never sent anywhere but api.anthropic.com">
+    <div class="row" style="margin-top:10px">
+      <div><label class="fld" for="model">Model</label><input id="model" value="claude-opus-4-8"></div>
+      <div><label class="fld" for="dirnpub">Your npub (draft recipient / Ngage desk)</label><input id="dirnpub" placeholder="npub1… — auto-fills from sign-in"></div>
+    </div>
+    <div class="kv" id="tmpl"></div>
+  </details>
+</div>
+
+<footer>
+  A <a href="https://nave.pub">nave.pub</a> project · Nscribe is the front door on the
+  <code>revoice</code> actuator (scoped-agent-actions §II·5) · your words come through your hand.
+</footer>
+
+<script type="module" src="./nscribe.mjs"></script>
+</body>
+</html>
