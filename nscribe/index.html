@@ -143,13 +143,13 @@ against <b>your own steering file</b> (the twelve essays, measured), then hands 
   (the emit round-trips in <code>emit.test.mjs</code> — the live bunker + relays are yours to confirm on the
   desk). Leave it blank and it falls back to copy-and-open.
   <details id="cfg"><summary>Settings — credential &amp; targets (in-memory only)</summary>
-    <label class="fld" for="akey">Anthropic key (credential:anthropic value)</label>
-    <input id="akey" type="password" placeholder="sk-ant-… — stays in this tab, never stored, never sent anywhere but api.anthropic.com">
+    <label class="fld" for="akey">Anthropic key — FALLBACK only (prefer the Cloud Drafter below). In memory only, never stored.</label>
+    <input id="akey" type="password" placeholder="sk-ant-… — only used if the Cloud Drafter isn't connected. Never stored, never sent anywhere but api.anthropic.com">
     <div class="row" style="margin-top:10px">
       <div><label class="fld" for="model">Model</label><input id="model" value="claude-opus-4-8"></div>
       <div><label class="fld" for="dirnpub">Your npub (draft recipient / Ngage desk)</label><input id="dirnpub" placeholder="npub1… — where the draft is sealed"></div>
     </div>
-    <label class="fld" for="bunker">jaf-quill bunker connection (NIP-46) — pens the draft so the desk verifies the hand</label>
+    <label class="fld" for="bunker">jaf-quill — the Cloud Drafter (NIP-46 bunker). Drafts from its own credential:anthropic grant AND pens to your Ngage desk. No key to paste.</label>
     <div class="row">
       <input id="bunker" placeholder="bunker://… (scoped to draft kinds 30440/1059/13). Leave blank to copy-and-open instead.">
       <button class="btn ghost fixed" id="connectBunker">Connect</button>

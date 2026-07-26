@@ -10,7 +10,7 @@
 // as penned direct (ngage/drafts.mjs `pennedDraft`, author === publisher).
 
 import { getEventHash, finalizeEvent, generateSecretKey, nip44, nip19 } from 'nostr-tools'
-import { KIND_DATA_SET, KIND_GRANT, newScopeKey } from './vendor/nipxx.mjs'
+import { KIND_DATA_SET, KIND_GRANT, newScopeKey, receiveGrants, latestGrants, fetchScope } from './vendor/nipxx.mjs'
 
 let lastTs = 0
 const now = () => (lastTs = Math.max(Math.floor(Date.now() / 1000), lastTs + 1))
@@ -107,4 +107,41 @@ export async function publishDraft(relay, signer, recipient, draft) {
   const scopeReceipt = await publishScopeWithSigner(relay, signer, { scopeId, generation, scopeKey, payload })
   const grantReceipt = await grantWithSigner(relay, signer, recipientHex, { scopeId, generation, scopeKey, scopeName })
   return { scopeId, scopeName, penPub: await signer.getPublicKey(), scopeReceipt, grantReceipt }
+}
+
+// ---- the Cloud Drafter: jaf-quill reads its OWN credential grant ------------
+//
+// The AD-10 director path: the Director never drafts with his own key. jaf-quill
+// (the pen, the bunker connection) dereferences the `credential:anthropic` grant
+// the Director issued to it — off the relays, with its own key — and drafts with
+// that. No key is ever pasted. Errors are typed so the UI can say exactly which
+// prerequisite is missing (grant not issued vs. bunker won't decrypt).
+//
+//   relay  — LiveRelay (or any {query})
+//   signer — the jaf-quill bunker connection (nip44Decrypt + getPublicKey)
+// Returns the Anthropic key string. Throws Error with a machine code in .code.
+const CRED_SCOPE = 'credential:anthropic'
+
+export async function readAnthropicCredential(relay, signer) {
+  let grants
+  try {
+    grants = await receiveGrants(relay, signer)   // needs the bunker to nip44Decrypt
+  } catch (e) {
+    const err = new Error(String(e?.message || e)); err.code = 'DECRYPT_REFUSED'; throw err
+  }
+  const latest = latestGrants(grants)
+  const cred = latest.find(g => g.scopeName === CRED_SCOPE)
+  if (!cred) {
+    const err = new Error('no credential:anthropic grant reached this key')
+    err.code = 'NO_GRANT'; err.seen = latest.map(g => g.scopeName).filter(Boolean); throw err
+  }
+  const scope = await fetchScope(relay, cred)
+  if (scope.status !== 'ok') {
+    const err = new Error('credential grant is ' + scope.status); err.code = 'STALE'; throw err
+  }
+  const value = scope.data?.value ?? scope.data?.anthropic ?? scope.data?.key
+  if (!value || typeof value !== 'string') {
+    const err = new Error('credential payload has no string .value'); err.code = 'SHAPE'; throw err
+  }
+  return value
 }
