@@ -10,7 +10,8 @@
 // as penned direct (ngage/drafts.mjs `pennedDraft`, author === publisher).
 
 import { getEventHash, finalizeEvent, generateSecretKey, nip44, nip19 } from 'nostr-tools'
-import { KIND_DATA_SET, KIND_GRANT, newScopeKey, receiveGrants, latestGrants, fetchScope } from './vendor/nipxx.mjs'
+import { KIND_DATA_SET, KIND_GRANT, newScopeKey, receiveGrants, latestGrants, fetchScope,
+         loadGrantIndex, fromIssuedEntry } from './vendor/nipxx.mjs'
 
 let lastTs = 0
 const now = () => (lastTs = Math.max(Math.floor(Date.now() / 1000), lastTs + 1))
@@ -144,4 +145,60 @@ export async function readAnthropicCredential(relay, signer) {
     const err = new Error('credential payload has no string .value'); err.code = 'SHAPE'; throw err
   }
   return value
+}
+
+// ---- discovery: read your own record, don't type it -------------------------
+//
+// The Director's exact question — "ngage knows my drafting source... you should
+// only have to somehow read this? or when that was created it created the record?"
+// The answer is yes, it created the record. When he trusted a pen in Ngage and
+// published steering, ngage/nvoy-index.mjs wrote a `steer:draft` issued entry
+// into his kind-10440 Grant Index (the one Nvoy is the source of truth for), and
+// that entry's `grantees` ARE his pens. So after an Alby sign-in Nscribe reads
+// his own index and discovers jaf-quill — no npub typed, no "Director" concept,
+// no config. His drafting hand is metadata, discovered from published state (AD-2).
+const STEER_SCOPE = 'steer:draft'
+
+/**
+ * Discover the signed-in identity's drafting pens straight from their own Grant
+ * Index. `signer` is the Alby (or bunker) sign-in — it decrypts the encrypted-
+ * to-self kind-10440 event. Returns hex pubkeys, current rotation winning,
+ * deduped; [] when no steering has been published yet (nothing to discover).
+ */
+export async function discoverDrafters(relay, signer) {
+  const index = await loadGrantIndex(relay, signer)
+  const issued = Array.isArray(index?.issued) ? index.issued : []
+  const steer = issued
+    .filter(e => e && e.scope_name === STEER_SCOPE && Array.isArray(e.grantees))
+    .map(fromIssuedEntry)
+    .sort((a, b) => (b.generation || 0) - (a.generation || 0))   // newest rotation first
+  const seen = new Set(); const drafters = []
+  for (const s of steer) for (const g of s.grantees)
+    if (typeof g === 'string' && /^[0-9a-f]{64}$/i.test(g) && !seen.has(g)) {
+      seen.add(g); drafters.push(g)
+    }
+  return drafters
+}
+
+/**
+ * Resolve display names for pubkeys from their published kind-0 profiles, so the
+ * discovered pen shows as "James's Quill", not a hex string. Best-effort: a
+ * pubkey with no profile (or an unreachable relay) maps to null.
+ */
+export async function resolveNames(relay, pubkeys) {
+  const uniq = [...new Set(pubkeys)].filter(pk => /^[0-9a-f]{64}$/i.test(pk))
+  if (!uniq.length) return {}
+  let events = []
+  try { events = await relay.query({ kinds: [0], authors: uniq }) } catch { /* offline → nulls */ }
+  const best = {}
+  for (const ev of events) {
+    if (best[ev.pubkey] && best[ev.pubkey].created_at >= ev.created_at) continue
+    try {
+      const p = JSON.parse(ev.content)
+      best[ev.pubkey] = { created_at: ev.created_at, name: p.display_name || p.name || p.nip05 || null }
+    } catch { /* malformed profile → skip */ }
+  }
+  const out = {}
+  for (const pk of uniq) out[pk] = best[pk]?.name || null
+  return out
 }
