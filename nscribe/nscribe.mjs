@@ -222,39 +222,88 @@ async function copyOut() {
 const RELAYS = ['wss://relay.nave.pub', 'wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.primal.net']
 let bunkerSigner = null
 
+// Bring up a NIP-46 connection, verify it lands on a discovered pen, and (unless
+// told not to) REMEMBER it as a self-grant so next time is paste-free. Returns
+// the connected pubkey; throws with .mismatch set when the key isn't your pen.
+async function establishConnection(uri, { clientSecret, remember = true } = {}) {
+  const { nip46Signer } = await import('./vendor/nave-connect.mjs')
+  const signer = nip46Signer(uri, { clientSecret })
+  const pk = await signer.getPublicKey()   // performs the NIP-46 connect
+  if (discovery?.drafters?.length && !discovery.drafters.includes(pk)) {
+    const { nip19 } = await import('nostr-tools')
+    const e = new Error(`that connection is ${nip19.npubEncode(pk).slice(0, 16)}… — not the pen your steering record names`)
+    e.mismatch = true; throw e
+  }
+  bunkerSigner = signer
+  els.toNgage.textContent = 'Seal to Ngage →'
+  // Remember the connection to YOU, encrypted to yourself — the stable transport
+  // key + the pen's relays (never the one-time secret), so a reload or another
+  // device reconnects with no paste. Best-effort: the live connection already works.
+  if (remember && directorSigner) {
+    try {
+      const relays = (() => { try { return [...new Set(new URL(uri).searchParams.getAll('relay'))] } catch { return [] } })()
+      const [{ saveConnection }, { LiveRelay }] = await Promise.all([import('./emit.mjs'), import('./vendor/liverelay.mjs')])
+      const relay = new LiveRelay(RELAYS)
+      try { await saveConnection(relay, directorSigner, { penPub: pk, relays, clientSecretHex: signer.clientSecretHex }) }
+      finally { try { relay.close?.() } catch { /* best effort */ } }
+    } catch { /* remembering is best-effort */ }
+  }
+  return pk
+}
+
+// The transport key we already saved for this bunker's pen, so a re-paste reuses
+// the SAME client identity the bunker is bound to (stable reconnect).
+async function savedClientSecretFor(uri) {
+  if (!directorSigner) return undefined
+  let remotePk = ''
+  try { remotePk = (new URL(uri).hostname || '').toLowerCase() } catch { return undefined }
+  try {
+    const [{ loadConnections }, { LiveRelay }] = await Promise.all([import('./emit.mjs'), import('./vendor/liverelay.mjs')])
+    const relay = new LiveRelay(RELAYS)
+    try { return (await loadConnections(relay, directorSigner))[remotePk]?.clientSecretHex }
+    finally { try { relay.close?.() } catch { /* best effort */ } }
+  } catch { return undefined }
+}
+
 async function connectBunker() {
   const uri = els.bunker.value.trim()
   if (!uri) return status(els.stBunker, 'Paste the connection to your discovered drafter (draft kinds only).', 'err')
   status(els.stBunker, 'Connecting to your drafter…')
   try {
-    const { nip46Signer } = await import('./vendor/nave-connect.mjs')
-    // Persist the NIP-46 transport key (per bunker host) so a reload re-pairs to
-    // the SAME session — a fresh key against a reused bunker:// looks like a
-    // stranger with a spent invite and hangs. This is the client's own connection
-    // identity, not any Nave key; standard NIP-46 client behaviour to persist it.
-    let host = ''
-    try { host = new URL(uri).hostname } catch { /* validated inside the signer */ }
-    const ckKey = `nscribe:nip46-client:${host}`
-    const clientSecret = (() => { try { return localStorage.getItem(ckKey) || undefined } catch { return undefined } })()
-    const signer = nip46Signer(uri, { clientSecret })
-    try { localStorage.setItem(ckKey, signer.clientSecretHex) } catch { /* private mode — session-only */ }
-    const pk = await signer.getPublicKey()   // lazily performs the NIP-46 connect
-    // Verify the connection lands on the pen your steering record names — a
-    // bunker for some OTHER key is not your drafter, discovered or not.
-    if (discovery?.drafters?.length && !discovery.drafters.includes(pk)) {
-      bunkerSigner = null
-      const { nip19 } = await import('nostr-tools')
-      return status(els.stBunker,
-        `That connection is ${nip19.npubEncode(pk).slice(0, 16)}… — not the pen your steering record names. ` +
-        `Connect the discovered drafter, or re-check which key you trusted in Ngage.`, 'err')
-    }
-    bunkerSigner = signer
-    els.toNgage.textContent = 'Seal to Ngage →'
+    const clientSecret = await savedClientSecretFor(uri)
+    const pk = await establishConnection(uri, { clientSecret })
     const nm = discovery?.names?.[pk] || 'your pen'
-    status(els.stBunker, `Connected — ${nm} (${pk.slice(0, 8)}…${pk.slice(-4)})${discovery?.drafters?.includes(pk) ? ', verified against your steering record' : ''}. Re-voice now drafts from its credential grant; Send to Ngage auto-seals.`, 'ok')
+    status(els.stBunker, `Connected — ${nm} (${pk.slice(0, 8)}…${pk.slice(-4)})${discovery?.drafters?.includes(pk) ? ', verified against your steering record' : ''}. Remembered — you won't paste this again. Re-voice drafts from its credential grant; Send to Ngage auto-seals.`, 'ok')
   } catch (e) {
     bunkerSigner = null
+    if (e.mismatch) return status(els.stBunker, e.message + '. Connect the discovered drafter, or re-check which key you trusted in Ngage.', 'err')
     status(els.stBunker, 'Connect failed: ' + String(e.message || e), 'err')
+  }
+}
+
+// After discovery, bring up a remembered connection to a discovered pen — no
+// paste. A stale/expired session just falls back to the Connect button.
+async function autoReconnect() {
+  if (!directorSigner || bunkerSigner || !discovery?.drafters?.length) return
+  let all
+  try {
+    const [{ loadConnections }, { LiveRelay }] = await Promise.all([import('./emit.mjs'), import('./vendor/liverelay.mjs')])
+    const relay = new LiveRelay(RELAYS)
+    try { all = await loadConnections(relay, directorSigner) } finally { try { relay.close?.() } catch { /* best effort */ } }
+  } catch { return }
+  const { connectionUri } = await import('./emit.mjs')
+  for (const pen of discovery.drafters) {
+    const saved = all[pen]
+    if (!saved?.clientSecretHex || !saved.relays?.length) continue
+    const nm = discovery.names[pen] || 'your pen'
+    status(els.stBunker, `Reconnecting to ${nm} from your saved connection…`)
+    try {
+      await establishConnection(connectionUri(pen, saved), { clientSecret: saved.clientSecretHex, remember: false })
+      status(els.stBunker, `Reconnected to ${nm} — no paste. Re-voice drafts from its credential grant; Send to Ngage auto-seals.`, 'ok')
+      return
+    } catch (e) {
+      status(els.stBunker, `Saved connection to ${nm} didn't answer (${String(e.message || e)}). Paste a fresh bunker:// to re-pair.`, '')
+    }
   }
 }
 
@@ -342,6 +391,8 @@ async function discoverDrafter(signer, npub) {
       `Connect ${primary} in settings to draft; the connection is verified against this discovered key.`
     // Prime the settings connection field with the discovered pen's name.
     els.bunker.placeholder = `bunker://… — the live connection to ${primary}. Leave blank to copy-and-open instead.`
+    // If you've connected before, bring that connection back up now — no paste.
+    await autoReconnect()
   } catch (e) {
     els.penInfo.textContent = 'Could not read your steering record (' + String(e.message || e) + '). ' +
       'You can still connect a drafter manually in settings, or use the paste fallback.'
