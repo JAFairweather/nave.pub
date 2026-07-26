@@ -136,6 +136,25 @@ scoped grants. What we did here is the proto over the "wrong transport." -->
   key-doc excerpts) and demanding a developed thought, plus the per-identity
   split. The strongest model on thin signals still writes headlines.
 
+## 2026-07-24 — Quill identity + the stale checkout
+
+- **A stale local `main` made a grep lie.** Working off a `main` that was 12
+  commits behind origin, a grep of `IDENTITY-REGISTRY.md` "proved" James's Quill
+  wasn't recorded — so the Director was asked to re-paste an npub that a merged
+  PR (`nave.pub#65`) had already documented, and time was spent re-doing it. The
+  rule that stuck: **`git fetch` before asserting anything is missing**; never
+  claim "X isn't recorded anywhere" from a local grep alone.
+- **Two Quills, one env var, endless conflation.** *Canonical* Quill
+  (`906bd25bbfc9`, `quill@nave.pub`, warm.contact reconnect agent) and *James's*
+  Quill (`8f3829871ec5`, `jaf-quill@nave.pub`, his personal instance) **both use
+  `QUILL_NSEC`**, so proposals to load "quill" onto the box, or to name it
+  `quill@nave.pub`, kept picking the wrong one. Resolution: distinct npubs + rows
+  in `IDENTITY-REGISTRY.md`, a distinct handle (`jaf-quill@…` → runtime name
+  `jafquill`), and — the architectural point — **James's Quill's key never goes
+  to Nactor**. It's a director-path (Ngage) identity: Nactor isn't its approver,
+  the Director is. Loading `quill.env` into the nactor container was tried and
+  explicitly rejected. When in doubt, check the short-id: `8f3829871ec5` is his.
+
 ## Meta
 
 - **Docker on warm.contact?** Considered, declined: 1 GB box, single app, native

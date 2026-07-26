@@ -37,6 +37,30 @@ sessions wrote them for exactly this):
 Then give me a 5-line status: what's shipped, what's in-flight, and the top 3
 next actions.
 
+## Recent (2026-07-24)
+
+*Delta since this doc was last rewritten. Fold into the map above as it settles.*
+
+- **Shipped + deployed.** `nact#34` — hardening **P4**, channel binding as a
+  revocable scoped grant + nonce ceremony (caught a real forgery: this
+  `nostr-tools` `verifyEvent` doesn't recompute the hash, so `verifyBinding`
+  asserts `getEventHash === id`). `nact#35` — **P5**, the `/sign` Mini-App +
+  shared tier/reveal specs. `nact#36` — the **director-path (Ngage) Agent
+  Identity type**: keyless, npub-only, so an off-box identity can finally be
+  *wired to the Ngage column* in Routing. `nvoy#32` — **file upload for the scope
+  payload** in New Delegation (drop a `.json`, it seeds the scope name).
+- **Voice profiles** (`luke/brief/`): the Director's **long-form** and
+  **business** voices, each a measured `.json` + a compact `.scope.json`
+  `steer:draft` payload. Long-form restructures `jaf.md`; business's email
+  register is measured from 677 sent emails (2015-26), technical register still
+  v1. Loop: measure → compact scope payload → Nvoy upload → grant.
+- **Open / next.** (1) The **Ngage delivery runtime is UNBUILT** — Nactor wires
+  only the web queue; there is no gift-wrap-to-Director delivery yet, so a
+  director-path identity can be *registered and wired* but the box can't raise
+  its drafts to me (design in `nact/docs/threat-model.md`). (2) `luke.nave.pub →
+  502`, undiagnosed. (3) `jaf-business.json` `formal_technical` still v1 — wants
+  a precise count pass against the solo PhD thesis.
+
 ## Who I am
 
 James Fairweather (GitHub `JAFairweather`; nostr `jaf@dequalsf.com` — the
@@ -61,6 +85,16 @@ the revocation."* Two corollaries now carry equal weight:
 - **Never print nsecs/secrets/keys/IPs** — npubs/names/roles only. Refer to
   boxes by role: **main · relay+bunker · warm.contact**. (IPs for SSH live in
   Bitwarden and local memory, not in chat or artifacts.)
+- **`git fetch` before claiming anything is missing.** A stale local `main`
+  (commits behind origin) makes a grep of an out-of-date file "prove" something
+  undocumented that a merged PR already recorded. Verify the tree, not memory.
+- **Two Quills — never conflate them; both use the env var `QUILL_NSEC`.**
+  *canonical* = `npub1jp4ay…` / `906bd25bbfc9` / `quill@nave.pub` (warm.contact
+  reconnect agent); *James's* = `npub13uuznpc…` / `8f3829871ec5` /
+  `jaf-quill@nave.pub` (my personal instance + drafting hand). James's Quill is a
+  **director-path (Ngage)** identity — its key is device-held, **never loaded
+  into Nactor** (Nactor isn't its approver; I am, via Ngage). See
+  `IDENTITY-REGISTRY.md`.
 - Any bunker:// connect string ever pasted into a chat is **BURNED** — re-mint
   from the console. Bitwarden is the vault.
 - **firewalld is BANNED** on Docker hosts; port control = on-box `firewall.sh`.
