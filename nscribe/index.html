@@ -13,155 +13,212 @@
 } }
 </script>
 <style>
-  /* Nscribe vendors the Nave ink/gold surface (design/tokens.css) with its own accent.
-     One accent + one seal per app is the design-system rule; everything else is constant. */
-  :root{
-    --ink:#0e1116; --ink-2:#161b22; --panel:#1b2230; --line:#2a3444;
-    --paper:#e9eef5; --muted:#9fb0c3; --soft:#c6d2e0;
-    --accent:#c9a24b;         /* quill gold — Nscribe's accent */
-    --accent-bright:#e6c063; --accent-ink:#1a1406;
-    --gold:#c9a24b;           /* the Nave through-line stays gold */
-    --danger:#e0745b; --ok:#78c091;
-    --mono:'SF Mono',Menlo,Consolas,monospace;
-    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  /* ── Nave design system — canonical tokens, VENDORED VERBATIM from
+     design/tokens.css (keep in sync). Nscribe overrides only the --accent trio
+     with its own seal colour (the quill's ink), per design/DESIGN.md. ── */
+  :root {
+    --ground: #0b0906; --panel: #14100a; --panel-2: #1b1409;
+    --line: #2a2317; --line-strong: #3a3020;
+    --field: #0d0a06;
+    --ink: #0b0906; --bg: #0b0906;
+    --text: #f4efe4; --dim: #9c927f; --faint: #6f6555;
+    --gold: #c39a56; --gold-bright: #e2c079;
+    --accent: #c39a56; --accent-bright: #e2c079; --accent-ink: #0b0906;
+    --good: #8fae6a; --warn: #d9a648; --critical: #c0705a;
+    --ok: #8fae6a; --danger: #c0705a;
+    --diff-user: #8fae6a;     --diff-user-bg: color-mix(in srgb, #8fae6a 14%, transparent);
+    --diff-template: #7f95ad; --diff-template-bg: color-mix(in srgb, #7f95ad 12%, transparent);
+    --alby: #ffdf6f; --alby-bright: #ffe98c; --alby-ink: #1c1400;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace;
+    --display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --serif: var(--sans);
+    --r-sm: 6px; --r-md: 10px; --r-pill: 999px; --radius: 6px;
   }
+  /* Nscribe's accent — ink-violet, the quill's ink (one accent per app) */
+  :root { --accent: #8a86d8; --accent-bright: #a7a3ea; --accent-ink: #0b0906; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --ground: #f5f0e4; --panel: #fffdf7; --panel-2: #ece4d2;
+      --line: #ddd2ba; --line-strong: #c8b89a; --field: #fffdf7;
+      --ink: #f5f0e4; --bg: #f5f0e4;
+      --text: #241d12; --dim: #6f6553; --faint: #8a7f66;
+      --accent: #5b57a6; --accent-bright: #6e6abc; --accent-ink: #fffdf7;
+      --good: #4f7a34; --warn: #9a6a12; --critical: #a2482f;
+      --ok: #4f7a34; --danger: #a2482f;
+    }
+  }
+  :root[data-theme="light"] {
+    --ground: #f5f0e4; --panel: #fffdf7; --panel-2: #ece4d2;
+    --line: #ddd2ba; --line-strong: #c8b89a; --field: #fffdf7;
+    --ink: #f5f0e4; --bg: #f5f0e4; --text: #241d12; --dim: #6f6553; --faint: #8a7f66;
+    --accent: #5b57a6; --accent-bright: #6e6abc; --accent-ink: #fffdf7;
+    --good: #4f7a34; --danger: #a2482f;
+  }
+
   *{box-sizing:border-box}
-  html,body{margin:0;background:var(--ink);color:var(--paper);font-family:var(--sans);line-height:1.5}
-  body{max-width:920px;margin:0 auto;padding:0 20px 80px}
+  html,body{margin:0;background:var(--ground);color:var(--text);font-family:var(--sans);line-height:1.5}
+  main{max-width:960px;margin:0 auto;padding:0 20px 40px}
   a{color:var(--accent-bright);text-decoration:none}
   a:hover{text-decoration:underline}
   code,.mono{font-family:var(--mono)}
 
-  header.bar{display:flex;align-items:center;gap:12px;padding:18px 0;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--ink);z-index:5}
-  .seal{width:30px;height:30px;flex:0 0 auto}
-  .wordmark{font-weight:700;letter-spacing:.2px}
-  .wordmark b{color:var(--accent-bright)}
-  .bar .spacer{flex:1}
-  #me{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
-  .pill{font-family:var(--mono);font-size:12px;background:var(--ink-2);border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--soft);cursor:pointer}
-  .badge{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent-ink);background:var(--accent);border-radius:4px;padding:1px 6px;font-weight:700}
-  button{font-family:inherit;cursor:pointer}
-  .btn{background:var(--accent);color:var(--accent-ink);border:none;border-radius:8px;padding:10px 16px;font-weight:700;font-size:15px}
-  .btn:hover{background:var(--accent-bright)}
-  .btn.ghost{background:transparent;color:var(--soft);border:1px solid var(--line)}
-  .btn.ghost:hover{border-color:var(--accent);color:var(--paper)}
-  .btn:disabled{opacity:.45;cursor:not-allowed}
-
-  h1{font-size:26px;margin:26px 0 4px}
-  .lede{color:var(--muted);margin:0 0 22px;max-width:60ch}
-  .lede b{color:var(--soft);font-weight:600}
+  .hero{font-family:var(--display);font-size:30px;margin:28px 0 6px;color:var(--text);font-weight:600}
+  .lede{color:var(--dim);margin:0 0 22px;max-width:62ch}
+  .lede b{color:var(--text);font-weight:600}
 
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
   @media(max-width:760px){.grid{grid-template-columns:1fr}}
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
-  .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:0 0 12px;font-weight:700}
-  textarea,input,select{width:100%;background:var(--ink-2);color:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:15px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:16px}
+  .panel h2{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--dim);margin:0 0 12px;font-weight:600}
+  textarea,input,select{width:100%;background:var(--field);color:var(--text);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;font-family:inherit;font-size:15px}
   textarea{min-height:240px;resize:vertical;line-height:1.55}
-  textarea#out{min-height:240px;background:#12161d}
-  label.fld{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px;text-transform:uppercase;letter-spacing:.4px}
+  textarea#out{min-height:240px}
+  label.fld{display:block;font-family:var(--mono);font-size:11px;color:var(--dim);margin:12px 0 5px;text-transform:uppercase;letter-spacing:.1em}
   .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
   .row > *{flex:1}
   .row .fixed{flex:0 0 auto}
-  .hint{font-size:12px;color:var(--muted);margin-top:8px}
-  .count{font-size:12px;color:var(--muted);text-align:right;margin-top:6px}
+  button{font-family:inherit;cursor:pointer}
+  .btn{background:var(--accent);color:var(--accent-ink);border:none;border-radius:var(--r-sm);padding:10px 16px;font-weight:700;font-size:15px}
+  .btn:hover{background:var(--accent-bright)}
+  .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+  .btn.ghost:hover{border-color:var(--accent);color:var(--accent-bright)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
   .actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
-  .note{font-size:13px;color:var(--soft);background:var(--ink-2);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:10px 12px;margin-top:14px}
-  .status{font-size:13px;min-height:18px;margin-top:10px;color:var(--muted)}
+  .count{font-family:var(--mono);font-size:11px;color:var(--dim);text-align:right;margin-top:6px}
+  .hint{font-size:12px;color:var(--dim);margin-top:8px}
+  .status{font-size:13px;min-height:18px;margin-top:10px;color:var(--dim)}
   .status.err{color:var(--danger)}
-  .status.ok{color:var(--ok)}
+  .status.ok{color:var(--good)}
   details{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
-  summary{cursor:pointer;color:var(--muted);font-size:13px}
-  .kv{font-family:var(--mono);font-size:12px;color:var(--soft);white-space:pre-wrap;margin-top:10px}
-  .seams{margin-top:26px;font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:14px}
-  .seams b{color:var(--soft)}
-  footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;text-align:center}
+  summary{cursor:pointer;color:var(--dim);font-size:13px}
+  .kv{font-family:var(--mono);font-size:12px;color:var(--faint);white-space:pre-wrap;margin-top:10px}
+  .seams{margin-top:26px;font-size:13px;color:var(--dim);border:1px dashed var(--line);border-radius:var(--r-md);padding:14px}
+  .seams b{color:var(--text)}
 </style>
 </head>
 <body>
-<header class="bar">
-  <svg class="seal" viewBox="0 0 32 32" aria-hidden="true">
-    <circle cx="16" cy="16" r="15" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
-    <!-- a quill nib -->
-    <path d="M23 9 L13 21 L11 23 L10.2 20.4 Z" fill="none" stroke="var(--accent-bright)" stroke-width="1.4" stroke-linejoin="round"/>
-    <path d="M13 21 L16 24" stroke="var(--accent-bright)" stroke-width="1.4" stroke-linecap="round"/>
-  </svg>
-  <span class="wordmark">N<b>scribe</b></span>
-  <span class="spacer"></span>
-  <div id="me"><button class="pill" id="signin">Sign in</button></div>
-</header>
+<!-- shared identity bar (nave-connect + nave-titlebar) mounts here -->
+<div id="titlebar" style="max-width:960px;margin:0 auto;padding:0 20px"></div>
 
-<h1>Say it in your hand.</h1>
-<p class="lede">Paste anything — a rough note, an AI draft, a wall of thoughts. Nscribe re-voices it
-against <b>your own steering file</b> (the twelve essays, measured), then hands the draft to your
-<b>Ngage desk</b> so nothing publishes without your signature. The drafter proposes; only you approve.</p>
+<main>
+  <h1 class="hero">Say it in your hand.</h1>
+  <p class="lede">Paste anything — a rough note, an AI draft, a wall of thoughts. Nscribe re-voices it
+  against <b>your own steering file</b> (the twelve essays, measured), drafted by <b>jaf-quill</b> from a
+  credential you granted it, then hands the draft to your <b>Ngage desk</b> so nothing publishes without
+  your signature. The drafter proposes; only you approve.</p>
 
-<div class="grid">
-  <div class="panel">
-    <h2>Source</h2>
-    <textarea id="src" placeholder="Paste your text here, or upload a .txt / .md file below…"></textarea>
-    <div class="count" id="srcCount">0 words</div>
-    <div class="row" style="margin-top:8px">
-      <label class="btn ghost fixed" for="file" style="text-align:center">Upload .txt / .md
-        <input id="file" type="file" accept=".txt,.md,text/plain,text/markdown" hidden></label>
-      <select id="register" class="fixed" title="Which register?">
-        <option value="post">Nostr post — short, back-loaded</option>
-        <option value="essay">Essay — long-form, by extension</option>
-        <option value="email">Email — warm, brisk (spaced hyphens OK)</option>
-        <option value="reply">Reply / reconnect — one warm beat</option>
-      </select>
+  <div class="grid">
+    <div class="panel">
+      <h2>Source</h2>
+      <textarea id="src" placeholder="Paste your text here, or upload a .txt / .md file below…"></textarea>
+      <div class="count" id="srcCount">0 words</div>
+      <div class="row" style="margin-top:8px">
+        <label class="btn ghost fixed" for="file" style="text-align:center">Upload .txt / .md
+          <input id="file" type="file" accept=".txt,.md,text/plain,text/markdown" hidden></label>
+        <select id="register" class="fixed" title="Which register?">
+          <option value="post">Nostr post — short, back-loaded</option>
+          <option value="essay">Essay — long-form, by extension</option>
+          <option value="email">Email — warm, brisk (spaced hyphens OK)</option>
+          <option value="reply">Reply / reconnect — one warm beat</option>
+        </select>
+      </div>
+      <label class="fld" for="intent">What is this, in a line? (optional — steers the draft)</label>
+      <input id="intent" placeholder="e.g. announce Nscribe to nostr / thank a maintainer / a note to a friend">
+      <div class="actions">
+        <button class="btn" id="revoice">Re-voice in my hand →</button>
+        <button class="btn ghost" id="preview" title="See the exact prompt + template with no credential">Preview only</button>
+      </div>
+      <div class="status" id="st1"></div>
     </div>
-    <label class="fld" for="intent">What is this, in a line? (optional — steers the draft)</label>
-    <input id="intent" placeholder="e.g. announce Nscribe to nostr / thank a maintainer / a note to a friend">
-    <div class="actions">
-      <button class="btn" id="revoice">Re-voice in my hand →</button>
-      <button class="btn ghost" id="preview" title="See the exact prompt + template with no credential">Preview only</button>
+
+    <div class="panel">
+      <h2>Draft — in your voice</h2>
+      <textarea id="out" placeholder="The re-voiced draft lands here. Read it, tweak it, then send it to your desk…"></textarea>
+      <div class="count" id="outCount">0 words</div>
+      <div class="actions">
+        <button class="btn" id="toNgage" disabled>Send to Ngage →</button>
+        <button class="btn ghost" id="copy" disabled>Copy</button>
+      </div>
+      <div class="status" id="st2"></div>
+      <p class="hint">Ngage is your sovereign desk — the draft arrives gift-wrapped to your npub,
+        pen-attested, and you sign the published event in your own hand. The drafting key can’t post.</p>
     </div>
-    <div class="status" id="st1"></div>
   </div>
 
-  <div class="panel">
-    <h2>Draft — in your voice</h2>
-    <textarea id="out" placeholder="The re-voiced draft lands here. Read it, tweak it, then send it to your desk…"></textarea>
-    <div class="count" id="outCount">0 words</div>
-    <div class="actions">
-      <button class="btn" id="toNgage" disabled>Send to Ngage →</button>
-      <button class="btn ghost" id="copy" disabled>Copy</button>
-    </div>
-    <div class="status" id="st2"></div>
-    <p class="hint">Ngage is your sovereign desk — the draft arrives gift-wrapped to your npub, pen-attested,
-      and you sign the published event in your own hand. The drafting key can’t post.</p>
+  <div class="seams">
+    <b>The route (AD-10):</b> the Director never drafts with his own key. Sign in above as the Director —
+    that’s the <b>approval</b> end (Ngage). Drafting is <b>jaf-quill’s</b> job: connect the Cloud Drafter in
+    <a href="#" id="openCfg">settings</a>, and it drafts from its own <code>credential:anthropic</code> grant
+    (no key to paste), pens the draft, and seals it to your desk.
+    <details id="cfg"><summary>Settings — the Cloud Drafter &amp; targets (in-memory only)</summary>
+      <label class="fld" for="bunker">jaf-quill — the Cloud Drafter (NIP-46 bunker). Drafts from its own credential:anthropic grant AND pens to your Ngage desk. No key to paste.</label>
+      <div class="row">
+        <input id="bunker" placeholder="bunker://… (scoped to draft kinds 30440/1059/13). Leave blank to copy-and-open instead.">
+        <button class="btn ghost fixed" id="connectBunker">Connect</button>
+      </div>
+      <div class="status" id="stBunker"></div>
+      <div class="row" style="margin-top:10px">
+        <div><label class="fld" for="model">Model</label><input id="model" value="claude-opus-4-8"></div>
+        <div><label class="fld" for="dirnpub">Your npub (draft recipient / Ngage desk)</label><input id="dirnpub" placeholder="npub1… — auto-fills from sign-in"></div>
+      </div>
+      <label class="fld" for="akey">Anthropic key — FALLBACK only (prefer the Cloud Drafter above). In memory only, never stored.</label>
+      <input id="akey" type="password" placeholder="sk-ant-… — only used if the Cloud Drafter isn't connected. Never stored, never sent anywhere but api.anthropic.com">
+      <div class="kv" id="tmpl"></div>
+    </details>
   </div>
-</div>
+</main>
 
-<div class="seams">
-  <b>Two seams need your own infrastructure to light up</b> — the same two <code>warm quill-draft</code> has,
-  and Nscribe never holds either secret in a file or in chat:
-  <br>• <b>credential:anthropic</b> (grant-to-app) — powers the re-voicing. Paste it in
-  <a href="#" id="openCfg">settings</a>, or point Nscribe at a proxy. Held in memory only, never logged.
-  <br>• <b>jaf-quill bunker connection</b> (NIP-46, draft kinds only) — pens the draft scope so the desk
-  verifies the hand. Connect it and “Send to Ngage” <b>auto-seals</b> the draft straight to your desk
-  (the emit round-trips in <code>emit.test.mjs</code> — the live bunker + relays are yours to confirm on the
-  desk). Leave it blank and it falls back to copy-and-open.
-  <details id="cfg"><summary>Settings — credential &amp; targets (in-memory only)</summary>
-    <label class="fld" for="akey">Anthropic key (credential:anthropic value)</label>
-    <input id="akey" type="password" placeholder="sk-ant-… — stays in this tab, never stored, never sent anywhere but api.anthropic.com">
-    <div class="row" style="margin-top:10px">
-      <div><label class="fld" for="model">Model</label><input id="model" value="claude-opus-4-8"></div>
-      <div><label class="fld" for="dirnpub">Your npub (draft recipient / Ngage desk)</label><input id="dirnpub" placeholder="npub1… — where the draft is sealed"></div>
+<!-- The common Nave footer (vendored from components/nave-footer.html; Nscribe marked .here). -->
+<style>
+  .nave-footer { background:#0b0906; border-top:1px solid #2a2317; color:#7a6f5c;
+    font-family:ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; padding:38px 24px; margin-top:56px; }
+  .nave-footer .nf-wrap { max-width:1040px; margin:0 auto; display:flex; flex-direction:column;
+    align-items:center; text-align:center; gap:18px; }
+  .nave-footer a { text-decoration:none; }
+  .nf-brand { display:inline-flex; align-items:center; gap:10px; font-size:13px;
+    letter-spacing:.16em; text-transform:uppercase; color:#c39a56; }
+  .nf-brand:hover { color:#e2c079; }
+  .nf-brand svg { width:22px; height:22px; flex:none; }
+  .nf-apps { display:flex; flex-wrap:wrap; gap:8px 16px; justify-content:center;
+    font-size:12px; letter-spacing:.08em; }
+  .nf-apps a { color:#9c927f; }
+  .nf-apps a:hover { color:#e2c079; }
+  .nf-apps .here { color:#f4efe4; border-bottom:1px solid #c39a56; }
+  .nf-meta { display:flex; flex-wrap:wrap; gap:8px 18px; justify-content:center; align-items:center; font-size:12px; }
+  .nf-meta a { color:#c39a56; }
+  .nf-meta a:hover { color:#e2c079; }
+  .nf-npub { font-size:11px; color:#6f6553; word-break:break-all; }
+  .nf-whisper { font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-style:italic; font-size:13px; color:#6f6553; }
+</style>
+<footer class="nave-footer">
+  <div class="nf-wrap">
+    <a class="nf-brand" href="https://nave.pub">
+      <svg viewBox="0 0 100 100" fill="none" aria-hidden="true">
+        <circle cx="50" cy="50" r="46" stroke="#c39a56" stroke-width="2" opacity="0.5"/>
+        <path d="M50 6 L57 43 L94 50 L57 57 L50 94 L43 57 L6 50 L43 43 Z" fill="#c39a56" fill-opacity="0.16" stroke="#c39a56" stroke-width="2"/>
+        <circle cx="50" cy="50" r="4" fill="#e2c079"/>
+      </svg>
+      A nave.pub project
+    </a>
+    <nav class="nf-apps">
+      <a href="https://noir.nave.pub">Noir</a>
+      <a href="https://nontact.nave.pub">Nontact</a>
+      <a href="https://nvelope.nave.pub">Nvelope</a>
+      <a href="https://nherit.nave.pub">Nherit</a>
+      <a href="https://ntrigue.nave.pub">Ntrigue</a>
+      <a href="https://notegate.nave.pub">Notegate</a>
+      <a href="https://nvoy.nave.pub">Nvoy</a>
+      <a href="https://ngage.nave.pub">Ngage</a>
+      <a href="https://nscope.nave.pub">Nscope</a>
+      <a class="here" href="https://nscribe.nave.pub">Nscribe</a>
+    </nav>
+    <div class="nf-meta">
+      <a href="mailto:help@nave.pub">help@nave.pub</a>
+      <span class="nf-npub">npub1gqg2csuzqmwpqqvts99786spefkf90xz96t3n6zp6fqnk2r74pxs4tcgrg</span>
     </div>
-    <label class="fld" for="bunker">jaf-quill bunker connection (NIP-46) — pens the draft so the desk verifies the hand</label>
-    <div class="row">
-      <input id="bunker" placeholder="bunker://… (scoped to draft kinds 30440/1059/13). Leave blank to copy-and-open instead.">
-      <button class="btn ghost fixed" id="connectBunker">Connect</button>
-    </div>
-    <div class="status" id="stBunker"></div>
-    <div class="kv" id="tmpl"></div>
-  </details>
-</div>
-
-<footer>
-  A <a href="https://nave.pub">nave.pub</a> project · Nscribe is the front door on the
-  <code>revoice</code> actuator (scoped-agent-actions §II·5) · your words come through your hand.
+    <div class="nf-whisper">Identity = Freedom · your data answers to your keys, and no one else's.</div>
+  </div>
 </footer>
 
 <script type="module" src="./nscribe.mjs"></script>

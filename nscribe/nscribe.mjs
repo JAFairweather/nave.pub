@@ -11,15 +11,25 @@
 // the desk without a paste. Left un-wired on purpose — untested relay/bunker crypto
 // shipped as "working" is exactly what this estate refuses to do.
 
+import { renderTitlebar, updateTitlebar } from './components/nave-titlebar.mjs'
+
 const $ = (id) => document.getElementById(id)
 const els = {
   src: $('src'), out: $('out'), file: $('file'), register: $('register'), intent: $('intent'),
   revoice: $('revoice'), preview: $('preview'), toNgage: $('toNgage'), copy: $('copy'),
   st1: $('st1'), st2: $('st2'), srcCount: $('srcCount'), outCount: $('outCount'),
-  signin: $('signin'), me: $('me'), akey: $('akey'), model: $('model'), dirnpub: $('dirnpub'),
+  akey: $('akey'), model: $('model'), dirnpub: $('dirnpub'),
   cfg: $('cfg'), openCfg: $('openCfg'), tmpl: $('tmpl'),
   bunker: $('bunker'), connectBunker: $('connectBunker'), stBunker: $('stBunker'),
 }
+
+// Nscribe's seal — a quill nib in its ink accent (favicon = header logo = grid icon).
+const QUILL_SEAL = `<svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+  <circle cx="16" cy="16" r="15" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+  <path d="M23 9 L13 21 L11 23 L10.2 20.4 Z" fill="none" stroke="var(--accent-bright)" stroke-width="1.4" stroke-linejoin="round"/>
+  <path d="M13 21 L16 24" stroke="var(--accent-bright)" stroke-width="1.4" stroke-linecap="round"/>
+</svg>`
+let directorSigner = null
 
 const words = (s) => (s.trim() ? s.trim().split(/\s+/).length : 0)
 const setCount = (t, el) => { el.textContent = `${words(t)} words` }
@@ -96,41 +106,79 @@ function actuatorTemplate() {
   }
 }
 
-// --- the re-voice call (grant-to-app: your credential → Anthropic directly) ---
+// --- the re-voice call: the AD-10 director path -----------------------------
+// jaf-quill (the Cloud Drafter) drafts from its OWN credential:anthropic grant;
+// the draft then routes to the Director's Ngage desk to sign. The Director never
+// drafts with his own key. A pasted key is a fallback only.
+
+// Resolve the drafting credential — jaf-quill's grant first, paste as fallback.
+async function resolveDraftKey() {
+  if (bunkerSigner) {   // the Cloud Drafter is connected → read jaf-quill's grant
+    const [{ readAnthropicCredential }, { LiveRelay }] = await Promise.all([
+      import('./emit.mjs'), import('./vendor/liverelay.mjs'),
+    ])
+    const relay = new LiveRelay(RELAYS)
+    try { return { key: await readAnthropicCredential(relay, bunkerSigner), via: 'grant' } }
+    finally { try { relay.close?.() } catch { /* best effort */ } }
+  }
+  const pasted = els.akey.value.trim()
+  if (pasted) return { key: pasted, via: 'paste' }
+  return null
+}
+
+// Precise, per-failure diagnostics so a live miss says exactly which prereq is off.
+function credErr(e) {
+  switch (e?.code) {
+    case 'DECRYPT_REFUSED': return 'Connected as jaf-quill, but the bunker refused to decrypt the grant — the Bunker46 connection needs nip44Decrypt permission, not just draft-kind signing. Widen it in the bunker console.'
+    case 'NO_GRANT': return `Connected as jaf-quill, but no credential:anthropic grant reached this key. Issue it in the Nvoy console (＋ grant → jaf-quill → credential:anthropic).${e.seen?.length ? ' Scopes it CAN see: ' + e.seen.join(', ') + '.' : ''}`
+    case 'STALE': return 'The credential:anthropic grant is stale/rotated — re-issue it to jaf-quill in Nvoy.'
+    case 'SHAPE': return 'Found the credential:anthropic grant, but its payload has no string .value — check how it was issued in Nvoy.'
+    default: return "Reading jaf-quill's credential grant failed: " + String(e?.message || e)
+  }
+}
+
+async function callAnthropic(key, spec, register, src) {
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: els.model.value.trim() || 'claude-opus-4-8',
+      max_tokens: 4096,
+      system: buildSystem(spec, register),
+      messages: [{ role: 'user', content: buildUser(src, els.intent.value, register) }],
+    }),
+  })
+  if (!r.ok) { const b = await r.text().catch(() => ''); throw new Error(`Anthropic ${r.status} — ${b.slice(0, 200)}`) }
+  const data = await r.json()
+  const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim()
+  if (!text) throw new Error('empty draft returned')
+  return text
+}
+
 async function revoice() {
   const src = els.src.value.trim()
   if (!src) return status(els.st1, 'Paste or upload some text first.', 'err')
-  const key = els.akey.value.trim()
-  if (!key) { openSettings(); return status(els.st1, 'Add your Anthropic credential in settings to re-voice (grant-to-app — held in memory only).', 'err') }
-  const spec = await voiceSpec()
-  const register = els.register.value
   els.revoice.disabled = true
-  status(els.st1, 'Re-voicing in your hand…')
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: els.model.value.trim() || 'claude-opus-4-8',
-        max_tokens: 4096,
-        system: buildSystem(spec, register),
-        messages: [{ role: 'user', content: buildUser(src, els.intent.value, register) }],
-      }),
-    })
-    if (!r.ok) {
-      const body = await r.text().catch(() => '')
-      throw new Error(`Anthropic ${r.status} — ${body.slice(0, 200)}`)
+    status(els.st1, bunkerSigner ? "jaf-quill is reading its credential grant (the Cloud Drafter)…" : 'Re-voicing…')
+    let resolved
+    try { resolved = await resolveDraftKey() }
+    catch (e) { return status(els.st1, credErr(e), 'err') }
+    if (!resolved) {
+      openSettings()
+      return status(els.st1, 'Connect your jaf-quill bunker — the Cloud Drafter — in settings. It drafts from its own credential:anthropic grant (no key to paste), then seals to your Ngage desk. A pasted key is a fallback only.', 'err')
     }
-    const data = await r.json()
-    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim()
-    if (!text) throw new Error('empty draft returned')
+    const spec = await voiceSpec()
+    status(els.st1, resolved.via === 'grant' ? 'Drafting as jaf-quill from the credential grant…' : 'Re-voicing (pasted-key fallback)…')
+    const text = await callAnthropic(resolved.key, spec, els.register.value, src)
     els.out.value = text; setCount(text, els.outCount); syncOutButtons()
-    status(els.st1, spec ? 'Drafted against your steering file. Read it, tweak it, then send it to your desk.' : 'Drafted (steering file not loaded — voice applied from built-in rules). Read closely.', 'ok')
+    const via = resolved.via === 'grant' ? "via jaf-quill's credential grant — no key pasted" : 'via the pasted-key fallback'
+    status(els.st1, `Drafted (${via})${spec ? ' against your steering file' : ''}. Read it, tweak it, then Send to Ngage to sign in your own hand.`, 'ok')
   } catch (err) {
     status(els.st1, String(err.message || err), 'err')
   } finally {
@@ -174,7 +222,7 @@ async function connectBunker() {
     const pk = await signer.getPublicKey()   // lazily performs the NIP-46 connect
     bunkerSigner = signer
     els.toNgage.textContent = 'Seal to Ngage →'
-    status(els.stBunker, `Connected — the pen is ${pk.slice(0, 8)}…${pk.slice(-4)}. "Send to Ngage" now auto-seals.`, 'ok')
+    status(els.stBunker, `Cloud Drafter connected — jaf-quill ${pk.slice(0, 8)}…${pk.slice(-4)}. Re-voice now drafts from its credential grant; Send to Ngage auto-seals.`, 'ok')
   } catch (e) {
     bunkerSigner = null
     status(els.stBunker, 'Bunker connect failed: ' + String(e.message || e), 'err')
@@ -209,16 +257,34 @@ async function toNgage() {
   if (!(bunkerSigner && recipient)) status(els.st2, 'Draft copied and Ngage opened — paste it and sign in your own hand. (Connect your jaf-quill bunker + set your npub in settings to auto-seal instead.)', 'ok')
 }
 
-// --- sign-in (v1: optional convenience via NIP-07; no hard dependency) ---
-async function signIn() {
+// --- Director sign-in via the shared nave-connect + titlebar (AD-11) ---------
+// This is the APPROVAL end (Ngage). Drafting is jaf-quill's job (the Cloud
+// Drafter, in settings). nave-connect is lazy-loaded so the page can't fail to
+// load on a bundle issue; the titlebar itself is dependency-free.
+async function signInDirector() {
   try {
-    const n = window.nostr
-    if (!n) { openSettings(); return status(els.st2, 'No extension found — you don\'t need to sign in for v1. Paste your credential in settings and re-voice; sign on your own desk in Ngage.') }
-    if (typeof n.enable === 'function') { try { await n.enable() } catch { return status(els.st2, 'Sign-in declined.', 'err') } }
-    const pk = await n.getPublicKey()
-    els.me.innerHTML = `<span class="badge">extension</span><span class="pill" title="${pk}">${pk.slice(0, 8)}…${pk.slice(-4)}</span>`
-    status(els.st2, 'Signed in. (v1 uses this only to remember who you are — the draft still goes to your Ngage desk.)', 'ok')
-  } catch (e) { status(els.st2, String(e.message || e), 'err') }
+    const nc = await import('./vendor/nave-connect.mjs')
+    let signer
+    if (window.nostr) {
+      signer = nc.nip07Signer()
+    } else {
+      const uri = prompt('No extension found. Paste a bunker:// or nostrconnect:// to sign in as the Director:')
+      if (!uri) return
+      signer = nc.nip46Signer(uri)
+    }
+    const pk = await signer.getPublicKey()
+    const { nip19 } = await import('nostr-tools')
+    const npub = nip19.npubEncode(pk)
+    directorSigner = signer
+    if (!els.dirnpub.value.trim()) els.dirnpub.value = npub   // you are the recipient / approver
+    updateTitlebar('#titlebar', { npub, kind: signer.kind, onLogout: signOutDirector, onSignIn: null })
+    status(els.st2, 'Signed in as the Director — the approval end (Ngage). Drafting is jaf-quill: connect the Cloud Drafter in settings.', 'ok')
+  } catch (e) { status(els.st2, 'Sign-in failed: ' + String(e.message || e), 'err') }
+}
+function signOutDirector() {
+  directorSigner = null
+  updateTitlebar('#titlebar', { npub: null, kind: null, onSignIn: signInDirector })
+  status(els.st2, 'Signed out.', '')
 }
 
 function openSettings() { els.cfg.open = true }
@@ -228,6 +294,11 @@ els.preview.addEventListener('click', preview)
 els.copy.addEventListener('click', copyOut)
 els.toNgage.addEventListener('click', toNgage)
 els.connectBunker.addEventListener('click', connectBunker)
-els.signin.addEventListener('click', signIn)
+
+// Mount the shared identity bar signed-out; sign-in swaps it to the Director pill.
+renderTitlebar('#titlebar', {
+  appName: 'Nscribe', tagline: 'say it in your hand', sealSvg: QUILL_SEAL,
+  npub: null, onSignIn: signInDirector, signInLabel: 'Sign in as Director',
+})
 
 setCount('', els.srcCount); setCount('', els.outCount); syncOutButtons()
