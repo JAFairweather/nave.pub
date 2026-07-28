@@ -47,6 +47,21 @@ sh deploy/ops/rekey.sh root@HOST --lock   # disable passwords (only after verify
 Always keep a **provider console open as a lifeline** while doing a box, and only
 run `--lock` after you've seen key login work.
 
+> **`rekey.sh` appends — but the provider can rewrite the whole file underneath
+> it.** The script only ever `>>`-appends the management key behind a
+> `grep -qxF` guard (see the code): it never truncates, never `mv`s the file, and
+> never filters by key type, so a key present before a run is present after. What
+> it *cannot* protect against is an **out-of-band provider action** — a
+> DigitalOcean panel **Rebuild**, **Recover**, or **Reset Root Password**, or any
+> event that re-runs **cloud-init** — which rewrites `/root/.ssh/authorized_keys`
+> **from scratch** to only the keys registered in the provider account. That
+> leaves a **new inode** (a pure append preserves the original) and silently drops
+> any key you added by hand or that isn't in the provider's registered set (an
+> ECDSA key pasted at the console, for example). If keys vanish from a box, the
+> tell is the file's `Birth:` time (`stat authorized_keys`) and
+> `/var/log/cloud-init.log` — **not** this script. Do not reason from "the script
+> only appends" to "the file can't have changed"; confirm against the box.
+
 ### If the box is ALREADY key-only (ssh-copy-id can't get in)
 
 Some boxes (e.g. fresh DigitalOcean droplets) already refuse passwords, so
