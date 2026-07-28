@@ -47,20 +47,38 @@ sh deploy/ops/rekey.sh root@HOST --lock   # disable passwords (only after verify
 Always keep a **provider console open as a lifeline** while doing a box, and only
 run `--lock` after you've seen key login work.
 
-> **`rekey.sh` appends — but the provider can rewrite the whole file underneath
-> it.** The script only ever `>>`-appends the management key behind a
+> **`rekey.sh` appends — so a new `authorized_keys` inode means something *else*
+> rewrote the file.** The script only ever `>>`-appends the management key behind a
 > `grep -qxF` guard (see the code): it never truncates, never `mv`s the file, and
-> never filters by key type, so a key present before a run is present after. What
-> it *cannot* protect against is an **out-of-band provider action** — a
-> DigitalOcean panel **Rebuild**, **Recover**, or **Reset Root Password**, or any
-> event that re-runs **cloud-init** — which rewrites `/root/.ssh/authorized_keys`
-> **from scratch** to only the keys registered in the provider account. That
-> leaves a **new inode** (a pure append preserves the original) and silently drops
-> any key you added by hand or that isn't in the provider's registered set (an
-> ECDSA key pasted at the console, for example). If keys vanish from a box, the
-> tell is the file's `Birth:` time (`stat authorized_keys`) and
-> `/var/log/cloud-init.log` — **not** this script. Do not reason from "the script
-> only appends" to "the file can't have changed"; confirm against the box.
+> never filters by key type, so a key present before a run is present after — and it
+> **cannot** produce a new inode. If `stat authorized_keys` shows a fresh `Birth:`,
+> a *wholesale rewrite* happened, and it was not this script. Two things do that,
+> and they are not the same:
+>
+> 1. **An operator rewriting the file by hand** — the common case. At provisioning
+>    you typically overwrite the provider's default key with your intended keys.
+>    *This is what happened on the Jul-24 box:* cloud-init wrote the DigitalOcean
+>    panel key at first boot (`15:34`), then the operator, logged in on `nave-mgmt`
+>    from our own management IP, rewrote the file at `15:41` to the two intended
+>    ed25519 keys — dropping the DO default ECDSA key on purpose. New inode, benign,
+>    same day the box was stood up. No key was ever lost *post-deploy*.
+> 2. **An out-of-band provider action** — a DigitalOcean **Rebuild** / **Recover** /
+>    **Reset Root Password**, or a cloud-init re-run — which rewrites the file to
+>    only the account-registered keys and would silently drop hand-added keys.
+>
+> **Distinguish them from the box, don't guess:** `cloud-init.log` write time vs the
+> inode `Birth:` time; `cloud-init query instance-id` vs `previous-instance-id`
+> (**equal ⇒ not a Rebuild**); and the source IPs in `/var/log/auth.log` for the
+> logins around the rewrite (all provider/management IPs ⇒ benign operator action; a
+> **foreign IP or a key none of us own** ⇒ investigate).
+>
+> **First, rule out the client.** A local `Permission denied (publickey)` looks
+> *identical* whether the box dropped your key or your own client never offered it.
+> Before concluding anything changed on the box, run `ssh -v` and check the obvious
+> local causes — an **empty `ssh-agent`**, a **VPN/egress toggle**, `IdentitiesOnly`
+> offering the wrong key. The Jul-24→28 "every key denied" scare was exactly this:
+> an empty agent + a VPN toggle, not a box-side change. Reason from `ssh -v`, not
+> from "the script only appends."
 
 ### If the box is ALREADY key-only (ssh-copy-id can't get in)
 
