@@ -13,7 +13,8 @@
     "mydude": "0a8e0720c3ec52c6bfd9e2545d620cf58e2e8d371244255efce3ddd57ba0a32c",
     "kerouac": "eb586b1e9c214c10762acc0dd4d428ac9156c284162f2d9dcc98562e644d71a5",
     "dennis": "9a07300d3295f392d295cd8f73c8f1d3c725809b2e50fc52815db8682ef940a5",
-    "neil": "5d3848a699e82f81e218aaad2f481bb63c00ff69b813cfca1cafc58ca633eb08"
+    "neil": "5d3848a699e82f81e218aaad2f481bb63c00ff69b813cfca1cafc58ca633eb08",
+    "claude": "78856ed6c671b816290e3b390c9ab180933e33ba99125ce2f71aaf399904e148"
   },
   "relays": {
     "d8de5184a096e49b3f79730258c05f8ffb56cdf138c08b3c7b0b0685a0fb963e": [
@@ -67,6 +68,11 @@
       "wss://relay.primal.net"
     ],
     "5d3848a699e82f81e218aaad2f481bb63c00ff69b813cfca1cafc58ca633eb08": [
+      "wss://relay.damus.io",
+      "wss://nos.lol",
+      "wss://relay.primal.net"
+    ],
+    "78856ed6c671b816290e3b390c9ab180933e33ba99125ce2f71aaf399904e148": [
       "wss://relay.damus.io",
       "wss://nos.lol",
       "wss://relay.primal.net"
