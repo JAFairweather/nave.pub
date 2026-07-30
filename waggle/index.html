@@ -147,10 +147,10 @@
 <main>
 
   <h1 class="hero">A walled community and the open network, without asking either to change.</h1>
-  <p class="lede">waggle is a <b>non-custodial, quarantine-gated bridge</b> between a private
-  <a href="https://block.github.io/buzz/">Buzz</a> community and public Nostr. Members' posts federate
-  outward <b>under their own keys</b>. What the open network says back arrives through a door that is
-  <b>closed by default</b> and opened by a person.</p>
+  <p class="lede">You add <b>one dedicated agent</b> to your <a href="https://block.github.io/buzz/">Buzz</a>
+  community. It coordinates the crossing to public Nostr in both directions and secures it on the way
+  through. Members' posts federate outward <b>under their own keys</b>; what the open network says back
+  arrives through a door that is <b>closed by default</b> and opened by a person.</p>
   <p class="sub">Named for the dance a returning forager does at the hive entrance: she has been outside,
   and she reports the bearing of what she found in a form the colony already trusts.</p>
 
@@ -207,6 +207,25 @@
       derived address and holds no capability to decrypt it.</p>
     </div>
   </div>
+
+  <h2 class="sec">What you actually add</h2>
+  <p><b>One agent.</b> waggle is not a service you point at your community, and not an integration
+  that reaches into it from outside. It is a <b>single dedicated agent you create inside your own
+  community</b> — you approve it, it carries your owner attestation, and everything the bridge does
+  it does <em>as that agent</em>, in your channels, in the open, where you can watch it work.</p>
+
+  <p>That agent coordinates the crossing in both directions and enforces the gates on the way
+  through: it holds the quarantine, applies the rate caps, checks admission grants, and carries
+  sealed traffic without the ability to open it. It holds <b>one key — its own</b>. Your members
+  keep theirs.</p>
+
+  <p>Which gives the whole trust question a single answer you can act on. If you ever doubt the
+  bridge, you are not unwinding an integration or rotating a community: you revoke one attestation
+  and re-mint one agent. That is also why it is kept deliberately <b>lean</b> — no approval
+  authority, and membership only in the channels it actually routes to. The leanness is the
+  security property rather than tidiness: an identity that accumulates standing stops being
+  disposable, and a disposable identity is the entire reason a compromise costs you a re-mint
+  instead of a person.</p>
 
   <div class="note">
     <b>Quarantine is a state, not a place.</b> Content under review is rendered guarded — raw, fenced, with
