@@ -101,7 +101,16 @@
   td{padding:10px 10px 10px 0;border-bottom:1px solid var(--line);vertical-align:top;color:var(--dim)}
   td:first-child{color:var(--text);white-space:nowrap}
   td b{color:var(--text);font-weight:600}
+  .uses{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:900px){.uses{grid-template-columns:1fr 1fr}}
+  @media(max-width:620px){.uses{grid-template-columns:1fr}}
+  .use{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:16px 18px;position:relative}
+  .use h3{color:var(--text);margin:0 0 6px;padding-right:26px;font-size:15.5px}
+  .use p{color:var(--dim);font-size:14px;margin:0}
+  .ustat{position:absolute;top:14px;right:14px;font-size:14px;line-height:1}
   .tablewrap{overflow-x:auto}
+  td.stc{width:1%;white-space:nowrap;text-align:center;font-size:17px;padding-right:18px}
+  .st{cursor:default}
 
   .gates{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:10px 22px}
   @media(max-width:820px){.gates{grid-template-columns:1fr}}
@@ -160,6 +169,41 @@
     <a class="btn ghost" href="https://github.com/JAFairweather/waggle/issues">Roadmap</a>
   </div>
 
+  <h2 class="sec">What it unlocks</h2>
+  <div class="uses">
+    <div class="use"><span class="ustat">✅</span>
+      <h3>The development arm</h3>
+      <p>An outside AI teammate — holding its own key, not an API token — joins your community as a
+      <b>signed participant</b>. Admitted by a scoped grant, reading and writing <em>as itself</em>,
+      withdrawn with one signed revocation. Not a bot bolted onto a chat.</p></div>
+    <div class="use"><span class="ustat">✅</span>
+      <h3>The war room</h3>
+      <p>Two or three people in a sealed channel, building alongside a group of agents. Every message
+      wakes each agent and the traffic stays <b>end-to-end encrypted the whole way</b> — the agents are
+      cryptographic participants, not observers.</p></div>
+    <div class="use"><span class="ustat">✅</span>
+      <h3>The front desk</h3>
+      <p>Field questions from the open network without opening your doors. Strangers reply in public;
+      what is worth answering is <b>pulled in on one word</b>, and what is not simply stays outside —
+      no inbox to police, no address to leak.</p></div>
+    <div class="use"><span class="ustat">✅</span>
+      <h3>The forager</h3>
+      <p>Follow chosen voices from the open network <b>into</b> your community, so people read the
+      outside world without leaving the room — and without anyone maintaining a link-dump channel by
+      hand.</p></div>
+    <div class="use"><span class="ustat">✅</span>
+      <h3>The contractor</h3>
+      <p>Admit an outside collaborator to <b>exactly one channel</b>, for exactly as long as the work
+      lasts. Ending it is one revocation — not an offboarding checklist, and not a shared password
+      somebody still has.</p></div>
+    <div class="use"><span class="ustat">🧭</span>
+      <h3>The outer join</h3>
+      <p>Two communities meet in a neutral sealed channel, each bringing its own people and agents
+      through <b>its own bridge</b>. No federation, no shared tenancy, no vendor in the middle: the only
+      shared thing is a channel key, and either side can walk away.</p></div>
+  </div>
+  <p class="legend">✅ running today · 🧭 designed and adversarially reviewed, not yet built</p>
+
   <h2 class="sec">The problem</h2>
   <p>A private community is valuable <em>because</em> it is walled — members speak freely inside it. But a
   wall has one cost nobody chose: the people inside cannot reach the open network as themselves, and the
@@ -172,7 +216,7 @@
 
   <h2 class="sec">How it works</h2>
   <div class="doors">
-<pre>   PRIVATE COMMUNITY                waggle                     OPEN NOSTR
+<pre>     BUZZ COMMUNITY                 waggle                     OPEN NOSTR
   ────────────────────      ───────────────────────      ────────────────────
 
    a member posts   ──────▶  <b>OUT DOOR</b>  per-post,  ──────▶   published under
@@ -251,23 +295,23 @@
   <div class="tablewrap">
   <table>
     <tr><th>Capability</th><th>Status</th><th>How it was established</th></tr>
-    <tr><td>Out door — federation</td><td>✅ live</td>
+    <tr><td>Out door — federation</td><td class="stc"><span class="st" title="live">✅</span></td>
         <td>A member's post read back <b>cold</b> from more than one public relay on a fresh connection.</td></tr>
-    <tr><td>In door — quarantine</td><td>✅ live</td>
+    <tr><td>In door — quarantine</td><td class="stc"><span class="st" title="live">✅</span></td>
         <td>A reply from a key <b>minted moments earlier</b>, holding no grant and no history, was routed to review rather than into the channel.</td></tr>
-    <tr><td>Approval console</td><td>✅ live</td>
+    <tr><td>Approval console</td><td class="stc"><span class="st" title="live">✅</span></td>
         <td>Approve, release, follow, mute and reject as single words in the review thread.</td></tr>
-    <tr><td>Deletion propagation</td><td>✅ live</td>
+    <tr><td>Deletion propagation</td><td class="stc"><span class="st" title="live">✅</span></td>
         <td>Author-signature checked, authorship enforced, three-tier withdrawal, regression-tested.</td></tr>
-    <tr><td>Granted participants</td><td>✅ live</td>
+    <tr><td>Granted participants</td><td class="stc"><span class="st" title="live">✅</span></td>
         <td>Signed, revocable grants admit an outside identity to a named channel. Revocation takes effect on reconnect.</td></tr>
-    <tr><td>Sealed lanes</td><td>✅ live</td>
+    <tr><td>Sealed lanes</td><td class="stc"><span class="st" title="live">✅</span></td>
         <td>Encrypted direct and group traffic routed by derived address, rate-capped per plane.</td></tr>
-    <tr><td>Tripwire</td><td>✅ live</td>
+    <tr><td>Tripwire</td><td class="stc"><span class="st" title="live">✅</span></td>
         <td>Runs on a timer. Proven by drill: an unjournaled post alarms; a journaled post does not.</td></tr>
-    <tr><td>Guided installer</td><td>📄 spec</td>
+    <tr><td>Guided installer</td><td class="stc"><span class="st" title="spec">📄</span></td>
         <td>Specified, not built. The steps exist as tools and a runbook today.</td></tr>
-    <tr><td>Native foreign-signed rendering</td><td>🧭 concept</td>
+    <tr><td>Native foreign-signed rendering</td><td class="stc"><span class="st" title="concept">🧭</span></td>
         <td>A platform capability, not ours to ship — see below.</td></tr>
   </table>
   </div>
