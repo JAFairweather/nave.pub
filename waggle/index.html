@@ -182,8 +182,9 @@
    channel, on                closed quarantine
    a human's word            <i>approve · follow · mute · reject</i>
 
-                      the bridge holds no member's private key
-                      and never unwraps a sealed conversation</pre>
+              the bridge holds exactly one key — <i>its own</i> — and no member's.
+              sealed conversations pass through unopened: it can route them,
+              it has no capability to read them.</pre>
   </div>
 
   <div class="grid3" style="margin-top:16px">
@@ -268,9 +269,12 @@ npm test                             <span class="c"># the safety gates, exercis
   <h2 class="sec">Design commitments</h2>
   <div class="grid">
     <div class="panel">
-      <h3>Non-custodial, in the strict sense</h3>
-      <p>The bridge never holds a member's private key. Compromise it and an attacker gets the bridge's own
-      disposable identity — not the community, and not anyone's voice but its own.</p>
+      <h3>One key, and it is the bridge's own</h3>
+      <p>The bridge holds a real, working private key — its own posting identity — and no one else's.
+      Members sign their own outbound posts; the bridge never touches those keys. So a compromise costs
+      you the bridge's voice, which is deliberately disposable and re-mintable, rather than a person's.
+      That is a bounded loss, not no loss, which is why detection and rotation carry the security story
+      rather than encryption at rest.</p>
     </div>
     <div class="panel">
       <h3>Default-closed, always</h3>
