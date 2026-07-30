@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>waggle — the Nostr ↔ Buzz bridge</title>
+<meta name="description" content="Non-custodial, quarantine-gated two-way interop between a walled Buzz community and the open Nostr network. Members federate under their own keys; the open network comes back through a door that is closed by default.">
+<style>
+  /* ── Nave design system — canonical tokens, VENDORED VERBATIM from
+     design/tokens.css (keep in sync). waggle overrides only the --accent trio
+     with its own seal colour (honey), per design/DESIGN.md. ── */
+  :root {
+    --ground: #0b0906; --panel: #14100a; --panel-2: #1b1409;
+    --line: #2a2317; --line-strong: #3a3020;
+    --field: #0d0a06;
+    --ink: #0b0906; --bg: #0b0906;
+    --text: #f4efe4; --dim: #9c927f; --faint: #6f6555;
+    --gold: #c39a56; --gold-bright: #e2c079;
+    --accent: #c39a56; --accent-bright: #e2c079; --accent-ink: #0b0906;
+    --good: #8fae6a; --warn: #d9a648; --critical: #c0705a;
+    --ok: #8fae6a; --danger: #c0705a;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace;
+    --display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --serif: var(--sans);
+    --r-sm: 6px; --r-md: 10px; --r-pill: 999px; --radius: 6px;
+  }
+  /* waggle's accent — honey, the forager's return (one accent per app) */
+  :root { --accent: #cf8a2e; --accent-bright: #e8a545; --accent-ink: #0b0906; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --ground: #f5f0e4; --panel: #fffdf7; --panel-2: #ece4d2;
+      --line: #ddd2ba; --line-strong: #c8b89a; --field: #fffdf7;
+      --ink: #f5f0e4; --bg: #f5f0e4;
+      --text: #241d12; --dim: #6f6553; --faint: #8a7f66;
+      --accent: #8a5a14; --accent-bright: #a86f1e; --accent-ink: #fffdf7;
+      --good: #4f7a34; --warn: #9a6a12; --critical: #a2482f;
+      --ok: #4f7a34; --danger: #a2482f;
+    }
+  }
+  :root[data-theme="light"] {
+    --ground: #f5f0e4; --panel: #fffdf7; --panel-2: #ece4d2;
+    --line: #ddd2ba; --line-strong: #c8b89a; --field: #fffdf7;
+    --ink: #f5f0e4; --bg: #f5f0e4; --text: #241d12; --dim: #6f6553; --faint: #8a7f66;
+    --accent: #8a5a14; --accent-bright: #a86f1e; --accent-ink: #fffdf7;
+    --good: #4f7a34; --warn: #9a6a12; --critical: #a2482f;
+    --ok: #4f7a34; --danger: #a2482f;
+  }
+  :root[data-theme="dark"] {
+    --ground: #0b0906; --panel: #14100a; --panel-2: #1b1409;
+    --line: #2a2317; --line-strong: #3a3020; --field: #0d0a06;
+    --ink: #0b0906; --bg: #0b0906;
+    --text: #f4efe4; --dim: #9c927f; --faint: #6f6555;
+    --accent: #cf8a2e; --accent-bright: #e8a545; --accent-ink: #0b0906;
+    --good: #8fae6a; --warn: #d9a648; --critical: #c0705a;
+    --ok: #8fae6a; --danger: #c0705a;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--ground);color:var(--text);font-family:var(--sans);line-height:1.55}
+  main{max-width:980px;margin:0 auto;padding:0 20px 40px}
+  a{color:var(--accent-bright);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code,.mono{font-family:var(--mono)}
+
+  /* masthead */
+  .top{max-width:980px;margin:0 auto;padding:26px 20px 0;display:flex;align-items:center;gap:14px}
+  .mark{width:56px;height:56px;flex:none}
+  .wordmark{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent)}
+  .top .spacer{flex:1}
+  .top .repo{font-family:var(--mono);font-size:12px;color:var(--dim)}
+
+  .hero{font-family:var(--display);font-size:clamp(30px,5vw,44px);line-height:1.15;margin:26px 0 10px;font-weight:600;text-wrap:balance}
+  .lede{color:var(--dim);margin:0 0 10px;max-width:64ch;font-size:17px}
+  .lede b{color:var(--text);font-weight:600}
+  .sub{color:var(--faint);max-width:64ch;font-size:15px;margin:0 0 24px}
+
+  h2.sec{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.14em;
+    color:var(--dim);font-weight:600;margin:44px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  h3{font-size:16px;margin:0 0 6px}
+  p{max-width:70ch}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:820px){.grid,.grid3{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:16px 18px}
+  .panel h3{color:var(--text)}
+  .panel p{color:var(--dim);font-size:14px;margin:0}
+  .panel .tag{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:8px}
+
+  /* the two doors diagram */
+  .doors{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:20px;overflow-x:auto}
+  .doors pre{font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--dim);margin:0;white-space:pre}
+  .doors pre b{color:var(--accent-bright);font-weight:600}
+  .doors pre i{color:var(--text);font-style:normal}
+
+  /* status ladder */
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);
+    text-align:left;font-weight:600;padding:0 10px 8px 0;border-bottom:1px solid var(--line)}
+  td{padding:10px 10px 10px 0;border-bottom:1px solid var(--line);vertical-align:top;color:var(--dim)}
+  td:first-child{color:var(--text);white-space:nowrap}
+  td b{color:var(--text);font-weight:600}
+  .tablewrap{overflow-x:auto}
+
+  .gates{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:10px 22px}
+  @media(max-width:820px){.gates{grid-template-columns:1fr}}
+  .gates li{padding-left:0;color:var(--dim);font-size:14px;border-bottom:1px solid var(--line);padding-bottom:9px}
+  .gates .g{font-family:var(--mono);color:var(--accent);font-size:12px;letter-spacing:.08em;margin-right:8px}
+  .gates b{color:var(--text);font-weight:600}
+
+  .cta{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0 0}
+  .btn{background:var(--accent);color:var(--accent-ink);border:none;border-radius:var(--r-sm);
+    padding:11px 18px;font-weight:700;font-size:15px;font-family:inherit;display:inline-block}
+  .btn:hover{background:var(--accent-bright);text-decoration:none}
+  .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line-strong)}
+  .btn.ghost:hover{border-color:var(--accent);color:var(--accent-bright)}
+
+  pre.sh{background:var(--field);border:1px solid var(--line);border-radius:var(--r-sm);
+    padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:13px;color:var(--text);margin:12px 0}
+  pre.sh .c{color:var(--faint)}
+
+  .note{border:1px dashed var(--line-strong);border-radius:var(--r-md);padding:15px 17px;color:var(--dim);font-size:14px;margin-top:18px}
+  .note b{color:var(--text)}
+  .legend{font-family:var(--mono);font-size:11.5px;color:var(--faint);margin-top:10px;letter-spacing:.03em}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <svg class="mark" viewBox="0 0 100 100" role="img" aria-label="waggle">
+    <rect x="2" y="2" width="96" height="96" rx="20" fill="#0b0906" stroke="#c39a56" stroke-opacity="0.5" stroke-width="2"/>
+    <g fill="none" stroke="#e2c079" stroke-width="2.6" stroke-linecap="round" opacity="0.9">
+      <path d="M62 34 C 38 24 22 44 38 66"/>
+      <path d="M62 34 C 86 44 74 70 38 66"/>
+    </g>
+    <polyline points="38,66 46.5,59 47.5,48 58.5,45 62,34" fill="none" stroke="#e2c079"
+      stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="62" cy="34" r="3" fill="#e2c079"/>
+    <line x1="26" y1="88" x2="74" y2="88" stroke="#c39a56" stroke-width="1.8" stroke-linecap="round" opacity="0.7"/>
+  </svg>
+  <span class="wordmark">waggle</span>
+  <span class="spacer"></span>
+  <span class="repo"><a href="https://github.com/JAFairweather/waggle">github.com/JAFairweather/waggle</a></span>
+</div>
+
+<main>
+
+  <h1 class="hero">A walled community and the open network, without asking either to change.</h1>
+  <p class="lede">You add <b>one dedicated agent</b> to your <a href="https://block.github.io/buzz/">Buzz</a>
+  community. It coordinates the crossing to public Nostr in both directions and secures it on the way
+  through. Members' posts federate outward <b>under their own keys</b>; what the open network says back
+  arrives through a door that is <b>closed by default</b> and opened by a person.</p>
+  <p class="sub">Named for the dance a returning forager does at the hive entrance: she has been outside,
+  and she reports the bearing of what she found in a form the colony already trusts.</p>
+
+  <div class="cta">
+    <a class="btn" href="https://github.com/JAFairweather/waggle">Get the code</a>
+    <a class="btn ghost" href="https://github.com/JAFairweather/waggle/blob/main/docs/SPEC_EXTERNAL.md">Read the spec</a>
+    <a class="btn ghost" href="https://github.com/JAFairweather/waggle/issues">Roadmap</a>
+  </div>
+
+  <h2 class="sec">The problem</h2>
+  <p>A private community is valuable <em>because</em> it is walled — members speak freely inside it. But a
+  wall has one cost nobody chose: the people inside cannot reach the open network as themselves, and the
+  open network cannot reach them at all. Every existing answer trades away something real. Open the
+  community and you lose the reason it worked. Mirror it through a bot and every member's voice becomes
+  the bot's voice. Hand a service your keys and you are no longer sovereign in the only way that counts.</p>
+  <p>waggle takes the position that this is a <b>routing</b> problem rather than a permissions problem, and
+  that both properties can be kept at once: <b>the wall stays up, and the door is per-message, consensual,
+  and reviewable in both directions.</b></p>
+
+  <h2 class="sec">How it works</h2>
+  <div class="doors">
+<pre>   PRIVATE COMMUNITY                waggle                     OPEN NOSTR
+  ────────────────────      ───────────────────────      ────────────────────
+
+   a member posts   ──────▶  <b>OUT DOOR</b>  per-post,  ──────▶   published under
+   and opts in               consent required             <i>the member's own key</i>
+
+   lands in the     ◀──────  <b>IN DOOR</b>   default-  ◀──────   a stranger replies
+   channel, on                closed quarantine
+   a human's word            <i>approve · follow · mute · reject</i>
+
+              the bridge holds exactly one key — <i>its own</i> — and no member's.
+              sealed conversations pass through unopened: it can route them,
+              it has no capability to read them.</pre>
+  </div>
+
+  <div class="grid3" style="margin-top:16px">
+    <div class="panel">
+      <span class="tag">Out door</span>
+      <h3>Signed by the member</h3>
+      <p>Outbound posts carry the member's own signature, not the bridge's. waggle routes; it does not
+      author. Nothing leaves without a per-post opt-in.</p>
+    </div>
+    <div class="panel">
+      <span class="tag">In door</span>
+      <h3>Closed until a person opens it</h3>
+      <p>A reply from an unknown key is held for review rather than delivered. Approving is one word in
+      the channel. Doing nothing is a valid, safe outcome — the default is closed.</p>
+    </div>
+    <div class="panel">
+      <span class="tag">Sealed lanes</span>
+      <h3>Carried, never read</h3>
+      <p>End-to-end encrypted direct and group traffic passes through untouched. The bridge routes by
+      derived address and holds no capability to decrypt it.</p>
+    </div>
+  </div>
+
+  <h2 class="sec">What you actually add</h2>
+  <p><b>One agent.</b> waggle is not a service you point at your community, and not an integration
+  that reaches into it from outside. It is a <b>single dedicated agent you create inside your own
+  community</b> — you approve it, it carries your owner attestation, and everything the bridge does
+  it does <em>as that agent</em>, in your channels, in the open, where you can watch it work.</p>
+
+  <p>That agent coordinates the crossing in both directions and enforces the gates on the way
+  through: it holds the quarantine, applies the rate caps, checks admission grants, and carries
+  sealed traffic without the ability to open it. It holds <b>one key — its own</b>. Your members
+  keep theirs.</p>
+
+  <p>Which gives the whole trust question a single answer you can act on. If you ever doubt the
+  bridge, you are not unwinding an integration or rotating a community: you revoke one attestation
+  and re-mint one agent. That is also why it is kept deliberately <b>lean</b> — no approval
+  authority, and membership only in the channels it actually routes to. The leanness is the
+  security property rather than tidiness: an identity that accumulates standing stops being
+  disposable, and a disposable identity is the entire reason a compromise costs you a re-mint
+  instead of a person.</p>
+
+  <div class="note">
+    <b>Quarantine is a state, not a place.</b> Content under review is rendered guarded — raw, fenced, with
+    mentions defused — so an unvouched stranger cannot format or ping their way into the room while a human
+    decides. Once released, the same message renders as ordinary text. <b>Presentation follows trust</b>,
+    which means the interface never quietly implies more standing than a sender has earned.
+  </div>
+
+  <h2 class="sec">Safety gates</h2>
+  <ul class="gates">
+    <li><span class="g">A1</span><b>Quarantine.</b> Unknown senders route to review, never to the channel.</li>
+    <li><span class="g">A2</span><b>Durable de-duplication.</b> Restarts and multi-relay overlap never double-post.</li>
+    <li><span class="g">A3</span><b>Persisted watermark.</b> A restart resumes where it stopped.</li>
+    <li><span class="g">A4</span><b>Bounded backfill.</b> A cold start cannot flood a channel.</li>
+    <li><span class="g">A5</span><b>Timestamp clamping.</b> A forged future date cannot jump the queue.</li>
+    <li><span class="g">A6</span><b>Size and rate caps.</b> Every drop is logged; none are silent.</li>
+    <li><span class="g">A7</span><b>Deletion propagation.</b> An author's withdrawal follows their post in.</li>
+    <li><span class="g">TW</span><b>Tripwire.</b> Out-of-process detection of signing the bridge did not do.</li>
+  </ul>
+
+  <h2 class="sec">What is actually true today</h2>
+  <p>Status is stated in the shared vocabulary, and <b>shipped is never blurred with designed</b>.</p>
+  <div class="tablewrap">
+  <table>
+    <tr><th>Capability</th><th>Status</th><th>How it was established</th></tr>
+    <tr><td>Out door — federation</td><td>✅ live</td>
+        <td>A member's post read back <b>cold</b> from more than one public relay on a fresh connection.</td></tr>
+    <tr><td>In door — quarantine</td><td>✅ live</td>
+        <td>A reply from a key <b>minted moments earlier</b>, holding no grant and no history, was routed to review rather than into the channel.</td></tr>
+    <tr><td>Approval console</td><td>✅ live</td>
+        <td>Approve, release, follow, mute and reject as single words in the review thread.</td></tr>
+    <tr><td>Deletion propagation</td><td>✅ live</td>
+        <td>Author-signature checked, authorship enforced, three-tier withdrawal, regression-tested.</td></tr>
+    <tr><td>Granted participants</td><td>✅ live</td>
+        <td>Signed, revocable grants admit an outside identity to a named channel. Revocation takes effect on reconnect.</td></tr>
+    <tr><td>Sealed lanes</td><td>✅ live</td>
+        <td>Encrypted direct and group traffic routed by derived address, rate-capped per plane.</td></tr>
+    <tr><td>Tripwire</td><td>✅ live</td>
+        <td>Runs on a timer. Proven by drill: an unjournaled post alarms; a journaled post does not.</td></tr>
+    <tr><td>Guided installer</td><td>📄 spec</td>
+        <td>Specified, not built. The steps exist as tools and a runbook today.</td></tr>
+    <tr><td>Native foreign-signed rendering</td><td>🧭 concept</td>
+        <td>A platform capability, not ours to ship — see below.</td></tr>
+  </table>
+  </div>
+  <p class="legend">✅ live · 🟡 alpha · 🟢 core-live · 📄 spec · 💤 parked · 🧭 concept</p>
+
+  <h2 class="sec">Run it</h2>
+  <p>Node 20 or newer, a Buzz community you administer, and a key for the bridge's own identity — which is
+  deliberately disposable, so that losing it costs you a re-mint rather than a person.</p>
+  <pre class="sh">git clone https://github.com/JAFairweather/waggle
+cd waggle &amp;&amp; npm ci
+cp config.example.json config.json   <span class="c"># then edit: relays, channels, approvers</span>
+npm test                             <span class="c"># the safety gates, exercised</span></pre>
+  <p>The <a href="https://github.com/JAFairweather/waggle/tree/main/deploy">deploy directory</a> carries
+  systemd units, a non-root bridge user, a firewall ruleset and a migration runbook. The two lanes run as
+  separate units under separate users on purpose: the lane exposed to the open network is not the lane
+  that touches sealed traffic.</p>
+
+  <h2 class="sec">Design commitments</h2>
+  <div class="grid">
+    <div class="panel">
+      <h3>One key, and it is the bridge's own</h3>
+      <p>The bridge holds a real, working private key — its own posting identity — and no one else's.
+      Members sign their own outbound posts; the bridge never touches those keys. So a compromise costs
+      you the bridge's voice, which is deliberately disposable and re-mintable, rather than a person's.
+      That is a bounded loss, not no loss, which is why detection and rotation carry the security story
+      rather than encryption at rest.</p>
+    </div>
+    <div class="panel">
+      <h3>Default-closed, always</h3>
+      <p>Every ambiguous case fails toward doing nothing. An unconfigured review channel does not fall back
+      to the community channel; it holds and logs.</p>
+    </div>
+    <div class="panel">
+      <h3>Authority is a signed, revocable grant</h3>
+      <p>Who may enter, and who may approve, are signed events rather than config a process can drift from.
+      Revocation is an event too, checked fresh rather than cached.</p>
+    </div>
+    <div class="panel">
+      <h3>No silent drops</h3>
+      <p>Anything refused is written down with its reason. A moderation system nobody can audit is a
+      different product with the same shape.</p>
+    </div>
+  </div>
+
+  <h2 class="sec">Moderation, honestly</h2>
+  <p>waggle moderates <b>entry into a community</b> — never the open network. A reply that is not approved
+  stays exactly as public as it was; it simply does not enter the walled room. Outbound is uncensored,
+  because it is the member's own key and their own choice.</p>
+  <p>The review queue is the same shape as a new-member queue on a forum, and it converges the same way:
+  approving an author once can promote them, so the work falls off rather than compounding. The honest
+  criticism of this design is not the queue — it is that a bridged message is currently authored by the
+  bridge's identity, because the platform cannot yet render an event signed by someone outside it. That is
+  a real limitation, it is a platform capability rather than a bridge one, and it is the change that would
+  make this native.</p>
+
+  <h2 class="sec">Read further</h2>
+  <div class="grid">
+    <div class="panel">
+      <span class="tag">Specification</span>
+      <h3><a href="https://github.com/JAFairweather/waggle/blob/main/docs/SPEC_EXTERNAL.md">The full spec</a></h3>
+      <p>Architecture, the safety gates, the moderation model, terms-of-service posture, and the roadmap.
+      Generated from an internal source of truth and never hand-edited.</p>
+    </div>
+    <div class="panel">
+      <span class="tag">Security</span>
+      <h3><a href="https://github.com/JAFairweather/waggle/blob/main/SECURITY.md">Reporting a flaw</a></h3>
+      <p>Private disclosure first, what is in scope, and — stated plainly — what is not a vulnerability, so
+      a reporter is not left guessing.</p>
+    </div>
+    <div class="panel">
+      <span class="tag">Roadmap</span>
+      <h3><a href="https://github.com/JAFairweather/waggle/issues">Open work</a></h3>
+      <p>Everything planned is a public issue under a milestone. What is deferred is deferred out loud,
+      with the reason attached.</p>
+    </div>
+    <div class="panel">
+      <span class="tag">Licence</span>
+      <h3><a href="https://github.com/JAFairweather/waggle/blob/main/LICENSE">MIT</a></h3>
+      <p>Take it, run your own, fork it. A reference implementation is only useful if you can actually
+      pick it up.</p>
+    </div>
+  </div>
+
+</main>
+
+<!-- The common Nave footer. Identical on every app, with fixed Nave-family colors
+     regardless of the host app's palette, so it reads as one family.
+     Source of truth: nave.pub/components/nave-footer.html. -->
+<style>
+  .nave-footer { background:#0b0906; border-top:1px solid #2a2317; color:#7a6f5c;
+    font-family:ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; padding:38px 24px; margin-top:56px; }
+  .nave-footer .nf-wrap { max-width:1040px; margin:0 auto; display:flex; flex-direction:column;
+    align-items:center; text-align:center; gap:18px; }
+  .nave-footer a { text-decoration:none; }
+  .nf-brand { display:inline-flex; align-items:center; gap:10px; font-size:13px;
+    letter-spacing:.16em; text-transform:uppercase; color:#c39a56; }
+  .nf-brand:hover { color:#e2c079; }
+  .nf-brand svg { width:22px; height:22px; flex:none; }
+  .nf-apps { display:flex; flex-wrap:wrap; gap:8px 16px; justify-content:center;
+    font-size:12px; letter-spacing:.08em; }
+  .nf-apps a { color:#9c927f; }
+  .nf-apps a:hover { color:#e2c079; }
+  .nf-apps .here { color:#f4efe4; border-bottom:1px solid #c39a56; }
+  .nf-meta { display:flex; flex-wrap:wrap; gap:8px 18px; justify-content:center;
+    align-items:center; font-size:12px; }
+  .nf-meta a { color:#c39a56; }
+  .nf-meta a:hover { color:#e2c079; }
+  .nf-npub { font-size:11px; color:#6f6553; word-break:break-all; }
+  .nf-whisper { font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-style:italic; font-size:13px; color:#6f6553; }
+</style>
+<footer class="nave-footer">
+  <div class="nf-wrap">
+    <a class="nf-brand" href="https://nave.pub">
+      <svg viewBox="0 0 100 100" fill="none" aria-hidden="true">
+        <circle cx="50" cy="50" r="46" stroke="#c39a56" stroke-width="2" opacity="0.5"/>
+        <path d="M50 6 L57 43 L94 50 L57 57 L50 94 L43 57 L6 50 L43 43 Z" fill="#c39a56" fill-opacity="0.16" stroke="#c39a56" stroke-width="2"/>
+        <circle cx="50" cy="50" r="4" fill="#e2c079"/>
+      </svg>
+      A nave.pub project
+    </a>
+    <nav class="nf-apps">
+      <a href="https://noir.nave.pub">Noir</a>
+      <a href="https://nontact.nave.pub">Nontact</a>
+      <a href="https://nvelope.nave.pub">Nvelope</a>
+      <a href="https://nherit.nave.pub">Nherit</a>
+      <a href="https://ntrigue.nave.pub">Ntrigue</a>
+      <a href="https://notegate.nave.pub">Notegate</a>
+      <a href="https://nvoy.nave.pub">Nvoy</a>
+      <a href="https://nscope.nave.pub">Nscope</a>
+      <a class="here" href="https://waggle.nave.pub">waggle</a>
+    </nav>
+    <div class="nf-meta">
+      <a href="mailto:help@nave.pub">help@nave.pub</a>
+      <span class="nf-npub">npub1gqg2csuzqmwpqqvts99786spefkf90xz96t3n6zp6fqnk2r74pxs4tcgrg</span>
+    </div>
+    <div class="nf-whisper">Identity = Freedom · your data answers to your keys, and no one else's.</div>
+  </div>
+</footer>
+
+</body>
+</html>
