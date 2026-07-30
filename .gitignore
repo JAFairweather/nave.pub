@@ -1,2 +1,4 @@
 
 .claude/settings.local.json
+deploy/waggle-wake.env
+deploy/waggle-wake-queue/

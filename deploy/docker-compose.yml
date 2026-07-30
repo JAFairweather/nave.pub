@@ -211,6 +211,46 @@ services:
   # it running and --remove-orphans never reaps it. Its state config (trusted-
   # proxy, bind=lan, channels) is patched by ops/oc-config-patch.sh; see
   # deploy/OPENCLAW-CUTOVER.md for the history and rollback.
+  # waggle-wake — the durable half of the event-driven wake (#26/#43).
+  #
+  # It holds relay subscriptions open for one agent's sealed mail, verifies the maintainer's
+  # signed grants off the same wire, and records that a granted sender wrote. It does NOT start
+  # an agent session: that needs a host running Claude Code, while this needs only a host that
+  # never sleeps. Splitting them is the point — detection used to stop whenever a laptop did.
+  #
+  # Runs --queue, so it is headless and needs no CLI beyond node. Whatever can act drains
+  # ~/.nvoy/wake-queue.jsonl when it next exists, instead of rediscovering history.
+  #
+  # Same build context as nvoy-mcp: the watcher lives in that repo, so this adds a process, not
+  # a codebase. The key lives in a box-local env file alongside the others, never in git.
+  waggle-wake:
+    build:
+      context: ./sites/nvoy
+      dockerfile_inline: |
+        FROM node:20-alpine
+        WORKDIR /app
+        COPY . .
+        WORKDIR /app/mcp
+        RUN npm install --no-audit --no-fund && npm prune --omit=dev
+        CMD ["node", "tools/wake-watcher.mjs", "--queue"]
+    image: waggle-wake:latest
+    restart: unless-stopped
+    env_file:
+      # Written by sites.sh at deploy time by age-decrypting secrets/wagglewake.age with the
+      # box's own key. Never in git as plaintext, never pasted, never in argv. required:false so
+      # a missing key cannot break the deploy — the service simply fails its own start.
+      - path: ./waggle-wake.env
+        required: false
+    environment:
+      - WAKE_QUEUE_PATH=/queue/wake-queue.jsonl
+    volumes:
+      # The queue outlives the container: a restart must not lose a wake that was recorded but
+      # not yet drained.
+      - ./waggle-wake-queue:/queue
+    networks: [nave]
+    # No ports. It makes outbound relay connections and listens for nothing — there is no
+    # surface here to expose, which is why it can live beside services that do have one.
+
   openclaw:
     # UPSTREAM image (pinned) — we left the Hostinger build (2026.6.9) for the
     # project's own release channel so upgrades are deliberate: bump this tag,
