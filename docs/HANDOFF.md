@@ -82,6 +82,10 @@ the revocation."* Two corollaries now carry equal weight:
 
 ## Hard constraints
 
+> The canonical operating rulebook is **`docs/STANDARDS.md`** — how we work, manage
+> repos, handle keys/boxes, and ship. The constraints here and conventions below are
+> its summary; when they diverge, **STANDARDS.md wins**. Read it first.
+
 - **Never print nsecs/secrets/keys/IPs** — npubs/names/roles only. Refer to
   boxes by role: **main · relay+bunker · warm.contact**. (IPs for SSH live in
   Bitwarden and local memory, not in chat or artifacts.)
