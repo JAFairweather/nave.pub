@@ -11,12 +11,17 @@
 # Compares byte-for-byte against the published source. Exits non-zero on any difference.
 set -euo pipefail
 
-SRC="${WAGGLE_RAW:-https://raw.githubusercontent.com/JAFairweather/waggle/main/console/index.html}"
+# Read through the contents API, NOT raw.githubusercontent.com. The raw host is CDN-cached
+# for minutes, so a guard pointed at it reports drift against a version that was already
+# merged - it cries wolf precisely when someone has just fixed the thing, which is how a
+# check earns the habit of being ignored. Caught by running this against a freshly merged
+# source: the API had the change and raw did not.
+SRC="${WAGGLE_SRC:-https://api.github.com/repos/JAFairweather/waggle/contents/console/index.html?ref=main}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MINE="$HERE/index.html"
 TMP="$(mktemp)"; trap 'rm -f "$TMP"' EXIT
 
-curl -fsSL "$SRC" -o "$TMP"
+curl -fsSL -H 'Accept: application/vnd.github.raw' -H 'Cache-Control: no-cache' "$SRC" -o "$TMP"
 
 # A truncated or error-page response would otherwise "match" nothing and pass quietly.
 bytes=$(wc -c < "$TMP" | tr -d ' ')
