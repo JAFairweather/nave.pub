@@ -90,6 +90,40 @@ This file is the master index; deep docs it points to:
 > **Correction on record:** "noir superseded by nave.pub" was wrong — `noir` (the
 > game) is active; the noir→nave.pub *flip* was only the website platform.
 
+### 2d · waggle — the Nostr ↔ Buzz bridge
+
+The estate's first piece of **interop with someone else's walled platform**, and the working
+reference consumer of draft NIP-DA (#2411) outside our own apps.
+
+The problem it answers: a private community is valuable *because* it is walled, but the wall costs
+its members reach — they cannot speak to the open network as themselves, and it cannot reach them
+at all. The usual answers all give something real away: open the community and the reason it
+worked is gone; mirror it through a bot and every member's voice becomes the bot's; hand a service
+your keys and sovereignty is over. waggle treats it as **routing** rather than permissions — the
+wall stays up, and the door is per-message and consensual in both directions.
+
+Three lanes, one process. **Out**: a member opts a post outward and it publishes **under their own
+key** — the bridge routes, it does not author. **In**: a reply from the open network lands in a
+**default-closed quarantine** and enters the community only on a human's one-word approval, with
+approve / follow / mute / reject available in the channel itself. **Sealed**: encrypted direct and
+group traffic is carried by derived address and never decrypted.
+
+Why it belongs in the inventory rather than beside it: the granted-participant tier is NIP-DA
+doing real work against a third-party platform — signed, revocable grants admitting an outside
+identity to a named channel, revocation honoured on reconnect. It is the spec earning its keep
+somewhere we do not control.
+
+Two honest limits. A bridged message is still **authored by the bridge's identity**, because the
+platform cannot yet render an event signed by someone outside it; presentation-follows-trust makes
+that as legible as it can be, but native foreign-signed rendering is the change that would make
+this stop being a workaround. And the bridge's own posting key is deliberately **disposable** —
+compromise costs a re-mint, not a person — which is why detection and rotation, rather than
+sealing alone, carry the security story.
+
+Status 🟢 core-live. All four proof rungs met, the last of them a key minted moments earlier,
+holding no grant and no history, held at the quarantine gate rather than let into the room.
+Site: `waggle.nave.pub` (in this repo). Service: `JAFairweather/waggle`, its own host.
+
 ### 2c · Luke — the flagship agent (James's own)
 ✅ Brain (proposer, cron), poster + Telegram approval cards, webhook
 self-registration, console + heartbeat, calendar beat (7:20am ET), OpenClaw engine

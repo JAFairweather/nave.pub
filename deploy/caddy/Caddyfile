@@ -104,6 +104,19 @@ nscribe.nave.pub {
 	header Cache-Control "no-cache"
 	file_server
 }
+waggle.nave.pub {
+	# Same shape as nscribe: waggle's public site lives INSIDE the nave.pub repo
+	# (deploy/sites/nave/waggle), so it serves that subdirectory of the hub clone.
+	# The waggle BRIDGE itself is a Node service in its own repo, deployed to its own
+	# host — it is not served from here. This vhost is its documentation front door
+	# only, which is why there is no sites.sh entry to go with it.
+	root * /srv/apps/nave/waggle
+	encode gzip zstd
+	@mjs path *.mjs
+	header @mjs Content-Type "text/javascript; charset=utf-8"
+	header Cache-Control "no-cache"
+	file_server
+}
 nact.nave.pub {
 	# /api/proxy/* is Nactor's INTERNAL credential-injecting egress proxy. It must
 	# NEVER be reachable from the internet — the only public path to Nactor is
