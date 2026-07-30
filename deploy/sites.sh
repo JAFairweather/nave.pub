@@ -25,6 +25,7 @@ apps=(
   "nscope:nostr-scoped-data-grants"
   "nact:nact"                     # the signature-gated agentic-actions library + landing
   "luke:luke"                     # a service (built + proxied), not file-served
+  "waggle:waggle"                 # cloned ONLY to serve console/ — the bridge runs elsewhere
 )
 
 for pair in "${apps[@]}"; do
