@@ -236,8 +236,9 @@ services:
     image: waggle-wake:latest
     restart: unless-stopped
     env_file:
-      # Box-local, gitignored: NVOY_NSEC (the agent identity whose mail this watches) and
-      # optionally GRANTORS / NVOY_RELAYS. See waggle-wake.env.example.
+      # Written by sites.sh at deploy time by age-decrypting secrets/wagglewake.age with the
+      # box's own key. Never in git as plaintext, never pasted, never in argv. required:false so
+      # a missing key cannot break the deploy — the service simply fails its own start.
       - path: ./waggle-wake.env
         required: false
     environment:
