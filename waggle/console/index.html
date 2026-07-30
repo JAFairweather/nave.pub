@@ -80,26 +80,18 @@
 </style>
 </head>
 <body>
+<!-- the shared Nave identity bar (nave-connect + nave-titlebar), vendored and mounted the
+     same way every other app in the family does it — one sign-in, promoted not re-invented -->
+<div id="titlebar" style="max-width:1000px;margin:0 auto;padding:0 20px"></div>
+
 <main>
-  <div class="top">
-    <svg class="mark" viewBox="0 0 100 100" role="img" aria-label="waggle">
-      <rect x="2" y="2" width="96" height="96" rx="20" fill="#0b0906" stroke="#c39a56" stroke-opacity="0.5" stroke-width="2"/>
-      <g fill="none" stroke="#e2c079" stroke-width="2.6" stroke-linecap="round" opacity="0.9">
-        <path d="M62 34 C 38 24 22 44 38 66"/><path d="M62 34 C 86 44 74 70 38 66"/>
-      </g>
-      <polyline points="38,66 46.5,59 47.5,48 58.5,45 62,34" fill="none" stroke="#e2c079"
-        stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="62" cy="34" r="3" fill="#e2c079"/>
-    </svg>
-    <div class="title">waggle console</div>
   </div>
-  <p class="sub">Who is admitted to your community, who may task your agents, and by whose signature.
-  This page reads the signed grants off the public relays and <b>verifies every signature here, in
+  <p class="sub" style="margin-top:26px">This page reads the signed grants off the public relays and <b>verifies every signature here, in
   your browser</b>. It needs no access to your bridge host and no key of any kind — an admission is
   a public signed event, so seeing the truth of it requires no privilege.</p>
 
-  <div class="panel" id="auth">
-    <h2>Sign in</h2>
+  <div class="panel" id="auth" style="display:none">
+    <h2>Choose a signer</h2>
     <p style="margin:0 0 12px;color:var(--dim);font-size:13.5px;max-width:74ch">
       Reading needs no key at all — leave this alone and use the lookup below. Sign in only to
       <b>act</b>: issue a grant, or revoke one. Your key never enters this page; it stays in your
@@ -270,6 +262,43 @@ function renderRows() {
       </tr>`).join('')
 }
 
+// ── The shared identity bar ─────────────────────────────────────────────────────────────────
+// Vendored from the estate's component rather than hand-rolled: one sign-in across the fleet,
+// promoted rather than levelled down. The bar owns the signed-in/signed-out presentation and
+// the npub pill; this page only supplies the callbacks.
+import { renderTitlebar, updateTitlebar } from './vendor/nave-titlebar.mjs'
+
+const TB = $('titlebar')
+const WAGGLE_SEAL = `<svg viewBox="0 0 100 100" fill="none" aria-hidden="true">
+  <rect x="2" y="2" width="96" height="96" rx="20" fill="#0b0906" stroke="#c39a56" stroke-opacity="0.5" stroke-width="2"/>
+  <g fill="none" stroke="#e2c079" stroke-width="2.6" stroke-linecap="round" opacity="0.9">
+    <path d="M62 34 C 38 24 22 44 38 66"/><path d="M62 34 C 86 44 74 70 38 66"/></g>
+  <polyline points="38,66 46.5,59 47.5,48 58.5,45 62,34" fill="none" stroke="#e2c079" stroke-width="4"
+    stroke-linecap="round" stroke-linejoin="round"/><circle cx="62" cy="34" r="3" fill="#e2c079"/></svg>`
+
+function drawTitlebar(npub, kind) {
+  renderTitlebar(TB, {
+    appName: 'waggle console',
+    tagline: 'who is admitted, and by whose signature',
+    sealSvg: WAGGLE_SEAL,
+    npub: npub || null,
+    kind: kind || null,
+    onSignIn: npub ? undefined : () => { $('auth').style.display = ''; $('auth').scrollIntoView({ behavior: 'smooth', block: 'center' }) },
+    onRefresh: npub ? () => $('go').click() : undefined,
+    onLogout: npub ? () => {
+      // Signed out means signed out: drop the signer, hide the actions, and re-draw the rows
+      // without them. A control plane must never leave an action visible that it cannot perform.
+      signer = null; signerPk = null
+      $('issue-panel').style.display = 'none'
+      $('confirm-panel').style.display = 'none'
+      $('signin-buttons').style.display = ''
+      setAuth('')
+      drawTitlebar(null, null); renderRows()
+    } : undefined,
+  })
+}
+drawTitlebar(null, null)
+
 // ── Signing ────────────────────────────────────────────────────────────────────────────────
 // The key never enters this page for the two paths that matter: a browser signer and a remote
 // signer are both handed an unsigned event and return a signature. The local-key path is last
@@ -281,10 +310,11 @@ const setAuth = (msg, cls = '') => { const s = $('authst'); s.className = 'statu
 async function adopt(s, label) {
   signer = s
   signerPk = await s.getPublicKey()
-  setAuth(`signed in via ${label} as ${short(signerPk)} — you can now issue and revoke`, 'ok')
-  $('signin-buttons').style.display = 'none'
+  setAuth('')
+  $('auth').style.display = 'none'
   $('bunker-row').style.display = 'none'
   $('local-row').style.display = 'none'
+  drawTitlebar(nip19.npubEncode(signerPk), s.kind || label)
   $('issue-panel').style.display = ''
   // Convenience only: the grantor field is what you sign as, so default it to the signed-in key.
   if (!$('grantor').value.trim()) { $('grantor').value = nip19.npubEncode(signerPk); $('go').click() }
