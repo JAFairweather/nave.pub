@@ -102,6 +102,8 @@
   td:first-child{color:var(--text);white-space:nowrap}
   td b{color:var(--text);font-weight:600}
   .tablewrap{overflow-x:auto}
+  td.stc{width:1%;white-space:nowrap;text-align:center;font-size:17px;padding-right:18px}
+  .st{cursor:default}
 
   .gates{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:10px 22px}
   @media(max-width:820px){.gates{grid-template-columns:1fr}}
@@ -251,23 +253,23 @@
   <div class="tablewrap">
   <table>
     <tr><th>Capability</th><th>Status</th><th>How it was established</th></tr>
-    <tr><td>Out door — federation</td><td>✅ live</td>
+    <tr><td>Out door — federation</td><td class="stc"><span class="st" title="live">✅</span></td>
         <td>A member's post read back <b>cold</b> from more than one public relay on a fresh connection.</td></tr>
-    <tr><td>In door — quarantine</td><td>✅ live</td>
+    <tr><td>In door — quarantine</td><td class="stc"><span class="st" title="live">✅</span></td>
         <td>A reply from a key <b>minted moments earlier</b>, holding no grant and no history, was routed to review rather than into the channel.</td></tr>
-    <tr><td>Approval console</td><td>✅ live</td>
+    <tr><td>Approval console</td><td class="stc"><span class="st" title="live">✅</span></td>
         <td>Approve, release, follow, mute and reject as single words in the review thread.</td></tr>
-    <tr><td>Deletion propagation</td><td>✅ live</td>
+    <tr><td>Deletion propagation</td><td class="stc"><span class="st" title="live">✅</span></td>
         <td>Author-signature checked, authorship enforced, three-tier withdrawal, regression-tested.</td></tr>
-    <tr><td>Granted participants</td><td>✅ live</td>
+    <tr><td>Granted participants</td><td class="stc"><span class="st" title="live">✅</span></td>
         <td>Signed, revocable grants admit an outside identity to a named channel. Revocation takes effect on reconnect.</td></tr>
-    <tr><td>Sealed lanes</td><td>✅ live</td>
+    <tr><td>Sealed lanes</td><td class="stc"><span class="st" title="live">✅</span></td>
         <td>Encrypted direct and group traffic routed by derived address, rate-capped per plane.</td></tr>
-    <tr><td>Tripwire</td><td>✅ live</td>
+    <tr><td>Tripwire</td><td class="stc"><span class="st" title="live">✅</span></td>
         <td>Runs on a timer. Proven by drill: an unjournaled post alarms; a journaled post does not.</td></tr>
-    <tr><td>Guided installer</td><td>📄 spec</td>
+    <tr><td>Guided installer</td><td class="stc"><span class="st" title="spec">📄</span></td>
         <td>Specified, not built. The steps exist as tools and a runbook today.</td></tr>
-    <tr><td>Native foreign-signed rendering</td><td>🧭 concept</td>
+    <tr><td>Native foreign-signed rendering</td><td class="stc"><span class="st" title="concept">🧭</span></td>
         <td>A platform capability, not ours to ship — see below.</td></tr>
   </table>
   </div>
