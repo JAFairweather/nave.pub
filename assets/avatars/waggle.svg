@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="waggle">
+  <rect x="2" y="2" width="96" height="96" rx="20" fill="#0b0906" stroke="#c39a56" stroke-opacity="0.5" stroke-width="2"/>
+  <!-- the waggle dance: how a returning forager tells the hive, in a form it trusts, what is out in the open field -->
+  <!-- the two return loops of the figure-eight — the bee circles back to run the line again -->
+  <g fill="none" stroke="#e2c079" stroke-width="2.6" stroke-linecap="round" opacity="0.9">
+    <path d="M62 34 C 38 24 22 44 38 66"/>
+    <path d="M62 34 C 86 44 74 70 38 66"/>
+  </g>
+  <!-- the waggle run: the straight vector up the middle, waggled side to side — this is the message,
+       and its angle is the bearing to the field. the bridge IS this run. -->
+  <polyline points="38,66 46.5,59 47.5,48 58.5,45 62,34"
+            fill="none" stroke="#e2c079" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- the heading: where the run points -->
+  <circle cx="62" cy="34" r="3" fill="#e2c079"/>
+  <!-- the true line the crew builds to -->
+  <line x1="26" y1="88" x2="74" y2="88" stroke="#c39a56" stroke-width="1.8" stroke-linecap="round" opacity="0.7"/>
+</svg>
