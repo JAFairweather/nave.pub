@@ -222,7 +222,7 @@
 
     <div class="cat">
       <h4 class="cat-title"><span class="cat-num">01</span> Protocols</h4>
-      <p class="cat-note">The primitive everything else is built on.</p>
+      <p class="cat-note">One primitive — the scoped grant — pointed at both ends: what an agent may <em>see</em>, and what it may <em>do</em>.</p>
     </div>
 
     <div class="grid">
@@ -238,6 +238,20 @@
           kinds: the encrypted scope, the gift-wrapped grant, the self-encrypted index. A NIP submitted
           to the nostr protocol, with TS and Go implementations in live interop.</p>
         <div class="card-links"><a href="https://nscope.nave.pub" target="_blank" rel="noopener">The case ↗</a><a href="https://github.com/JAFairweather/nostr-scoped-data-grants/blob/main/SPEC.md" target="_blank" rel="noopener">Spec</a><a href="https://github.com/JAFairweather/nostr-scoped-data-grants" target="_blank" rel="noopener">Repo</a></div>
+      </div>
+
+      <!-- Naction -->
+      <div class="card" style="--accent:#d8b45a">
+        <div class="card-head">
+          <span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 2 L4 14 h6 l-1 8 9-12 h-6 z"/></svg></span>
+          <div><h4>Naction</h4><div class="tag">The foundation · Scoped Action Grants</div></div>
+        </div>
+        <p>The act-side symmetry to Nscope. Where a data grant scopes what an agent may <em>see</em>, an action
+          grant scopes what it may <em>do</em> — post, use a credential, run an op, actions of many types — each
+          one proposed by the agent and enacted only when your own key signs it. What you see is what you sign;
+          the rotation is the revocation.</p>
+        <div class="card-links"><a href="https://github.com/JAFairweather/nave.pub/blob/main/docs/scoped-agent-actions.md" target="_blank" rel="noopener">The spec ↗</a><a href="https://github.com/JAFairweather/nact" target="_blank" rel="noopener">Repo</a></div>
       </div>
 
     </div>
@@ -275,17 +289,17 @@
         <div class="card-links"><a href="https://ngage.nave.pub" target="_blank" rel="noopener">Open ↗</a><a href="https://github.com/JAFairweather/ngage" target="_blank" rel="noopener">Repo</a></div>
       </div>
 
-      <!-- Nact -->
+      <!-- Control Plane (the Nact / Nactor app — Naction, run for real) -->
       <div class="card" style="--accent:#c98f4f">
         <div class="card-head">
           <span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 4"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg></span>
-          <div><h4>Nact</h4><div class="tag">Agentic actions · human-signed</div></div>
+          <div><h4>Control Plane</h4><div class="tag">Naction, run for real · human-signed</div></div>
         </div>
-        <p>Give an AI agent a voice on nostr without giving it your keys: it drafts an action, you enact it
-          with a signature, it broadcasts. The action-out half of scoped autonomy — Nvoy governs what an agent
-          may see, Nact governs what it may do. Its runtime, <strong>Nactor</strong>, brokers each credential as
-          a capability the agent invokes but never holds.</p>
+        <p>The console where <strong>Naction</strong> becomes real — the app formerly branded Nact. Review what
+          your agents propose and enact each with a signature; wire every identity's approval path; set per-kind
+          risk policy; revoke authority in a keystroke. Its runtime, <strong>Nactor</strong>, brokers each
+          credential as a capability the agent invokes but never holds — all behind your nostr signature.</p>
         <div class="card-links"><a href="https://nact.nave.pub" target="_blank" rel="noopener">Open ↗</a><a href="https://github.com/JAFairweather/nact" target="_blank" rel="noopener">Repo</a></div>
       </div>
 
