@@ -16,6 +16,7 @@ _Last reconciled 2026-07-23._
 | Project | What it is | Repo | Served | Status |
 |---|---|---|---|---|
 | **NIP-DA / Nscope** — Scoped Data Grants | The root primitive: signed, revocable, scoped data grants on nostr (kinds 30440/440/441/10440). PR nostr-protocol/nips#2411. P-series hardened (2026-07-22). | `JAFairweather/nostr-scoped-data-grants` (local clone: `~/Projects/nip-demo`) | `nscope.nave.pub` | 📄 spec + JS & Go reference libs, interop-verified |
+| **Naction** — Scoped Action Grants | The act-side peer to Nscope: what an agent may *do*, each action human-signed (WYSIWYS). Realized in the Nact app / Nactor runtime. | (case page in `nave.pub` `naction/`; spec `docs/scoped-agent-actions.md`; runtime `JAFairweather/nact`) | `naction.nave.pub` | 📄 concept + case page; the runtime is 🟢 core-live as Nact |
 
 ## The NIP-DA app family (pure clients of the spec)
 
