@@ -243,6 +243,18 @@ services:
         required: false
     environment:
       - WAKE_QUEUE_PATH=/queue/wake-queue.jsonl
+      # Detection without delivery is a diary. The queue above is a file on THIS box, and the
+      # agent that can act on it is not here — so for four hours it recorded 11 arrivals that
+      # nothing ever consumed (waggle#106). WAKE_NOTIFY sends a sealed DM when a wake fires,
+      # alongside the queue write rather than instead of it.
+      #
+      # CONTENT-FREE by design: "a granted sender wrote", never the text, never who. It reaches
+      # whoever holds this key, so anything carried in it would be instructions arriving from an
+      # inbox we do not control.
+      #
+      # An invalid value makes the watcher REFUSE TO START rather than run with delivery quietly
+      # off, so a typo here is loud instead of recreating the bug it fixes.
+      - WAKE_NOTIFY=npub1gqg2csuzqmwpqqvts99786spefkf90xz96t3n6zp6fqnk2r74pxs4tcgrg
     volumes:
       # The queue outlives the container: a restart must not lose a wake that was recorded but
       # not yet drained.
