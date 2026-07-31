@@ -259,6 +259,16 @@ services:
       # The queue outlives the container: a restart must not lose a wake that was recorded but
       # not yet drained.
       - ./waggle-wake-queue:/queue
+      # ...and so must the DEDUP LOG, for the mirror-image reason. wake-seen.log lives at
+      # ~/.nvoy inside the container, so before this it died with every recreate — and the
+      # watcher, seeing no record of what it had already handled, re-processed the backlog and
+      # re-sent notices for mail that was answered hours ago. Observed twice tonight: the same
+      # sender re-queued and re-notified on each restart.
+      #
+      # A wake that re-fires on old mail is the alarm-that-always-fires failure, and the fix for
+      # the same class everywhere else in this project was to make the state durable rather than
+      # to suppress the symptom.
+      - ./waggle-wake-state:/root/.nvoy
     networks: [nave]
     # No ports. It makes outbound relay connections and listens for nothing — there is no
     # surface here to expose, which is why it can live beside services that do have one.
