@@ -43,9 +43,9 @@ done
 # --- Platform secrets: decrypt SOPS ciphertext → the env the compose reads --
 # The nave-owned secret bundle lives in THIS repo at deploy/secrets/nave.enc.env
 # (SOPS/age; the private key is box-only). It decrypts to ./nave.env — the full
-# platform env only Nactor reads. During the luke.env→nave.env migration we keep
-# a fallback to the old luke-repo location and write luke.env as an alias so any
-# consumer still referencing it is unaffected. Guarded: if SOPS or the file isn't
+# platform env only Nactor reads. The old Luke-repo ciphertext remains a
+# migration fallback, but every consumer now reads the canonical nave env files.
+# Guarded: if SOPS or the file isn't
 # set up this is a no-op and the stack still comes up (env_files are
 # required:false). See deploy/secrets/.sops.yaml.
 SECRETS_SRC=""
@@ -65,16 +65,14 @@ if [ -n "$SECRETS_SRC" ] && command -v sops >/dev/null 2>&1; then
         echo "🔓 Nact_jaf carrier key (NACTJAF_NSEC) → nave.env"
       else echo "⚠ nactjaf.age present but age-decrypt failed (age key?)"; fi
     fi
-    cp nave.env luke.env; chmod 600 luke.env          # transition alias — consumers still ref luke.env
-    echo "🔓 platform secrets decrypted → nave.env (+ luke.env alias) from $SECRETS_SRC"
+    echo "🔓 platform secrets decrypted → nave.env from $SECRETS_SRC"
 
     # env-split: the CONSUMERS (luke service, brain) get a copy with the BROKERED
     # credentials stripped — those live only in Nactor (which reads the full
     # nave.env). Box-local + gitignored.
     grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN|TELEGRAM_LUKE_BOT_TOKEN|GOOGLE_OAUTH_[A-Z_]+|GMAIL_APP_PASSWORD|OPENCLAW_GATEWAY_PASSWORD|NACTOR_NSEC|NACT_CHANNEL_NSEC|NACT_PROXY_TOKEN)=' nave.env > nave-consumer.env
     chmod 600 nave-consumer.env
-    cp nave-consumer.env luke-consumer.env; chmod 600 luke-consumer.env   # transition alias
-    echo "🔓 consumer env (brokered creds stripped) → nave-consumer.env (+ luke-consumer.env alias)"
+    echo "🔓 consumer env (brokered creds stripped) → nave-consumer.env"
     # The engine's internal-client password: its env_file is openclaw.env (the
     # engine must NOT read the full env — env-split), so sync just this one var
     # across from the freshly decrypted root. SOPS stays the source of truth.
@@ -115,11 +113,10 @@ if [ -n "$SECRETS_SRC" ] && command -v sops >/dev/null 2>&1; then
     # sites.sh run. nactor.env is box-local and handled by the cutover script
     # itself, not here.
     if [ -f .m7-mcp-transport ]; then
-      for f in nave.env luke.env; do
-        [ -f "$f" ] || continue
-        grep -vE '^NACTOR_NSEC=' "$f" > "$f.tmp"; chmod 600 "$f.tmp"; mv "$f.tmp" "$f"
-      done
-      echo "🔒 M7 cutover in force — NACTOR_NSEC stripped from nave.env + luke.env (custody: nvoy-mcp)"
+      grep -vE '^NACTOR_NSEC=' nave.env > nave.env.tmp
+      chmod 600 nave.env.tmp
+      mv nave.env.tmp nave.env
+      echo "🔒 M7 cutover in force — NACTOR_NSEC stripped from nave.env (custody: nvoy-mcp)"
     fi
   else
     echo "⚠ platform secrets present but decrypt FAILED (age key missing?) — services run without env"
@@ -127,6 +124,11 @@ if [ -n "$SECRETS_SRC" ] && command -v sops >/dev/null 2>&1; then
 else
   echo "· platform secrets: SOPS/enc file not set up yet — skipping (see deploy/secrets/.sops.yaml)"
 fi
+
+# The transition aliases are retired only after all tracked consumers moved to
+# the canonical names. Keep cleanup idempotent so future deploys cannot revive
+# stale plaintext copies left by an older release.
+rm -f luke.env luke-consumer.env
 
 echo
 echo "done. now: docker compose up -d --build"

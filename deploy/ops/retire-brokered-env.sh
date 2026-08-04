@@ -15,7 +15,7 @@
 # from:
 #   1. secrets/nave.enc.env  (the SOPS source — decrypt → filter → re-encrypt
 #      per the ritual documented in secrets/.sops.yaml; ciphertext backup kept)
-#   2. the live nave.env + luke.env alias (consumer copies never had them)
+#   2. the live nave.env (consumer copies never had them)
 # then recreates nactor and VERIFIES: env names gone from the container AND
 # the grant reader still loads both credentials from the relays. On failed
 # verification it restores the live env files and recreates nactor again.
@@ -66,12 +66,11 @@ echo "✓ secrets/nave.enc.env rewritten (backup: nave.enc.env.bak-$STAMP)"
 cd ..
 
 # --- 2. Live env files (what the running compose reads) ----------------------
-for f in nave.env luke.env; do
-  [ -f "$f" ] || continue
-  cp "$f" "$f.bak-$STAMP"; chmod 600 "$f.bak-$STAMP"
-  grep -vE "^($STRIP)=" "$f" > "$f.tmp"; chmod 600 "$f.tmp"; mv "$f.tmp" "$f"
-  echo "✓ $f stripped (backup: $f.bak-$STAMP)"
-done
+if [ -f nave.env ]; then
+  cp nave.env "nave.env.bak-$STAMP"; chmod 600 "nave.env.bak-$STAMP"
+  grep -vE "^($STRIP)=" nave.env > nave.env.tmp; chmod 600 nave.env.tmp; mv nave.env.tmp nave.env
+  echo "✓ nave.env stripped (backup: nave.env.bak-$STAMP)"
+fi
 
 # --- 3. Recreate nactor + verify --------------------------------------------
 docker compose up -d --force-recreate nactor
@@ -93,7 +92,7 @@ done
 
 if [ "$VERIFY_FAIL" = 1 ]; then
   echo "✗ VERIFICATION FAILED — restoring live env files and recreating nactor"
-  for f in nave.env luke.env; do [ -f "$f.bak-$STAMP" ] && cp "$f.bak-$STAMP" "$f"; done
+  [ -f "nave.env.bak-$STAMP" ] && cp "nave.env.bak-$STAMP" nave.env
   mv "secrets/nave.enc.env.bak-$STAMP" secrets/nave.enc.env
   docker compose up -d --force-recreate nactor
   echo "restored. Nothing retired."

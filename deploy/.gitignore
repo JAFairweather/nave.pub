@@ -2,8 +2,6 @@
 .env            # Director secrets (ANTHROPIC_API_KEY, director nsec, ACME_EMAIL)
 nave.env        # the platform secret bundle, decrypted from secrets/nave.enc.env at deploy time (nactor reads this — has the brokered creds)
 nave-consumer.env # nave.env with brokered creds stripped — what the consumers read
-luke.env        # transition alias of nave.env (kept while consumers still reference it)
-luke-consumer.env # transition alias of nave-consumer.env
 nactor.env      # Nactor's own grantee key (NACTOR_NSEC), minted on the box by ops/gen-nactor-key.sh
 brain.env       # brain identity (BRAIN_NSEC) + NACT_BROKER_URL, minted on the box by ops/gen-brain-key.sh
 quill.env       # James's Quill's key (QUILL_NSEC, npub13uuznpc) if running the interim box scribe — the Director's own key, provided by him, NEVER minted here
