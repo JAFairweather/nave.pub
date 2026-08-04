@@ -40,7 +40,7 @@ jobs:
             export SOPS_AGE_KEY_FILE=/root/.config/sops/age/keys.txt
             # Flip-aware paths.
             if [ -f /root/nave.pub/deploy/.flipped ]; then
-              DEPLOY=/root/nave.pub/deploy; LUKEENV=$DEPLOY/luke.env
+              DEPLOY=/root/nave.pub/deploy; LUKEENV=$DEPLOY/nave.env
             else
               DEPLOY=/root/noir/deploy; LUKEENV=/root/noir/luke/.env
             fi
@@ -65,7 +65,7 @@ jobs:
             # Phase 2 env-split: strip the brokered credentials from the brain's
             # env — it reaches Anthropic through Nactor's broker, so the key never
             # lives here. brain.env supplies BRAIN_NSEC + NACT_BROKER_URL.
-            CONSUMERENV="$DEPLOY/luke-consumer.env"
+            CONSUMERENV="$DEPLOY/nave-consumer.env"
             grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN)=' "$LUKEENV" > "$CONSUMERENV" && chmod 600 "$CONSUMERENV"
 
             FLAG="--dry-run"

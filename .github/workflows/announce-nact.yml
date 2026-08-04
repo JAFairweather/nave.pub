@@ -24,8 +24,8 @@ jobs:
           script: |
             set -e
             if [ -f /root/nave.pub/deploy/.flipped ]; then DEPLOY=/root/nave.pub/deploy; else DEPLOY=/root/noir/deploy; fi
-            LUKEENV="$DEPLOY/luke.env"
-            [ -f "$LUKEENV" ] || { echo "no luke.env at $LUKEENV — luke secrets not decrypted"; exit 1; }
+            LUKEENV="$DEPLOY/nave.env"
+            [ -f "$LUKEENV" ] || { echo "no nave.env at $LUKEENV — platform secrets not decrypted"; exit 1; }
 
             # The launch note, plain text (kind:1 renders no markdown).
             cat > /tmp/nact-announce.txt <<'TXT'
@@ -46,7 +46,7 @@ jobs:
             # PROPOSE_TOKEN never leaves the box and the JSON is escaped cleanly.
             docker run --rm --env-file "$LUKEENV" \
               -v /tmp/nact-announce.txt:/tmp/a.txt:ro luke:latest \
-              node -e 'const fs=require("fs");const text=fs.readFileSync("/tmp/a.txt","utf8").trim();const tok=process.env.PROPOSE_TOKEN;if(!tok){console.error("PROPOSE_TOKEN unset in luke.env");process.exit(1)}fetch("https://luke.nave.pub/propose",{method:"POST",headers:{authorization:"Bearer "+tok,"content-type":"application/json"},body:JSON.stringify({identity:"nave",text,rationale:"nact launch — the pattern announcing itself, from the ecosystem voice"})}).then(async r=>{const b=await r.text();console.log("propose →",r.status,b);if(!r.ok)process.exit(1)}).catch(e=>{console.error("propose failed:",e.message);process.exit(1)})'
+              node -e 'const fs=require("fs");const text=fs.readFileSync("/tmp/a.txt","utf8").trim();const tok=process.env.PROPOSE_TOKEN;if(!tok){console.error("PROPOSE_TOKEN unset in nave.env");process.exit(1)}fetch("https://luke.nave.pub/propose",{method:"POST",headers:{authorization:"Bearer "+tok,"content-type":"application/json"},body:JSON.stringify({identity:"nave",text,rationale:"nact launch — the pattern announcing itself, from the ecosystem voice"})}).then(async r=>{const b=await r.text();console.log("propose →",r.status,b);if(!r.ok)process.exit(1)}).catch(e=>{console.error("propose failed:",e.message);process.exit(1)})'
 
             rm -f /tmp/nact-announce.txt
             echo "── proposed as nave → check your Telegram approval card ──"
