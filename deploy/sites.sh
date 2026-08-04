@@ -11,6 +11,10 @@ set -euo pipefail
 cd "$(dirname "$0")"
 mkdir -p sites
 
+# waggle-wake is deliberately keyless. Remove the legacy generated identity env before
+# any optional secret setup: a host without SOPS must not retain this plaintext artifact.
+rm -f waggle-wake.env
+
 # name : github repo (default branch = main for all)
 apps=(
   "nave:nave.pub"                 # the hub — served at the apex (/srv/apps/nave)
@@ -68,11 +72,6 @@ if [ -n "$SECRETS_SRC" ] && command -v sops >/dev/null 2>&1; then
     cp nave.env luke.env; chmod 600 luke.env          # transition alias — consumers still ref luke.env
     echo "🔓 platform secrets decrypted → nave.env (+ luke.env alias) from $SECRETS_SRC"
 
-    # waggle-wake is deliberately keyless.  It observes only outer NIP-59 p-tags and
-    # records opaque envelope IDs; it must never decrypt a participant identity on this host.
-    # Remove the legacy generated file on every deploy so an earlier keyed version cannot
-    # survive a source update as dormant plaintext.
-    rm -f waggle-wake.env
     # env-split: the CONSUMERS (luke service, brain) get a copy with the BROKERED
     # credentials stripped — those live only in Nactor (which reads the full
     # nave.env). Box-local + gitignored.
