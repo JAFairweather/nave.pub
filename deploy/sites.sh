@@ -11,6 +11,10 @@ set -euo pipefail
 cd "$(dirname "$0")"
 mkdir -p sites
 
+# waggle-wake is deliberately keyless. Remove the legacy generated identity env before
+# any optional secret setup: a host without SOPS must not retain this plaintext artifact.
+rm -f waggle-wake.env
+
 # name : github repo (default branch = main for all)
 apps=(
   "nave:nave.pub"                 # the hub — served at the apex (/srv/apps/nave)
@@ -68,18 +72,6 @@ if [ -n "$SECRETS_SRC" ] && command -v sops >/dev/null 2>&1; then
     cp nave.env luke.env; chmod 600 luke.env          # transition alias — consumers still ref luke.env
     echo "🔓 platform secrets decrypted → nave.env (+ luke.env alias) from $SECRETS_SRC"
 
-    # waggle-wake's agent key rides the same separate-age-file pattern as nact_jaf's carrier:
-    # sealed workspace-side to the box age PUBLIC key, so the plaintext never transits and
-    # nobody needs the sops key to add it. Decrypted into its OWN env rather than appended to
-    # nave.env — only the watcher should hold an identity able to decrypt that agent's mail,
-    # and nave.env is read by a service with no business holding it.
-    if [ -f secrets/wagglewake.age ] && command -v age >/dev/null 2>&1; then
-      AGEKEY="${SOPS_AGE_KEY_FILE:-/root/.config/sops/age/keys.txt}"
-      if age -d -i "$AGEKEY" secrets/wagglewake.age > waggle-wake.env 2>/dev/null; then
-        chmod 600 waggle-wake.env
-        echo "🔓 waggle-wake agent key → waggle-wake.env"
-      else echo "⚠ wagglewake.age present but age-decrypt failed (age key?)"; rm -f waggle-wake.env; fi
-    fi
     # env-split: the CONSUMERS (luke service, brain) get a copy with the BROKERED
     # credentials stripped — those live only in Nactor (which reads the full
     # nave.env). Box-local + gitignored.

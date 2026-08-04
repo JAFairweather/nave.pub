@@ -213,48 +213,32 @@ services:
   # deploy/OPENCLAW-CUTOVER.md for the history and rollback.
   # waggle-wake — the durable half of the event-driven wake (#26/#43).
   #
-  # It holds relay subscriptions open for one agent's sealed mail, verifies the maintainer's
-  # signed grants off the same wire, and records that a granted sender wrote. It does NOT start
-  # an agent session: that needs a host running Claude Code, while this needs only a host that
-  # never sleeps. Splitting them is the point — detection used to stop whenever a laptop did.
+  # It holds relay subscriptions open for one agent's sealed mail and records only an opaque
+  # outer-envelope marker. It has no nsec, cannot learn a sender or body, and cannot turn a
+  # relay arrival into instructions. The identity-owning runtime decrypts and verifies grants.
   #
-  # Runs --queue, so it is headless and needs no CLI beyond node. Whatever can act drains
-  # ~/.nvoy/wake-queue.jsonl when it next exists, instead of rediscovering history.
+  # It is a public-key-only marker detector. An owner-installed runtime may drain its marker
+  # queue, but no content or sender identity crosses this boundary.
   #
   # Same build context as nvoy-mcp: the watcher lives in that repo, so this adds a process, not
-  # a codebase. The key lives in a box-local env file alongside the others, never in git.
+  # a codebase. It receives only the participant's public key, never its signing key.
   waggle-wake:
     build:
       context: ./sites/nvoy
       dockerfile_inline: |
-        FROM node:20-alpine
+        FROM node:22-bookworm-slim
         WORKDIR /app
         COPY . .
         WORKDIR /app/mcp
-        RUN npm install --no-audit --no-fund && npm prune --omit=dev
-        CMD ["node", "tools/wake-watcher.mjs", "--queue"]
+        RUN npm ci --omit=dev --ignore-scripts
+        CMD ["node", "tools/keyless-wake-watcher.mjs"]
     image: waggle-wake:latest
     restart: unless-stopped
-    env_file:
-      # Written by sites.sh at deploy time by age-decrypting secrets/wagglewake.age with the
-      # box's own key. Never in git as plaintext, never pasted, never in argv. required:false so
-      # a missing key cannot break the deploy — the service simply fails its own start.
-      - path: ./waggle-wake.env
-        required: false
     environment:
-      - WAKE_QUEUE_PATH=/queue/wake-queue.jsonl
-      # Detection without delivery is a diary. The queue above is a file on THIS box, and the
-      # agent that can act on it is not here — so for four hours it recorded 11 arrivals that
-      # nothing ever consumed (waggle#106). WAKE_NOTIFY sends a sealed DM when a wake fires,
-      # alongside the queue write rather than instead of it.
-      #
-      # CONTENT-FREE by design: "a granted sender wrote", never the text, never who. It reaches
-      # whoever holds this key, so anything carried in it would be instructions arriving from an
-      # inbox we do not control.
-      #
-      # An invalid value makes the watcher REFUSE TO START rather than run with delivery quietly
-      # off, so a typo here is loud instead of recreating the bug it fixes.
-      - WAKE_NOTIFY=npub1gqg2csuzqmwpqqvts99786spefkf90xz96t3n6zp6fqnk2r74pxs4tcgrg
+      - WAKE_RECIPIENT=78856ed6c671b816290e3b390c9ab180933e33ba99125ce2f71aaf399904e148
+      - NVOY_RELAYS=wss://relay.nave.pub,wss://nos.lol,wss://relay.primal.net
+      - WAKE_QUEUE_PATH=/queue/keyless-wake-queue.jsonl
+      - WAKE_SEEN_PATH=/root/.nvoy/keyless-wake-seen.log
     volumes:
       # The queue outlives the container: a restart must not lose a wake that was recorded but
       # not yet drained.
