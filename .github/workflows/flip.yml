@@ -42,8 +42,8 @@ jobs:
             echo "── 2. carry over Luke's untracked encrypted secrets ──"
             if [ -f /root/noir/deploy/sites/luke/secrets.enc.env ]; then
               cp /root/noir/deploy/sites/luke/secrets.enc.env sites/luke/secrets.enc.env
-              sops --input-type dotenv --output-type dotenv -d sites/luke/secrets.enc.env > luke.env && chmod 600 luke.env
-              echo "luke.env keys loaded: $(grep -cE '^[A-Z_]+=.' luke.env)"
+              sops --input-type dotenv --output-type dotenv -d sites/luke/secrets.enc.env > nave.env && chmod 600 nave.env
+              echo "nave.env keys loaded: $(grep -cE '^[A-Z_]+=.' nave.env)"
             else
               echo "⚠ no luke secrets in old tree — luke will come up keyless"
             fi
@@ -73,7 +73,7 @@ jobs:
 
             echo "── diagnostics ──"
             docker compose ps
-            echo "sites/nave: $(ls sites/nave 2>/dev/null | wc -l) files; luke.env keys: $(grep -cE '^[A-Z_]+=.' luke.env 2>/dev/null)"
+            echo "sites/nave: $(ls sites/nave 2>/dev/null | wc -l) files; nave.env keys: $(grep -cE '^[A-Z_]+=.' nave.env 2>/dev/null)"
             docker logs deploy-caddy-1 --tail 12 2>&1 | tail -12
 
             if [ "$UP" = "0" ] && echo "$CODE" | grep -qE '^(200|301|302|308)$'; then

@@ -26,12 +26,12 @@
 #          nactor's /api/health nactorNpub — same key on both sides
 #        · nactor's relay reader is currently serving (a recent
 #          "credential-grants: loaded" line) — never cut over a broken baseline
-#   1. back up nave.env, luke.env, nactor.env (.bak-<stamp>, chmod 600)
+#   1. back up nave.env, nave.env, nactor.env (.bak-<stamp>, chmod 600)
 #   2. nactor.env: drop any stale NACTOR_NSEC + old M7 lines, append
 #        NACT_GRANT_TRANSPORT=mcp
 #        NACT_MCP_URL=http://nvoy-mcp:8799/mcp
 #        NACTOR_NPUB=<the verified npub>          (public — safe in plaintext)
-#   3. strip NACTOR_NSEC from nave.env + luke.env (the custody move)
+#   3. strip NACTOR_NSEC from nave.env + nave.env (the custody move)
 #   4. touch .m7-mcp-transport — sites.sh keeps future regenerations stripped
 #      (without the marker, the next deploy would resurrect the key)
 #   5. recreate nactor and VERIFY (polling ~2 min):
@@ -93,7 +93,7 @@ echo "relay reader last sweep: ${LOADED:-<none>}"
 echo "✓ preflight: identity match, nvoy-mcp healthy, relay baseline serving"
 
 # --- 1. backups --------------------------------------------------------------
-for f in nave.env luke.env nactor.env; do
+for f in nave.env nactor.env; do
   [ -f "$f" ] || continue
   cp "$f" "$f.bak-$STAMP"; chmod 600 "$f.bak-$STAMP"
   echo "· backup: $f.bak-$STAMP"
@@ -101,7 +101,7 @@ done
 
 restore() {
   echo "✗ VERIFICATION FAILED — restoring env files and the relay transport"
-  for f in nave.env luke.env nactor.env; do
+  for f in nave.env nactor.env; do
     [ -f "$f.bak-$STAMP" ] && cp "$f.bak-$STAMP" "$f" && chmod 600 "$f"
   done
   rm -f .m7-mcp-transport
@@ -123,11 +123,10 @@ mv nactor.env.new nactor.env; rm -f nactor.env.tmp
 echo "✓ nactor.env: transport=mcp, url=$MCP_URL, public npub kept (any stale nsec copy dropped)"
 
 # --- 3. the custody move: strip the nsec from what Nactor reads --------------
-for f in nave.env luke.env; do
-  [ -f "$f" ] || continue
-  grep -vE '^NACTOR_NSEC=' "$f" > "$f.tmp"; chmod 600 "$f.tmp"; mv "$f.tmp" "$f"
-  echo "✓ $f: NACTOR_NSEC stripped"
-done
+if [ -f nave.env ]; then
+  grep -vE '^NACTOR_NSEC=' nave.env > nave.env.tmp; chmod 600 nave.env.tmp; mv nave.env.tmp nave.env
+  echo "✓ nave.env: NACTOR_NSEC stripped"
+fi
 
 # --- 4. the durable marker (sites.sh honors it on every future deploy) -------
 touch .m7-mcp-transport

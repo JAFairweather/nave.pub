@@ -6,7 +6,7 @@
 # sanctioned home (migration.md class C). This script:
 #   1. generates a 64-hex token (skips minting if the bundle already has one)
 #   2. adds it to secrets/nave.enc.env via the .sops.yaml ritual (backup kept)
-#   3. adds it to the live nave.env + luke.env; STRIPS it from the consumer
+#   3. adds it to the live nave.env + nave.env; STRIPS it from the consumer
 #      envs (sites.sh strips it on future deploys too — same PR)
 #   4. recreates nactor and verifies end-to-end: without the token the proxy
 #      answers 403; WITH it, /api/proxy/anthropic/v1/models returns 200 from
@@ -36,12 +36,11 @@ else
   mv nave.enc.env.new nave.enc.env
   echo "✓ NACT_PROXY_TOKEN minted into secrets/nave.enc.env (backup: nave.enc.env.bak-$STAMP)"
   cd ..
-  for f in nave.env luke.env; do
-    [ -f "$f" ] || continue
-    { grep -vE '^NACT_PROXY_TOKEN=' "$f"; printf 'NACT_PROXY_TOKEN=%s\n' "$TOK"; } > "$f.tmp"
-    chmod 600 "$f.tmp"; mv "$f.tmp" "$f"
-  done
-  echo "✓ live nave.env + luke.env updated"
+  if [ -f nave.env ]; then
+    { grep -vE '^NACT_PROXY_TOKEN=' nave.env; printf 'NACT_PROXY_TOKEN=%s\n' "$TOK"; } > nave.env.tmp
+    chmod 600 nave.env.tmp; mv nave.env.tmp nave.env
+  fi
+  echo "✓ live nave.env updated"
 fi
 # Consumers never get the egress token (least privilege; sites.sh also strips
 # it on regeneration as of this PR).

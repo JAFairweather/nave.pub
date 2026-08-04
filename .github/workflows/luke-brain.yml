@@ -40,7 +40,7 @@ jobs:
             export SOPS_AGE_KEY_FILE=/root/.config/sops/age/keys.txt
             # Flip-aware paths.
             if [ -f /root/nave.pub/deploy/.flipped ]; then
-              DEPLOY=/root/nave.pub/deploy; LUKEENV=$DEPLOY/luke.env
+              DEPLOY=/root/nave.pub/deploy; LUKEENV=$DEPLOY/nave.env
             else
               DEPLOY=/root/noir/deploy; LUKEENV=/root/noir/luke/.env
             fi

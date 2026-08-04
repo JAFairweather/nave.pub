@@ -43,10 +43,10 @@ done
 # --- Platform secrets: decrypt SOPS ciphertext → the env the compose reads --
 # The nave-owned secret bundle lives in THIS repo at deploy/secrets/nave.enc.env
 # (SOPS/age; the private key is box-only). It decrypts to ./nave.env — the full
-# platform env only Nactor reads. During the luke.env→nave.env migration we keep
-# a fallback to the old luke-repo location and write luke.env as an alias so any
-# consumer still referencing it is unaffected. Guarded: if SOPS or the file isn't
-# set up this is a no-op and the stack still comes up (env_files are
+# platform env only Nactor reads. The old Luke-named alias is retired: every
+# consumer reads nave.env directly. The old luke-repo source remains only as a
+# one-way ciphertext migration fallback. Guarded: if SOPS or the file isn't set
+# up this is a no-op and the stack still comes up (env_files are
 # required:false). See deploy/secrets/.sops.yaml.
 SECRETS_SRC=""
 if [ -f secrets/nave.enc.env ]; then SECRETS_SRC=secrets/nave.enc.env
@@ -65,8 +65,7 @@ if [ -n "$SECRETS_SRC" ] && command -v sops >/dev/null 2>&1; then
         echo "🔓 Nact_jaf carrier key (NACTJAF_NSEC) → nave.env"
       else echo "⚠ nactjaf.age present but age-decrypt failed (age key?)"; fi
     fi
-    cp nave.env luke.env; chmod 600 luke.env          # transition alias — consumers still ref luke.env
-    echo "🔓 platform secrets decrypted → nave.env (+ luke.env alias) from $SECRETS_SRC"
+    echo "🔓 platform secrets decrypted → nave.env from $SECRETS_SRC"
 
     # waggle-wake's agent key rides the same separate-age-file pattern as nact_jaf's carrier:
     # sealed workspace-side to the box age PUBLIC key, so the plaintext never transits and
@@ -127,11 +126,8 @@ if [ -n "$SECRETS_SRC" ] && command -v sops >/dev/null 2>&1; then
     # sites.sh run. nactor.env is box-local and handled by the cutover script
     # itself, not here.
     if [ -f .m7-mcp-transport ]; then
-      for f in nave.env luke.env; do
-        [ -f "$f" ] || continue
-        grep -vE '^NACTOR_NSEC=' "$f" > "$f.tmp"; chmod 600 "$f.tmp"; mv "$f.tmp" "$f"
-      done
-      echo "🔒 M7 cutover in force — NACTOR_NSEC stripped from nave.env + luke.env (custody: nvoy-mcp)"
+      grep -vE '^NACTOR_NSEC=' nave.env > nave.env.tmp; chmod 600 nave.env.tmp; mv nave.env.tmp nave.env
+      echo "🔒 M7 cutover in force — NACTOR_NSEC stripped from nave.env (custody: nvoy-mcp)"
     fi
   else
     echo "⚠ platform secrets present but decrypt FAILED (age key missing?) — services run without env"
