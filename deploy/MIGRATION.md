@@ -20,7 +20,7 @@ with seconds of downtime while Caddy hands over ports 80/443.
    (If the box lacks push auth, commit it from your laptop, or copy the file
    into the new clone after step 3.)
 2. **age key + sops already on the box** — yes (you set these up). The new
-   `sites.sh` decrypts `sites/luke/secrets.enc.env` → `./luke.env`.
+   `sites.sh` decrypts the platform secret bundle → `./nave.env`.
 3. **Merge `platform-move` → `main`** on the nave.pub repo, so `deploy/` is on
    main. (Open the PR, or merge locally and push.)
 
@@ -35,7 +35,7 @@ cd /root/nave.pub/deploy
 cp /root/noir/deploy/.env .env
 
 # 3. Sync every repo + decrypt Luke's env
-bash sites.sh                       # clones nave, noir, apps, luke; writes luke.env
+bash sites.sh                       # clones nave, noir, apps, luke; writes nave.env
 
 # 4. Validate the Caddyfile BEFORE touching the running stack
 #    (config lives in ./caddy/Caddyfile — mounted as a directory so file

@@ -11,7 +11,7 @@
 # then re-encrypts and prints ONLY the encrypted file (safe by design — that is
 # exactly what the repo hosts) between BEGIN/END markers so the operator (or the
 # pipeline) can commit it back to the luke repo. Box envs are left in place
-# until the next deploy proves luke.env carries everything.
+# until the next deploy proves nave.env carries everything.
 set -u
 if [ -f /root/nave.pub/deploy/.flipped ]; then D=/root/nave.pub/deploy; else D=/root/noir/deploy; fi
 cd "$D"

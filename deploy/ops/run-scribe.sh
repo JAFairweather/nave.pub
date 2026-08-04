@@ -30,8 +30,8 @@ if [ -f /root/nave.pub/deploy/.flipped ]; then DEPLOY=/root/nave.pub/deploy; els
 BUNKERENV="$DEPLOY/quill-bunker.env"
 if [ -f "$BUNKERENV" ]; then
   cd "$DEPLOY" 2>/dev/null || { echo "no deploy dir"; exit 1; }
-  CONSUMER="$DEPLOY/luke-consumer.env"
-  [ -f "$DEPLOY/luke.env" ] && grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN)=' "$DEPLOY/luke.env" > "$CONSUMER" && chmod 600 "$CONSUMER"
+  CONSUMER="$DEPLOY/nave-consumer.env"
+  [ -f "$DEPLOY/nave.env" ] && grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN)=' "$DEPLOY/nave.env" > "$CONSUMER" && chmod 600 "$CONSUMER"
   [ -f "$CONSUMER" ] || { echo "no consumer env ($CONSUMER) — run a deploy first"; exit 1; }
   BRAINENV=""; NETARG=""
   if [ -f "$DEPLOY/brain.env" ]; then
@@ -69,9 +69,9 @@ cd "$DEPLOY" 2>/dev/null || { echo "no deploy dir"; exit 1; }
 # Same consumer env as the brain: brokered creds stripped. The scribe signs as
 # JAMES'S QUILL (npub13uuznpc…); quill.env holds its QUILL_NSEC, which the
 # Director provides for this one break-glass run and should remove after.
-CONSUMER="$DEPLOY/luke-consumer.env"
-if [ -f "$DEPLOY/luke.env" ]; then
-  grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN)=' "$DEPLOY/luke.env" > "$CONSUMER" && chmod 600 "$CONSUMER"
+CONSUMER="$DEPLOY/nave-consumer.env"
+if [ -f "$DEPLOY/nave.env" ]; then
+  grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN)=' "$DEPLOY/nave.env" > "$CONSUMER" && chmod 600 "$CONSUMER"
 fi
 [ -f "$CONSUMER" ] || { echo "no consumer env ($CONSUMER) — run a deploy first"; exit 1; }
 

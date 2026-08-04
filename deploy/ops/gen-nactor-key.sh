@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Mint Nactor's own keypair ON THE BOX so it becomes a grantee (Directors
 # encrypt credential-scopes to its npub). The key goes in ./nactor.env, which
-# is box-local and gitignored — NOT luke.env, which sites.sh regenerates from
+# is box-local and gitignored — NOT nave.env, which sites.sh regenerates from
 # SOPS on every deploy (an append there gets wiped).
 #
 # SAFE FOR CI LOGS: the nsec is written straight into nactor.env and NEVER
@@ -24,7 +24,7 @@ else
   if [ -z "$NSEC" ]; then echo "key generation failed (is the nactor image built?)"; exit 1; fi
   printf '# Nactor grantee key — minted on the box; credential-scopes encrypt to its npub\nNACTOR_NSEC=%s\n' "$NSEC" >> "$ENVF"
   unset NSEC
-  echo "NACTOR_NSEC minted → nactor.env (survives sites.sh; not luke.env)."
+  echo "NACTOR_NSEC minted → nactor.env (survives sites.sh; not nave.env)."
 fi
 
 # Recreate nactor so it loads nactor.env now (env_file change needs a recreate).

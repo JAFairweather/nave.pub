@@ -6,7 +6,7 @@
 #
 #   cd /root/nave.pub/deploy
 #   cp .env.example .env            # director + ACME email (migrated secrets)
-#   # luke.env holds Luke's LUKE_NSEC + LUKE_MASTER_NPUB
+#   # nave.env holds the platform secret bundle
 #   bash sites.sh && docker compose up -d --build
 
 services:
@@ -33,7 +33,7 @@ services:
 
   # Luke — the delegated-agent card + the nostr-signed cockpit gate. Its own
   # repo (jafairweather/luke), synced into ./sites/luke, built standalone.
-  # Its env lives at ./luke.env on the box (gitignored, never in a repo).
+  # Its consumer env lives at ./nave-consumer.env on the box (gitignored).
   luke:
     build:
       context: ./sites/luke
@@ -52,7 +52,7 @@ services:
       # Phase 2: route luke-poster's Telegram calls through Nactor's broker
       # (same nave network). luke signs NIP-98 with its own key; the bot token
       # lives only in Nactor. Falls back to the direct call if the broker errs
-      # while TELEGRAM_BOT_TOKEN is still in luke.env, so this is safe to enable.
+      # while TELEGRAM_BOT_TOKEN is still in nave.env, so this is safe to enable.
       - NACT_BROKER_URL=http://nactor:8791/api
       # Phase 2: authorize the brain's NIP-98 signature on POST /propose, so the
       # shared PROPOSE_TOKEN can be retired. Public npub — safe to commit.
@@ -94,7 +94,7 @@ services:
       start_period: 10s
 
   # Nactor — the Nact runtime, the NIP-98-gated control-plane API behind
-  # nact.nave.pub/api. Built from the nact repo's nactor/. Reuses luke.env for
+  # nact.nave.pub/api. Built from the nact repo's nactor/. Uses nave.env for
   # the master npub + role signing keys (LUKE_NSEC / NAVE_NSEC). Config persists
   # in nact_data. See sites/nact/nactor/README.md.
   nactor:

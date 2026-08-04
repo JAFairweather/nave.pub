@@ -21,11 +21,11 @@ ENVF=./brain.env
 BROKER_URL=http://nactor:8791/api
 
 # Reuse an existing brain key so we never churn it (a new key would need
-# re-activation): prefer brain.env, then a BRAIN_NSEC already in luke.env (e.g.
+# re-activation): prefer brain.env, then a BRAIN_NSEC already in nave.env (e.g.
 # left by an earlier run), else mint a fresh one in the nactor image.
 NSEC=""
 [ -f "$ENVF" ]     && NSEC=$(grep '^BRAIN_NSEC=' "$ENVF"     2>/dev/null | cut -d= -f2-)
-[ -z "$NSEC" ] && [ -f ./luke.env ] && NSEC=$(grep '^BRAIN_NSEC=' ./luke.env 2>/dev/null | cut -d= -f2-)
+[ -z "$NSEC" ] && [ -f ./nave.env ] && NSEC=$(grep '^BRAIN_NSEC=' ./nave.env 2>/dev/null | cut -d= -f2-)
 if [ -z "$NSEC" ]; then
   NSEC=$(docker compose run --rm --no-deps --entrypoint node nactor -e \
     'import("nostr-tools").then(t=>process.stdout.write(t.nip19.nsecEncode(t.generateSecretKey())))' 2>/dev/null)

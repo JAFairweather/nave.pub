@@ -14,10 +14,10 @@ cd "$DEPLOY" 2>/dev/null || { echo "no deploy dir"; exit 1; }
 
 # Consumer env: the brokered creds (ANTHROPIC_API_KEY, TELEGRAM_BOT_TOKEN) are
 # stripped — the brain reaches those providers through Nactor. Regenerate from
-# luke.env when present so it's always current with the latest secrets.
-CONSUMER="$DEPLOY/luke-consumer.env"
-if [ -f "$DEPLOY/luke.env" ]; then
-  grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN)=' "$DEPLOY/luke.env" > "$CONSUMER" && chmod 600 "$CONSUMER"
+# nave.env when present so it's always current with the latest secrets.
+CONSUMER="$DEPLOY/nave-consumer.env"
+if [ -f "$DEPLOY/nave.env" ]; then
+  grep -vE '^(ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN)=' "$DEPLOY/nave.env" > "$CONSUMER" && chmod 600 "$CONSUMER"
 fi
 [ -f "$CONSUMER" ] || { echo "no consumer env ($CONSUMER) — run a deploy first"; exit 1; }
 
