@@ -36,8 +36,8 @@ jobs:
           script: |
             set -e
             if [ -f /root/nave.pub/deploy/.flipped ]; then DEPLOY=/root/nave.pub/deploy; else DEPLOY=/root/noir/deploy; fi
-            LUKEENV="$DEPLOY/luke.env"
-            [ -f "$LUKEENV" ] || { echo "no luke.env at $LUKEENV — luke secrets not decrypted"; exit 1; }
+            LUKEENV="$DEPLOY/nave.env"
+            [ -f "$LUKEENV" ] || { echo "no nave.env at $LUKEENV — platform secrets not decrypted"; exit 1; }
             FLAG=""; [ "$MODE" = "dry-run" ] && FLAG="--dry-run"
             # Brain/Nactor keys live in box-local env files; include them when
             # present so all four identities publish. Missing ones just skip.

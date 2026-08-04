@@ -28,7 +28,7 @@ jobs:
             crontab -l 2>/dev/null | grep -vE '# luke-brain-schedule|^CRON_TZ=' > /tmp/ct || true
             {
               echo 'CRON_TZ=America/New_York'
-              echo '0 8,17 * * * docker run --rm --env-file /root/nave.pub/deploy/luke.env luke:latest node luke-brain.mjs >> /var/log/luke-brain.log 2>&1 # luke-brain-schedule'
+              echo '0 8,17 * * * docker run --rm --env-file /root/nave.pub/deploy/nave.env luke:latest node luke-brain.mjs >> /var/log/luke-brain.log 2>&1 # luke-brain-schedule'
             } >> /tmp/ct
             crontab /tmp/ct
             rm -f /tmp/ct
