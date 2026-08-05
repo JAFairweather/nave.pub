@@ -1,0 +1,311 @@
+#!/usr/bin/env node
+// nave-drift — is the fleet actually running the design system it says it is?
+//
+// The system is copy-vendored by rule (design/DESIGN.md: apps inline it because they
+// are no-build static clients). Nothing checked the copies, and the cost was already
+// paid: two token generations live in production, three apps lost their light theme
+// purely because their copies were stale, and every titlebar provenance stamp is
+// stale while the bodies are current — because a prose stamp cannot be compared.
+//
+// Four verdicts, and the third is the one that matters:
+//
+//   ok               byte-identical to the hub
+//   stale            differs, but matches the recorded fleet baseline — the hub moved
+//                    ahead and this app has not re-vendored yet. Warns.
+//   diverged         differs from BOTH the hub and the baseline. On a dev machine that
+//                    means a shared component was edited in an app (the AD-11 fork
+//                    case). On the box, after the reset, it means an app repo's own
+//                    main has diverged from the hub in the snapshot about to be
+//                    served — there is no box-local edit left to find. Fails either
+//                    way, because shipping disagreeing shared components is how the
+//                    2026-07 console drift reached production.
+//   not adopted      declared in the manifest as a future consumer, carrying its own
+//                    implementation today. Informational, not a failure — waggle's
+//                    console, for instance, has a private token block rather than a
+//                    vendored one, and calling that a "fork" would be noise.
+//   missing          the consumer named in VENDOR.json has no such file
+//
+// Distinguishing `stale` from `diverged` is the whole value of the tool, and
+// it needs two baselines, not one:
+//   sha256 / sha256Body      what the hub has NOW          (`--update`, at publish)
+//   fleetSha256 / …Body      what the fleet is known to carry (`--baseline`, once,
+//                            after a fleet-wide re-vendor)
+// Without the second, every hub edit reports the whole fleet as diverged — and a tool
+// that cries wolf on every commit is a tool nobody runs.
+//
+// Where to run it: from a nave.pub checkout with sibling clones (nave-spine layout), or on
+// the box against deploy/sites. The hook is deploy/sites.sh, after the clone/reset loop and
+// before secrets or build, reading the trees Caddy actually mounts.
+//
+// IT IS A DIAGNOSTIC, NOT AN ATOMICITY GUARANTEE. `./sites` is a live bind mount and the
+// loop promotes thirteen trees IN PLACE, so production has already served a mixed snapshot
+// by the time this runs, and a mid-loop failure leaves it half-promoted. This reports that
+// the serving state disagrees with itself; it cannot prevent that state having been served.
+// Atomic promotion is nave.pub#115 — stage outside the mounted tree, swap the serving root
+// after a successful stage, roll back a failed activation. Nothing this prints may be read
+// as a claim that a deploy was atomic.
+//
+//   node bin/nave-drift                 check, table to stdout, non-zero on divergence
+//   node bin/nave-drift --update        rewrite VENDOR.json's hub hashes (at publish)
+//   node bin/nave-drift --baseline      record what the fleet carries right now
+//   node bin/nave-drift --write-report  also write design/DRIFT.md
+//   node bin/nave-drift --root <dir>    clone root; EXPLICIT --root overrides the
+//                                       per-consumer roots (the box layout)
+//   node bin/nave-drift --json          machine-readable
+//
+// Exit codes: 0 clean (stale allowed) · 1 a divergence or a missing consumer · 2 the
+// manifest itself is unusable. Deliberately: `stale` WARNS and `diverged` FAILS,
+// because staleness is a deploy-ordering fact while divergence is a decision nobody
+// recorded.
+
+import { createHash } from 'node:crypto'
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { join, dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const HUB = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const argv = process.argv.slice(2)
+const flag = (n) => argv.includes(n)
+const opt = (n, d) => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : d }
+
+const MANIFEST = join(HUB, 'design/VENDOR.json')
+// Default: siblings of the hub clone (the nave-spine layout). Ngage lives outside
+// that workspace on the maintainer's Mac, which is exactly why --root exists and why
+// the per-repo sync scripts that hardcode `../nave.pub` never worked for it.
+const ROOT = resolve(opt('--root', join(HUB, '..')))
+
+const sha = (buf) => createHash('sha256').update(buf).digest('hex')
+
+/** Hash a file, optionally ignoring its first line (the provenance stamp). */
+function hashFile(path, { skipFirstLine = false } = {}) {
+  if (!existsSync(path)) return null
+  let text = readFileSync(path, 'utf8')
+  if (skipFirstLine) text = text.slice(text.indexOf('\n') + 1)
+  return sha(Buffer.from(text, 'utf8'))
+}
+
+/**
+ * An inlined artifact is vendored INTO a bigger file, so a whole-file hash says
+ * nothing. Compare the declaration sets instead: that is what "vendored verbatim"
+ * actually means for a token block, and it lets an app legitimately override the
+ * three accent tokens without registering as drift (design/tokens.css says exactly
+ * those three may differ).
+ */
+const ACCENT_OVERRIDES = new Set(['--accent', '--accent-bright', '--accent-ink'])
+
+// Vendored copies are minified — `--sans:-apple-system,BlinkMacSystemFont` vs
+// `--sans: -apple-system, BlinkMacSystemFont`. Those are the same declaration, and a
+// comparator that calls them different reports every app as forked on cosmetics,
+// which is how a drift tool earns the reputation of being noise. Normalise to a
+// canonical form: collapse runs of whitespace, then drop space around the separators
+// that cannot carry meaning in a value list. Case is preserved — font names and hex
+// are compared as authored.
+const canon = (v) => v.trim()
+  .replace(/\s+/g, ' ')
+  .replace(/\s*,\s*/g, ',')
+  .replace(/\s*\(\s*/g, '(')
+  .replace(/\s*\)\s*/g, ')')
+
+function declSet(css) {
+  const out = new Map()
+  for (const [, name, value] of css.matchAll(/(--[a-z0-9-]+)\s*:\s*([^;}]+)[;}]/gi)) {
+    out.set(name.trim(), canon(value))
+  }
+  return out
+}
+function compareInline(hubText, appText) {
+  const hub = declSet(hubText), app = declSet(appText)
+  const missing = [], changed = []
+  for (const [k, v] of hub) {
+    if (!app.has(k)) { missing.push(k); continue }
+    if (app.get(k) !== v && !ACCENT_OVERRIDES.has(k)) changed.push(k)
+  }
+  return { missing, changed }
+}
+
+let manifest
+try {
+  manifest = JSON.parse(readFileSync(MANIFEST, 'utf8'))
+} catch (e) {
+  console.error(`nave-drift: cannot read ${MANIFEST} — ${e.message}`)
+  process.exit(2)
+}
+
+// ── --update: stamp the hub's own hashes ─────────────────────────────────────
+if (flag('--update')) {
+  let n = 0
+  for (const a of manifest.artifacts) {
+    const p = join(HUB, a.path)
+    if (!existsSync(p)) { console.error(`  ! ${a.path} — not in this repo`); continue }
+    a.sha256 = hashFile(p)
+    // Body hash too: a consumer that rewrites the first line into a provenance
+    // stamp can only be compared body-to-body.
+    a.sha256Body = hashFile(p, { skipFirstLine: true })
+    n++
+  }
+  writeFileSync(MANIFEST, JSON.stringify(manifest, null, 2) + '\n')
+  console.log(`nave-drift: stamped ${n} artifact hash(es) into design/VENDOR.json`)
+  process.exit(0)
+}
+
+// Resolve where a consumer's clone lives.
+//
+// Two layouts, and --root decides which. On a developer's Mac the clones are
+// scattered (nave-spine siblings, plus ngage and waggle elsewhere), so each consumer
+// may carry its own `root`. On the box every clone sits under deploy/sites, so an
+// EXPLICIT --root is authoritative and the per-consumer roots must be ignored —
+// otherwise the deploy gate looks for $HOME/Projects/ngage, finds nothing, reports
+// `missing`, and fails a deploy for a path that was never supposed to apply there.
+const ROOT_EXPLICIT = argv.includes('--root')
+const consumerPath = (c) => {
+  const base = (!ROOT_EXPLICIT && c.root)
+    ? resolve(c.root.replace(/^~|^\$HOME/, process.env.HOME || '~'))
+    : ROOT
+  return join(base, c.repo === '.' ? '' : c.repo, c.path)
+}
+
+// ── --baseline: record what the fleet is carrying right now ──────────────────
+// Run once after a fleet-wide re-vendor, so later runs can tell "has not
+// re-vendored yet" from "someone edited a shared component."
+if (flag('--baseline')) {
+  let n = 0
+  for (const a of manifest.artifacts) {
+    const hub = join(HUB, a.path)
+    if (!existsSync(hub)) continue
+    // Take the baseline from any adopted consumer that agrees with the majority;
+    // in practice the vendored copies are identical to each other.
+    const seen = new Map()
+    for (const c of a.consumers || []) {
+      if (c.adopted === false) continue
+      const p = consumerPath(c)
+      if (!existsSync(p) || c.inline) continue
+      const h = hashFile(p, { skipFirstLine: c.skipFirstLine })
+      const key = c.skipFirstLine ? 'body' : 'file'
+      if (!seen.has(key)) seen.set(key, h)
+    }
+    if (seen.has('file')) { a.fleetSha256 = seen.get('file'); n++ }
+    if (seen.has('body')) { a.fleetSha256Body = seen.get('body'); n++ }
+  }
+  writeFileSync(MANIFEST, JSON.stringify(manifest, null, 2) + '\n')
+  console.log(`nave-drift: recorded ${n} fleet baseline hash(es). Later runs can now`)
+  console.log(`            distinguish "not re-vendored yet" from "edited in an app".`)
+  process.exit(0)
+}
+
+// ── check ────────────────────────────────────────────────────────────────────
+const rows = []
+let forks = 0, gone = 0, stale = 0, unadopted = 0
+
+for (const a of manifest.artifacts) {
+  const hubPath = join(HUB, a.path)
+  if (!existsSync(hubPath)) {
+    rows.push({ artifact: a.path, repo: '—', verdict: 'missing', detail: 'not in the hub repo' })
+    gone++; continue
+  }
+  const hubText = readFileSync(hubPath, 'utf8')
+  const hubHash = sha(Buffer.from(hubText, 'utf8'))
+
+  // A stamped hash that no longer matches the file means someone edited the hub
+  // artifact without re-running --update. Report it once, against the hub itself.
+  if (a.sha256 && a.sha256 !== hubHash) {
+    rows.push({ artifact: a.path, repo: 'nave.pub', verdict: 'stale', detail: 'manifest hash predates this file — run --update' })
+    stale++
+  }
+
+  for (const c of a.consumers || []) {
+    const appPath = consumerPath(c)
+    // A consumer that has not adopted this artifact yet carries its own
+    // implementation. Say so; do not call it a fork. waggle's console has a private
+    // token block rather than a vendored one, and reporting that as drift every run
+    // would train everyone to ignore the output.
+    if (c.adopted === false) {
+      rows.push({ artifact: a.path, repo: c.repo, verdict: 'not adopted',
+        detail: c.note || 'carries its own implementation' })
+      unadopted++; continue
+    }
+    if (!existsSync(appPath)) {
+      rows.push({ artifact: a.path, repo: c.repo, verdict: 'missing', detail: c.path })
+      gone++; continue
+    }
+    if (c.inline) {
+      const { missing, changed } = compareInline(hubText, readFileSync(appPath, 'utf8'))
+      if (!missing.length && !changed.length) {
+        rows.push({ artifact: a.path, repo: c.repo, verdict: 'ok', detail: 'all declarations present' })
+      } else if (changed.length) {
+        rows.push({ artifact: a.path, repo: c.repo, verdict: 'diverged',
+          detail: `redefined: ${changed.slice(0, 4).join(' ')}${changed.length > 4 ? ` +${changed.length - 4}` : ''}` })
+        forks++
+      } else {
+        rows.push({ artifact: a.path, repo: c.repo, verdict: 'stale',
+          detail: `absent: ${missing.slice(0, 4).join(' ')}${missing.length > 4 ? ` +${missing.length - 4}` : ''}` })
+        stale++
+      }
+      continue
+    }
+    const appHash = hashFile(appPath, { skipFirstLine: c.skipFirstLine })
+    const hubCmp = c.skipFirstLine
+      ? sha(Buffer.from(hubText.slice(hubText.indexOf('\n') + 1), 'utf8'))
+      : hubHash
+    if (appHash === hubCmp) {
+      rows.push({ artifact: a.path, repo: c.repo, verdict: 'ok', detail: appHash.slice(0, 12) })
+      continue
+    }
+    // Distinguishing "behind" from "forked" is what makes this tool worth running.
+    // The manifest's stamped hash is the last hash the hub PUBLISHED. So:
+    //   app == stamped, hub != stamped  → the hub moved ahead; the app is STALE
+    //   app != stamped, app != hub      → the app was edited; that is a FORK
+    // Without this, every hub edit would report the whole fleet as forked, and a
+    // tool that cries fork on every commit is a tool nobody runs.
+    // The FLEET baseline, not the hub's current hash — that is what makes "has not
+    // re-vendored yet" distinguishable from "was edited here." Two variants, because
+    // consumers hash two ways: whole-file, or body-only when the first line is a
+    // provenance stamp the app rewrites on vendoring.
+    const baseline = c.skipFirstLine ? a.fleetSha256Body : a.fleetSha256
+    if (baseline && appHash === baseline && hubCmp !== baseline) {
+      rows.push({ artifact: a.path, repo: c.repo, verdict: 'stale',
+        detail: `matches the last published hash; hub has moved ahead` })
+      stale++
+    } else {
+      rows.push({ artifact: a.path, repo: c.repo, verdict: 'diverged',
+        detail: `${appHash.slice(0, 12)} ≠ ${hubCmp.slice(0, 12)}` })
+      forks++
+    }
+  }
+}
+
+const a_baselineSet = manifest.artifacts.some(a => a.fleetSha256 || a.fleetSha256Body)
+
+if (flag('--json')) {
+  console.log(JSON.stringify({ root: ROOT, rows, forks, stale, unadopted, missing: gone }, null, 2))
+} else {
+  const w = (s, n) => String(s).padEnd(n)
+  const GLYPH = { ok: '✓', stale: '·', 'diverged': '✗', 'not adopted': '○', missing: '?' }
+  console.log(`nave-drift — hub ${HUB}\n            clones ${ROOT}\n`)
+  console.log(`  ${w('', 2)}${w('artifact', 34)}${w('repo', 10)}${w('verdict', 18)}detail`)
+  console.log(`  ${'─'.repeat(90)}`)
+  for (const r of rows) {
+    console.log(`  ${w(GLYPH[r.verdict] ?? '?', 2)}${w(r.artifact, 34)}${w(r.repo, 10)}${w(r.verdict, 18)}${r.detail}`)
+  }
+  console.log(`\n  ${rows.filter(r => r.verdict === 'ok').length} ok · ${stale} stale · ${forks} diverged · ${unadopted} not adopted · ${gone} missing`)
+  if (forks) console.log(`\n  A shared component disagrees with the hub and with the recorded baseline.\n  Promote the change to the hub and re-vendor — never fork (AD-11: promote the\n  best implementation, never level down). If the divergence is deliberate,\n  record it: node bin/nave-drift --baseline`)
+  if (gone) console.log(`\n  A consumer named in VENDOR.json has no such file. Either it has not adopted the\n  component yet (drop it from consumers) or the path moved.`)
+  if (!forks && !gone && !stale) console.log(`\n  The fleet is consistent.`)
+  if (!a_baselineSet) console.log(`\n  No fleet baseline recorded yet — run \`--baseline\` once after a\n  fleet-wide re-vendor so later runs can tell stale from forked.`)
+}
+
+if (flag('--write-report')) {
+  const when = new Date().toISOString().slice(0, 10)
+  const lines = [
+    '# Design-system drift', '',
+    `Generated by \`bin/nave-drift\` on ${when}. **Do not hand-edit.**`, '',
+    'Verdicts: `ok` byte-identical · `stale` re-vendor · **`diverged`** a shared',
+    'component disagrees with both the hub and the baseline (AD-11: promote, never fork) ·', '`not adopted` carries its own implementation · `missing` no such file.', '',
+    '| artifact | repo | verdict | detail |', '|---|---|---|---|',
+    ...rows.map(r => `| \`${r.artifact}\` | ${r.repo} | ${r.verdict === 'diverged' ? '**diverged**' : r.verdict} | ${r.detail} |`),
+    '', `${rows.filter(r => r.verdict === 'ok').length} ok · ${stale} stale · ${forks} diverged · ${unadopted} not adopted · ${gone} missing`, '',
+  ]
+  writeFileSync(join(HUB, 'design/DRIFT.md'), lines.join('\n'))
+  console.log('\n  wrote design/DRIFT.md')
+}
+
+process.exit(forks || gone ? 1 : 0)

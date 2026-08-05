@@ -40,6 +40,73 @@ for pair in "${apps[@]}"; do
   fi
 done
 
+# --- Design-system drift gate (AD-12, #113) -------------------------------
+# Placed HERE deliberately: after the complete clone/reset loop, and BEFORE secret
+# generation or any build. It reads the trees Caddy actually mounts, so it inspects the
+# real serving state rather than this checkout's copy of it.
+#
+# THIS GATE IS A DIAGNOSTIC, NOT AN ATOMICITY GUARANTEE — and the distinction is a
+# required one (#115). `./sites` is a LIVE bind mount and the loop above promotes thirteen
+# trees IN PLACE, one at a time, so production has already served a mixed snapshot by the
+# time this runs. The gate can report that the serving state disagrees with itself; it
+# cannot prevent that state having been served, and a mid-loop failure still leaves
+# production half-promoted. Nothing here may be read as a claim that a deploy is atomic.
+# That property arrives only when #115 stages the complete set outside the mounted tree
+# and swaps the serving root after a successful stage, with rollback on failed activation.
+#
+# What it detects is UNRECORDED CROSS-REPO DIVERGENCE IN THE SERVING SNAPSHOT — not a
+# box-local edit. The reset above just overwrote anything box-local, so a difference at
+# this point means an app repo's own main has diverged from the hub's shared component
+# without that being recorded in design/VENDOR.json.
+#
+# Fail-closed is the right DESTINATION for this: shipping a snapshot whose shared
+# components disagree is how the console drift of 2026-07 reached production and
+# "rendered perfectly, then failed at the moment someone tried to sign in."
+#
+# But it REPORTS ONLY until the fleet is clean, and that is deliberate. The fleet has
+# two recorded divergences today (nact's --mono fallback, ngage's Courier/Georgia
+# override) that predate this gate. Enforcing on the first commit would red the very
+# next deploy for drift the gate did not cause — and it would break the rule this
+# whole wave is built on: Wave 0 is strictly additive and must behave identically to
+# today. A gate that blocks a deploy is not additive.
+#
+# Flip it with NAVE_DRIFT_ENFORCE=1, and make that the default in Wave 5 once nact
+# and ngage are reconciled (ngage's is a real design decision — the "signed artifact"
+# type exception — not a patch, so it lands in its own wave).
+# THE GATE MUST RUN FROM THE SERVED SNAPSHOT, NOT FROM THIS CHECKOUT.
+# `sites/nave` is the clone Caddy mounts at /srv/apps/nave; this script lives in the
+# platform checkout, which is updated by a separate `git pull`. The two are normally the
+# same commit and are not guaranteed to be — so running ../bin/nave-drift would hash
+# THIS checkout's tokens.css and manifest while production serves sites/nave's. The gate
+# could pass while the snapshot about to be served disagrees, which is precisely the
+# failure it exists to catch. Invariant: every hash and manifest the gate uses comes from
+# the same reset sites/* snapshot the build then serves.
+#
+# A missing executable is a HARD failure, never a skip. If the gate cannot run, the
+# correct conclusion is "unverified", not "fine" — being unable to check is not
+# permission. That is separate from the divergence policy below.
+echo "→ design-system drift gate"
+if [ ! -f sites/nave/bin/nave-drift ]; then
+  echo "  ✗ sites/nave/bin/nave-drift is absent from the freshly reset snapshot."
+  echo "    The gate cannot verify what is about to be served. Stopping."
+  exit 1
+fi
+# Divergence itself REPORTS ONLY until the fleet is clean, and that is deliberate: the
+# fleet has two divergences that predate this gate (nact's dropped --mono fallback,
+# ngage's Courier/Georgia override), and blocking on them would red a deploy for drift
+# the gate did not cause. Wave 5 flips the default once those are reconciled.
+if node sites/nave/bin/nave-drift --root "$PWD/sites" --write-report; then
+  echo "  drift gate: clean"
+elif [ "${NAVE_DRIFT_ENFORCE:-0}" = "1" ]; then
+  echo "  ✗ drift gate FAILED — stopping before secrets and build."
+  echo "    A shared component diverges in the snapshot about to be served."
+  echo "    Reconcile it, or re-record the baseline: node bin/nave-drift --baseline"
+  exit 1
+else
+  echo "  ⚠ drift gate found divergence — REPORTING ONLY (see the report it wrote)."
+  echo "    Set NAVE_DRIFT_ENFORCE=1 to make this stop the deploy."
+fi
+
 # --- Platform secrets: decrypt SOPS ciphertext → the env the compose reads --
 # The nave-owned secret bundle lives in THIS repo at deploy/secrets/nave.enc.env
 # (SOPS/age; the private key is box-only). It decrypts to ./nave.env — the full

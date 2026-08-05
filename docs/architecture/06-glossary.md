@@ -55,6 +55,51 @@ his pens), `channel:bind` (approver-channel authority).
   box crypto; partner, not a NIP-DA client.
 - **outerjoin** — native macOS contacts sync; no nostr at all.
 
+## The governance model (AD-12)
+
+The five objects everything else is expressed in. Before AD-12 this glossary had
+no definition of "agent" — which is how seven stores came to disagree about one.
+
+- **Agent** — a named principal, other than the Director, identified by
+  **exactly one** nostr public key. It is `key + custody + authority + runtime`,
+  where only the key is its identity; custody decides its Approval Path.
+  **Authority is never a property of the Agent** — it is the grants it holds,
+  looked up in the Ledger. The **join key is the lowercase hex pubkey,
+  everywhere**; `npub` is display only. **One key, one Agent.**
+- **agent ≡ identity ≡ role key ≡ pen ≡ deliverer ≡ granted participant ≡
+  admitted author** — one object. The differences are **roles inside a slice**,
+  an attribute of the record, not a type of Agent.
+- **Data Grant** — read access to a scoped dataset: `(scope d, grantor, grantee,
+  generation)`, revoked by rotation. The NIP-DA primitive, unchanged.
+- **Action Grant** — one object, two modes. **Capability** (`standing`): the
+  right to *propose* in a class, carrying action class · max tier · TTL · rate
+  limit · one bound Approval Path · revocable by 441. **Approval**
+  (`discrete`): one human tap over frozen bytes. A durable grant **cannot**
+  authorize a signature — WYSIWYS binds to bytes that do not exist at issuance —
+  so *"no standing authority to sign; standing authority to propose."*
+- **Approval Path** — where an Agent's approvals happen, **derived from key
+  custody, never chosen** (AD-10). Two: `box` and `director`. **Transports** are
+  its children and are non-exclusive within a path: Telegram, NIP-59 DM and the
+  web queue are `box`; **Ngage is the `director` transport.**
+- **`ungoverned`** — a transport the runtime displays but does not deliver to.
+  A named state, so it can never render as wired.
+- **Application Slice** — an app managing the Agents, grants and routing
+  specific to itself. May define slice roles, routing views, slice-local policy.
+  **May not** define Agent identity, grant shapes, capability enums, approval
+  paths, or a second roster. Every slice roster row is a **projection** of the
+  registry, never authority. *Universal = the slice with the trivial predicate.*
+- **Registry** — the Agent roster: the `nvoy_agents` field on the Director's
+  encrypted `10440`, distributed to headless slices as the `data:agents/registry`
+  scope. **`handle` is authority; kind-0 is a hint** — otherwise whoever holds an
+  agent's key controls its label in the Director's console.
+- **`da-cap` vs `capability:*`** — `da-cap` on a public 440 is the
+  **enforcement** tag, checkable without any key (default-closed); the
+  `capability:*` scope carries the terms. Enum **CLOSED** at
+  `admit · admit+read · task · task+act · task-relay · mirror`.
+- **Declined names** — *universal plane · application plane · overarching plane ·
+  root grantor · Scoped Action Grants*. Recorded so they do not return; AD-8:
+  new synonyms fragment vocabulary the docs already rely on.
+
 ## People, agents, keys
 
 - **The Director** — the human root authority (James for the fleet; each
@@ -65,10 +110,15 @@ his pens), `channel:bind` (approver-channel authority).
 - **operator** — the delegated day-to-day login signer in the bunker (iPhone
   path).
 - **nave / nactor / luke / brain / nact_jaf / noir** — the SOPS-custodied fleet
-  identities: fleet root · runtime · acting agent · proposer ("Luke is one
-  agent, two keys") · approvals carrier · legacy hub.
+  identities: fleet root · runtime · acting agent · proposer · approvals
+  carrier · legacy hub.
 - **Luke** — James's flagship agent (posts as himself, box path, Telegram
-  approval). **brain** — Luke's proposer identity; thinks, never acts.
+  approval). **brain** — holds the **proposer** role; thinks, never acts.
+  **`luke` and `brain` are two Agents sharing one voice** (AD-12 ruling 1 +
+  AD-9): one key each, so one Agent each; the shared thing is the steering file,
+  not the identity. The older phrasing — "Luke is one agent, two keys" — is
+  **retired**, because it is the exact ambiguity that let two rosters disagree
+  about what an agent is.
 - **Quill (canonical)** — warm.contact's reference reconnect-agent instance.
 - **James's Quill / jaf-quill** — the Director's own drafting hand. ONE key,
   sole custody Bunker46 (2026-07-24), NIP-46-scoped to draft kinds only;
@@ -85,11 +135,18 @@ his pens), `channel:bind` (approver-channel authority).
 
 ## Mechanisms & doctrine
 
-- **AD-1…AD-11** — the architecture-decision log
-  (`docs/nave-architecture-decisions.md`). The load-bearing ones: **AD-2**
+- **AD-1…AD-12** — the architecture-decision log
+  (`docs/nave-architecture-decisions.md`; note **AD-7 appears first in the
+  file**, so do not scan it by position). The load-bearing ones: **AD-2**
   identity-not-server · **AD-6** broker vs grant-to-app by sensitivity ·
   **AD-9** evidence-only per-identity voice · **AD-10** approval happens where
-  the signing key lives · **AD-11** one sign-in, promote never level down.
+  the signing key lives · **AD-11** one sign-in, promote never level down ·
+  **AD-12** one agent, two planes, N slices.
+- **Authority moves as signed events** — AD-12: a console never receives host
+  access. It verifies signed state and issues signed commands; it is never a
+  remote shell. Separate axis, also real: **supply-chain integrity of a signing
+  UI** — whoever serves the page chooses the JavaScript that shows you what you
+  are about to sign.
 - **Box path / director path** — the two approval routes (AD-10), forced by
   key custody.
 - **Broker vs grant-to-app** — Nactor holds and injects (on-box,

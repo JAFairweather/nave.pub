@@ -1,0 +1,145 @@
+{
+  "$comment": [
+    "The vendoring manifest (AD-12, nave.pub#113). The design system is copy-vendored",
+    "by rule — apps inline it because they are no-build static clients — and until this",
+    "file existed, nothing could tell whether a copy was current. The cost was already",
+    "paid three ways: two token generations live in production (--panel2 vs --panel-2),",
+    "three apps lost their light theme purely because their copies were old, and every",
+    "titlebar provenance stamp in the fleet is stale while the bodies are current,",
+    "because the stamp was prose rather than a hash.",
+    "",
+    "Regenerate hashes with:  node bin/nave-drift --update",
+    "Check the fleet with:    node bin/nave-drift",
+    "",
+    "A consumer may carry `root` when its clone is not a sibling of the hub — on the maintainer's Mac ngage and waggle live elsewhere. $HOME is expanded at run time so no absolute user path is stored.",
+    "`consumers` is also the source of the plane switcher's app list, so one file",
+    "drives both the drift check and the fleet navigation."
+  ],
+  "version": 1,
+  "artifacts": [
+    {
+      "path": "design/tokens.css",
+      "sha256": "c1aca3d2cf40dbf179eaef4241b38e4374b4a920585bad93905c42ba88cc0347",
+      "note": "Apps override ONLY --accent / --accent-bright / --accent-ink. A copy that differs in any other declaration is drift, not customisation.",
+      "consumers": [
+        {
+          "repo": "nvoy",
+          "path": "console/index.html",
+          "inline": true
+        },
+        {
+          "repo": "nact",
+          "path": "app.html",
+          "inline": true
+        },
+        {
+          "repo": "ngage",
+          "path": "index.html",
+          "inline": true,
+          "root": "$HOME/Projects"
+        },
+        {
+          "repo": "waggle",
+          "path": "console/index.html",
+          "inline": true,
+          "root": "$HOME/.buzz/REPOS",
+          "adopted": false,
+          "note": "private token block, not a vendored copy — adoption tracked in nave.pub#113"
+        }
+      ],
+      "sha256Body": "8bc53b815933a311d2e1831947cce1e59d23d026a867d0f83473493481127fab"
+    },
+    {
+      "path": "components/nave-titlebar.mjs",
+      "sha256": "61a7e31cda51c2a125ae8a5a28b9071d3b11e0296acfc238cdef59e0cc16d749",
+      "consumers": [
+        {
+          "repo": "nvoy",
+          "path": "lib/nave-titlebar.mjs",
+          "skipFirstLine": true
+        },
+        {
+          "repo": "nact",
+          "path": "lib/nave-titlebar.mjs",
+          "skipFirstLine": true
+        },
+        {
+          "repo": "ngage",
+          "path": "lib/nave-titlebar.mjs",
+          "skipFirstLine": true,
+          "root": "$HOME/Projects"
+        },
+        {
+          "repo": "waggle",
+          "path": "console/vendor/nave-titlebar.mjs",
+          "root": "$HOME/.buzz/REPOS"
+        }
+      ],
+      "sha256Body": "0487a14930899434814791008ef28bc7f5bb67ecfb0ec352ea1a3421a9d9f40a",
+      "fleetSha256": "c0f7d2d50bdd6cf9a4d51b2e302030b4b45a739525ff233822c059e9473a9b98",
+      "fleetSha256Body": "c0f7d2d50bdd6cf9a4d51b2e302030b4b45a739525ff233822c059e9473a9b98"
+    },
+    {
+      "path": "components/nave-tabs.mjs",
+      "sha256": "d949e9e403f09a306fde519bb0d44173a12f7cfdc954be485903c38ad7df4b54",
+      "consumers": [],
+      "sha256Body": "cc2d27e53e845dfe7747cf34a7b8944b244ff05fce5c13ee7d3a8b583516a323"
+    },
+    {
+      "path": "components/nave-cap.mjs",
+      "sha256": "5d52d75c72a5237739ac1e5147ca773155048c0d14700efa5b5462c57c6d55a2",
+      "consumers": [],
+      "sha256Body": "e5476dbdd2534536f4af669725525399b0a453c03cf5739c4feeb8f1672b401d"
+    },
+    {
+      "path": "components/nave-source-note.mjs",
+      "sha256": "984c1a0ac3530e44c3c67b959c7ecbffbd2b8bb357c12f787765539c821f42b2",
+      "consumers": [],
+      "sha256Body": "f43b425c0708883c2ea59d79314963a7eeb9e5efedb9ab37945c00b0a3e292d8"
+    },
+    {
+      "path": "components/nave-login.mjs",
+      "sha256": "dba3c770d58d95d14ce2504d5aa484fe3c5c29297a195a9ec86865ea23e4f495",
+      "consumers": [],
+      "sha256Body": "7d3fad819dd96c1c4503cbebdca74ce5e92e69c41e66e1130c56bc9c9d657627"
+    },
+    {
+      "path": "components/nave-footer.html",
+      "sha256": "519bd081c1f1d8e0b3782b93e5e1df121b92454be078c7c19b292a10cd385b9c",
+      "note": "Five different sibling lists exist across five copies today, and six surfaces carry no footer at all. Reconciling those is nave.pub#113 follow-up work, not a hash mismatch to silence.",
+      "consumers": [],
+      "sha256Body": "ec54aa2679dc40e70ee9c68bfcc757ac14e8d338ed0d77bb33a3d2c46cc55577"
+    }
+  ],
+  "apps": [
+    {
+      "id": "nvoy",
+      "label": "Nvoy · data",
+      "kind": "plane",
+      "accent": "#6fa8a0",
+      "href": "https://nvoy.nave.pub/console/"
+    },
+    {
+      "id": "nact",
+      "label": "Nact · action",
+      "kind": "plane",
+      "accent": "#c98f4f",
+      "href": "https://nact.nave.pub/app.html"
+    },
+    {
+      "id": "waggle",
+      "label": "waggle",
+      "kind": "app",
+      "accent": "#cf8a2e",
+      "href": "https://waggle.nave.pub/console/",
+      "note": "lowercase always — never Waggle or WAGGLE"
+    },
+    {
+      "id": "ngage",
+      "label": "Ngage",
+      "kind": "app",
+      "accent": "#b8874f",
+      "href": "https://ngage.nave.pub/"
+    }
+  ]
+}
