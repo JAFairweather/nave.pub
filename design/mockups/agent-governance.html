@@ -1,0 +1,895 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AD-12 mockups — one agent, two planes, N slices</title>
+<meta name="description" content="Proposed screens for the agent-governance refactor (nave.pub#110 / AD-12).">
+<style>
+/* ─── The Nave design system — canonical tokens ───────────────────────────
+   VENDORED VERBATIM from design/tokens.css — keep in sync with that file.
+   This mockup overrides only --accent per pane, to show each app's own seal
+   colour on its own screens (design/DESIGN.md). */
+:root {
+  --ground: #0b0906; --panel: #14100a; --panel-2: #1b1409;
+  --line: #2a2317; --line-strong: #3a3020;
+  --field: #0d0a06;
+  --ink: #0b0906; --bg: #0b0906;
+  --text: #f4efe4; --dim: #9c927f; --faint: #6f6555;
+  --gold: #c39a56; --gold-bright: #e2c079;
+  --accent: #c39a56; --accent-bright: #e2c079; --accent-ink: #0b0906;
+  --good: #8fae6a; --warn: #d9a648; --critical: #c0705a;
+  --ok: #8fae6a; --danger: #c0705a;
+  --diff-user: #8fae6a;     --diff-user-bg: color-mix(in srgb, #8fae6a 14%, transparent);
+  --diff-template: #7f95ad; --diff-template-bg: color-mix(in srgb, #7f95ad 12%, transparent);
+  --alby: #ffdf6f; --alby-bright: #ffe98c; --alby-ink: #1c1400;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace;
+  --display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --serif: var(--sans);
+  --r-sm: 6px; --r-md: 10px; --r-pill: 999px; --radius: 6px;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --ground: #f5f0e4; --panel: #fffdf7; --panel-2: #ece4d2;
+    --line: #ddd2ba; --line-strong: #c8b89a; --field: #fffdf7;
+    --ink: #f5f0e4; --bg: #f5f0e4;
+    --text: #241d12; --dim: #6f6553; --faint: #8a7f66;
+    --accent: #8f6a2c; --accent-bright: #b0863c; --accent-ink: #fffdf7;
+    --good: #4f7a34; --warn: #9a6a12; --critical: #a2482f;
+    --ok: #4f7a34; --danger: #a2482f;
+    --diff-user: #4f7a34;     --diff-user-bg: #e9f0dd;
+    --diff-template: #48607a; --diff-template-bg: #e6ecf3;
+  }
+}
+:root[data-theme="light"] {
+  --ground: #f5f0e4; --panel: #fffdf7; --panel-2: #ece4d2;
+  --line: #ddd2ba; --line-strong: #c8b89a; --field: #fffdf7;
+  --ink: #f5f0e4; --bg: #f5f0e4;
+  --text: #241d12; --dim: #6f6553; --faint: #8a7f66;
+  --accent: #8f6a2c; --accent-bright: #b0863c; --accent-ink: #fffdf7;
+  --good: #4f7a34; --warn: #9a6a12; --critical: #a2482f;
+  --ok: #4f7a34; --danger: #a2482f;
+  --diff-user: #4f7a34;     --diff-user-bg: #e9f0dd;
+  --diff-template: #48607a; --diff-template-bg: #e6ecf3;
+}
+:root[data-theme="dark"] {
+  --ground: #0b0906; --panel: #14100a; --panel-2: #1b1409;
+  --line: #2a2317; --line-strong: #3a3020; --field: #0d0a06;
+  --ink: #0b0906; --bg: #0b0906;
+  --text: #f4efe4; --dim: #9c927f; --faint: #6f6555;
+  --accent: #c39a56; --accent-bright: #e2c079; --accent-ink: #0b0906;
+  --good: #8fae6a; --warn: #d9a648; --critical: #c0705a;
+  --ok: #8fae6a; --danger: #c0705a;
+  --diff-user: #8fae6a;     --diff-user-bg: color-mix(in srgb, #8fae6a 14%, transparent);
+  --diff-template: #7f95ad; --diff-template-bg: color-mix(in srgb, #7f95ad 12%, transparent);
+}
+/* ─── mockup chrome (not part of the design system) ───────────────────── */
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--text);font:15px/1.55 var(--sans)}
+.shell{display:grid;grid-template-columns:246px 1fr;min-height:100vh}
+.rail{background:var(--panel);border-right:1px solid var(--line);padding:16px 14px 40px;position:sticky;top:0;height:100vh;overflow:auto}
+.rail h1{font:600 15px var(--sans);margin:0 0 2px}
+.rail .sub{font:11px var(--mono);color:var(--faint);letter-spacing:.06em;margin:0 0 16px}
+.rail .grp{font:10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:16px 0 6px}
+.rail a{display:block;color:var(--dim);text-decoration:none;font-size:13px;padding:5px 8px;border-radius:var(--r-sm);border-left:2px solid transparent}
+.rail a:hover{color:var(--text);background:var(--panel-2)}
+.rail a.on{color:var(--accent-bright);background:var(--panel-2);border-left-color:var(--accent)}
+.themebtn{margin-top:20px;width:100%;background:transparent;color:var(--dim);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px;font:11px var(--mono);cursor:pointer}
+.themebtn:hover{color:var(--text);border-color:var(--line-strong)}
+main{padding:26px 30px 90px;max-width:1080px}
+.note-mock{background:var(--panel-2);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--r-sm);padding:11px 13px;font-size:13px;color:var(--dim);margin:0 0 22px}
+.note-mock b{color:var(--text)}
+section.screen{display:none}
+section.screen.on{display:block}
+h2.st{font:600 21px var(--display);margin:0 0 3px}
+.stsub{font:11px var(--mono);color:var(--faint);letter-spacing:.05em;margin:0 0 20px}
+/* ─── app surface primitives (what the real apps would ship) ─────────── */
+.app{background:var(--ground);border:1px solid var(--line-strong);border-radius:var(--r-md);overflow:hidden}
+.tb{display:flex;align-items:center;gap:11px;padding:11px 15px;background:var(--panel);border-bottom:1px solid var(--line)}
+.seal{width:26px;height:26px;border-radius:7px;background:var(--accent);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;font:700 13px var(--sans);flex:none}
+.tbname{font:600 15px var(--sans)}
+.tbtag{font:11px var(--mono);color:var(--faint);letter-spacing:.05em}
+.tbright{margin-left:auto;display:flex;align-items:center;gap:8px}
+.kind{font:10px var(--mono);letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line-strong);color:var(--dim);border-radius:var(--r-pill);padding:3px 8px}
+.npubpill{font:11px var(--mono);color:var(--dim);border:1px solid var(--line);border-radius:var(--r-pill);padding:3px 9px}
+.btn{background:transparent;border:1px solid var(--line-strong);color:var(--dim);border-radius:var(--r-sm);padding:5px 10px;font-size:12px;cursor:pointer;font-family:var(--sans)}
+.btn:hover{color:var(--text)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:650}
+.btn.dgr{border-color:var(--critical);color:var(--critical)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+/* plane switcher */
+.planes{display:flex;align-items:center;gap:7px;padding:8px 15px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.planes .lbl{font:10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.pl{font-size:12px;text-decoration:none;color:var(--dim);border:1px solid var(--line);border-radius:var(--r-pill);padding:3px 11px}
+.pl.here{color:var(--accent-bright);border-color:var(--accent);background:color-mix(in srgb, var(--accent) 12%, transparent)}
+.pl.nvoy:hover{color:#6fa8a0;border-color:#6fa8a0}
+.pl.nact:hover{color:#c98f4f;border-color:#c98f4f}
+.sep{width:1px;height:16px;background:var(--line);margin:0 4px}
+/* tabs (the proposed nave-tabs primitive) */
+.tabs{display:flex;gap:3px;padding:0 15px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tab{background:none;border:0;border-bottom:2px solid transparent;color:var(--dim);font:650 13px var(--sans);padding:9px 11px 8px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent-bright);border-bottom-color:var(--accent)}
+.tab .bdg{background:var(--accent);color:var(--accent-ink);border-radius:var(--r-pill);font:700 10px var(--mono);padding:1px 6px}
+.tab.div{border-left:1px solid var(--line);margin-left:7px;padding-left:14px;color:var(--faint)}
+.body{padding:17px 16px 20px}
+.status{font-size:12.5px;color:var(--dim);margin:0 0 16px}
+/* cards, rows */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:13px 14px;margin:0 0 11px}
+.card.acc{border-left:3px solid var(--accent)}
+.sect{font:10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:0 0 9px;display:flex;align-items:center;gap:9px}
+.sect .src{margin-left:auto;text-transform:none;letter-spacing:.02em;font-size:10.5px}
+.sect .src.ok{color:var(--good)}.sect .src.no{color:var(--warn)}
+.row{display:flex;align-items:center;gap:11px;padding:9px 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.row.click{cursor:pointer;border-radius:var(--r-sm);padding:9px 8px;margin:0 -8px}
+.row.click:hover{background:var(--panel-2)}
+.av{width:30px;height:30px;border-radius:8px;background:var(--panel-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font:600 12px var(--sans);color:var(--gold);flex:none}
+.av.q{color:var(--faint);border-style:dashed}
+.nm{font-weight:600;font-size:14px}
+.mono{font:11.5px var(--mono);color:var(--dim)}
+.grow{flex:1;min-width:0}
+.pill{font:10px var(--mono);letter-spacing:.06em;border-radius:var(--r-pill);padding:2px 8px;border:1px solid var(--line-strong);color:var(--dim);white-space:nowrap}
+.pill.g{color:var(--good);border-color:var(--good)}
+.pill.w{color:var(--warn);border-color:var(--warn)}
+.pill.c{color:var(--critical);border-color:var(--critical)}
+.pill.a{color:var(--accent-bright);border-color:var(--accent)}
+.pill.off{color:var(--faint);border-style:dashed}
+.warnrow{color:var(--warn);font-size:12px;display:flex;align-items:center;gap:6px;margin-top:4px}
+/* the three source states */
+.srcnote{background:var(--field);border:1px dashed var(--line-strong);border-radius:var(--r-sm);padding:10px 12px;font-size:12.5px;color:var(--dim)}
+.srcnote b{color:var(--text)}
+.empty{font-size:12.5px;color:var(--faint);padding:8px 0}
+/* mono well */
+.well{background:var(--field);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 11px;font:11.5px/1.5 var(--mono);color:var(--dim);overflow-x:auto;white-space:pre}
+/* ledger rail */
+.lg{display:grid;grid-template-columns:184px 1fr;gap:16px}
+.lgnav{font-size:12.5px}
+.lgh{font:10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:14px 0 5px}
+.lgh:first-child{margin-top:0}
+.lgnav label{display:flex;gap:7px;align-items:center;color:var(--dim);padding:2px 0;cursor:pointer}
+.lgnav label:hover{color:var(--text)}
+/* the routing ladder */
+.lane{border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 13px;margin:0 0 7px;background:var(--panel)}
+.lane .top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.lane .fill{font:12px var(--mono);letter-spacing:-1px;flex:none}
+.lane .lname{font-weight:650;font-size:13.5px}
+.lane .dest{color:var(--dim);font-size:12.5px}
+.lane .cnt{margin-left:auto;font:11px var(--mono);color:var(--dim)}
+.lane .why{font-size:12.5px;color:var(--dim);margin:5px 0 0}
+.lane .from{font:11px var(--mono);color:var(--faint);margin-top:5px}
+.lane.l1{border-left:3px solid var(--good)}
+.lane.l2{border-left:3px solid var(--good)}
+.lane.l3{border-left:3px solid var(--warn)}
+.lane.l4{border-left:3px solid var(--critical)}
+.lane.l5{border-left:3px solid var(--line-strong);opacity:.75}
+table.acl{width:100%;border-collapse:collapse;font-size:13px}
+table.acl th{text-align:left;font:10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--faint);padding:0 10px 7px 0;border-bottom:1px solid var(--line);font-weight:400}
+table.acl td{padding:9px 10px 9px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.fld{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center;margin:0 0 9px}
+.fld label{font:11px var(--mono);letter-spacing:.06em;color:var(--dim)}
+.fld .inp{background:var(--field);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;font:12.5px var(--mono);color:var(--faint)}
+.opt{display:flex;gap:9px;padding:7px 0;align-items:flex-start;font-size:13px}
+.opt .g{font:12px var(--mono);width:14px;flex:none;text-align:center}
+.opt .t{color:var(--text)}
+.opt .r{color:var(--dim);font-size:12.5px;margin-top:2px}
+.opt.dis .t{color:var(--faint)}
+.legend{font:11px var(--mono);color:var(--faint);margin-top:10px}
+</style></head><body>
+<div class="shell">
+<nav class="rail">
+  <h1>AD-12 mockups</h1>
+  <p class="sub">nave.pub#110 · proposed screens</p>
+
+  <div class="grp">Shared chrome</div>
+  <a href="#s-planes" data-s="s-planes">Plane switcher</a>
+
+  <div class="grp">Nvoy · what agents may see</div>
+  <a href="#s-nv-agents" data-s="s-nv-agents">Agents</a>
+  <a href="#s-nv-detail" data-s="s-nv-detail">Agent page ★</a>
+  <a href="#s-nv-req" data-s="s-nv-req">Requests</a>
+  <a href="#s-nv-ledger" data-s="s-nv-ledger">Ledger</a>
+
+  <div class="grp">Nact · what agents may do</div>
+  <a href="#s-na-queue" data-s="s-na-queue">Queue</a>
+  <a href="#s-na-agents" data-s="s-na-agents">Agents ★</a>
+  <a href="#s-na-actions" data-s="s-na-actions">Actions</a>
+  <a href="#s-na-add" data-s="s-na-add">Add agent</a>
+
+  <div class="grp">Slices</div>
+  <a href="#s-wg-routing" data-s="s-wg-routing">waggle · Routing ★</a>
+  <a href="#s-wg-access" data-s="s-wg-access">waggle · Access list</a>
+  <a href="#s-ng-pens" data-s="s-ng-pens">Ngage · Pens</a>
+
+  <button class="themebtn" id="tt">theme: dark ⇄ light</button>
+  <p class="sub" style="margin-top:14px">★ = new screen</p>
+</nav>
+
+<main>
+<div class="note-mock">
+  <b>Mockups, not builds.</b> Static HTML with the canonical tokens vendored verbatim, so light and
+  dark both render from the real palette. Every string here is either existing copy being promoted or
+  copy the spec proposes. Data is illustrative. Read alongside
+  <b>docs/AGENT-GOVERNANCE-REFACTOR.md</b> and <b>AD-12</b>.
+</div>
+
+<!-- ══════════════════════════ PLANE SWITCHER ══════════════════════════ -->
+<section class="screen on" id="s-planes">
+  <h2 class="st">Plane switcher — the shared titlebar, extended</h2>
+  <p class="stsub">renderTitlebar gains {planes, activePlane} · additive: absent the option, every app renders exactly as today</p>
+  <div class="app" style="--accent:#6fa8a0;--accent-bright:#8fc4bc">
+    <div class="tb">
+      <div class="seal">↗</div>
+      <div><div class="tbname">Nvoy</div><div class="tbtag">what your agents may see</div></div>
+      <div class="tbright"><span class="kind">bunker</span><span class="npubpill">npub1gqg2c…4tcgrg</span>
+        <button class="btn">Refresh</button><button class="btn">Sign out</button></div>
+    </div>
+    <div class="planes">
+      <span class="lbl">Planes</span>
+      <a class="pl here nvoy" href="#s-nv-agents" data-s="s-nv-agents">Nvoy · data</a>
+      <a class="pl nact" href="#s-na-queue" data-s="s-na-queue">Nact · action</a>
+      <span class="sep"></span>
+      <span class="lbl">Apps</span>
+      <a class="pl" href="#s-wg-routing" data-s="s-wg-routing">waggle</a>
+      <a class="pl" href="#s-ng-pens" data-s="s-ng-pens">Ngage</a>
+    </div>
+    <div class="body">
+      <p class="status">The taglines are the two verbs, in the Director's own words — so no new nouns
+        are coined (AD-8). <b>Nvoy: what your agents may see. Nact: what your agents may do.</b>
+        Hovering a destination previews its accent, so colour becomes wayfinding rather than decoration.
+        The app list is data-driven from <span class="mono">design/VENDOR.json</span>, so a new slice
+        appears in every switcher on the next deploy.</p>
+      <div class="card"><div class="sect">Badge law</div>
+        <p style="margin:0;font-size:13px;color:var(--dim)">A count badge means <b style="color:var(--text)">a human decision is
+        waiting</b>. Nothing else may carry one, fleet-wide — which gives exactly four in the estate:
+        Nvoy <span class="mono">Requests</span>, Nact <span class="mono">Queue</span>, Ngage
+        <span class="mono">Drafts</span>, waggle <span class="mono">Waiting for you</span>.</p></div>
+      <div class="card"><div class="sect">One deep link, four surfaces</div>
+        <div class="well">#agent/&lt;npub&gt;   → on a plane, opens the agent page
+              → on a slice, highlights that row and nothing more</div>
+        <p style="margin:9px 0 0;font-size:12.5px;color:var(--dim)">A slice never pretends to a full
+          agent view it cannot populate. Nact gains hash routing, which it has none of today.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ NVOY · AGENTS ══════════════════════════ -->
+<section class="screen" id="s-nv-agents">
+  <h2 class="st">Nvoy · Agents</h2>
+  <p class="stsub">five tabs become four · rows become clickable · the roster is a projection of the registry</p>
+  <div class="app" style="--accent:#6fa8a0;--accent-bright:#8fc4bc">
+    <div class="tb"><div class="seal">↗</div>
+      <div><div class="tbname">Nvoy</div><div class="tbtag">what your agents may see</div></div>
+      <div class="tbright"><span class="kind">bunker</span><span class="npubpill">npub1gqg2c…4tcgrg</span></div></div>
+    <div class="tabs">
+      <button class="tab active">Agents</button>
+      <button class="tab">Requests <span class="bdg">2</span></button>
+      <button class="tab">Ledger</button>
+      <button class="tab">Settings</button>
+    </div>
+    <div class="body">
+      <p class="status">4 agents · 6 active delegations · 2 pending access requests · 1 expired scope
+        rotated. Everything below derives from your encrypted Grant Index — sign in with this key
+        anywhere and it reconstitutes.</p>
+      <div class="card">
+        <div class="sect">Registered agents <span class="src ok">from your Grant Index · 4</span></div>
+        <div class="row click"><div class="av">J</div>
+          <div class="grow"><div class="nm">jafquill <span class="pill a">Ngage</span></div>
+            <div class="mono">npub1w8e5x…kk09 · drafts long-form; never posts</div></div>
+          <span class="pill">3 data · 1 action</span></div>
+        <div class="row click"><div class="av">B</div>
+          <div class="grow"><div class="nm">brain</div>
+            <div class="mono">npub1qh6y2…3xk2 · proposer; thinks, never acts</div></div>
+          <span class="pill">2 data</span></div>
+        <div class="row click"><div class="av">L</div>
+          <div class="grow"><div class="nm">luke</div>
+            <div class="mono">npub1f93kk…8m1p · posts as himself, box path</div></div>
+          <span class="pill">1 data · 1 action</span></div>
+        <div class="row click"><div class="av q">?</div>
+          <div class="grow"><div class="nm" style="color:var(--dim)">poller-3 <span class="pill off">unregistered</span></div>
+            <div class="mono">npub1t0p9m…4z8s</div>
+            <div class="warnrow">⚠ known only to Nact — a key slot exists on the box, no registry row here</div></div>
+          <button class="btn">Register…</button></div>
+      </div>
+      <div class="note-mock" style="margin:0"><b>The divergence is now a row, not an absence.</b>
+        That single row type is the whole answer to "some agents show in Nvoy that do not show in Nact."
+        Today the mismatch is a missing row, which is unobservable; made visible, it is a to-do.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ NVOY · AGENT PAGE ══════════════════════════ -->
+<section class="screen" id="s-nv-detail">
+  <h2 class="st">Nvoy · Agent page — the missing screen ★</h2>
+  <p class="stsub">nave-agent-detail.mjs · one component, mounted in both planes · every section source-stamped</p>
+  <div class="app" style="--accent:#6fa8a0;--accent-bright:#8fc4bc">
+    <div class="tb"><div class="seal">↗</div>
+      <div><div class="tbname">Nvoy</div><div class="tbtag">what your agents may see</div></div>
+      <div class="tbright"><span class="npubpill">#agent/npub1w8e5x…kk09</span></div></div>
+    <div class="body">
+      <button class="btn" style="margin-bottom:14px">← Agents</button>
+      <div class="card acc">
+        <div class="row" style="padding-top:0">
+          <div class="av" style="width:42px;height:42px;font-size:15px">J</div>
+          <div class="grow"><div class="nm" style="font-size:17px">jafquill
+              <span class="pill a">agent</span> <span class="pill">Ngage</span></div>
+            <div class="mono">npub1w8e5x…kk09 ⧉</div>
+            <div style="font-size:12.5px;color:var(--dim);margin-top:3px">“drafts long-form for JAF; never posts”
+              <span class="pill off" style="margin-left:5px">kind-0 · unverified hint</span></div></div>
+          <span class="mono">first seen 12 Mar</span></div>
+      </div>
+
+      <div class="card"><div class="sect">Key custody <span class="src no">Nact did not answer</span></div>
+        <div class="srcnote"><b>Nact did not answer.</b> Nothing is shown because nothing could be
+          verified — this is not the same as “no key.” <button class="btn" style="margin-left:6px">Open in Nact ↗</button></div></div>
+
+      <div class="card"><div class="sect">Approval path <span class="src ok">derived from custody</span></div>
+        <div class="row" style="padding-top:0"><div class="grow">
+          <div style="font-size:14px">Proposals go to → <b>your Ngage desk</b></div>
+          <div style="font-size:12.5px;color:var(--dim);margin-top:2px">You sign. No key for this agent
+            exists on the box, so no other path is possible — AD-10: the path is derived from custody,
+            never chosen.</div></div>
+          <button class="btn">Ngage ↗</button></div></div>
+
+      <div class="card"><div class="sect">Data granted <span class="src ok">from your Grant Index · 2</span></div>
+        <div class="row"><div class="grow"><div class="nm">🔑 house-style <span class="mono">v3</span></div>
+            <div style="font-size:12.5px;color:var(--dim)">“so it writes in my voice, not its own”</div>
+            <div style="margin-top:4px"><span class="pill">no_persist</span> <span class="pill">no redelegate</span> <span class="pill g">no expiry</span></div></div>
+          <button class="btn dgr">Revoke now</button></div>
+        <div class="row"><div class="grow"><div class="nm">📄 project-brief <span class="mono">v1</span></div>
+            <div style="margin-top:4px"><span class="pill">no_persist</span> <span class="pill w">expires in 6d 23h</span></div></div>
+          <button class="btn dgr">Revoke now</button></div>
+        <div style="margin-top:9px"><button class="btn">＋ Grant data…</button></div></div>
+
+      <div class="card"><div class="sect">Actions granted <span class="src ok">from your Grant Index · 1</span></div>
+        <div class="row" style="padding-top:0"><div class="grow">
+            <div class="nm">✋ Take tasks from you</div>
+            <div style="font-size:12.5px;color:var(--dim)">“draft, never post” · standing · rate 6/day ·
+              tier cap <b>low</b> · bound to the Ngage desk</div></div>
+          <button class="btn dgr">Revoke now</button></div>
+        <div style="margin-top:9px"><button class="btn">＋ Grant action… ↗ Nact</button></div>
+        <div class="legend">Durable action grants are issued and listed in Nact (AD-12); this plane shows them read-only.</div></div>
+
+      <div class="card"><div class="sect">Granted onward <span class="src ok">lineage · 1 child</span></div>
+        <div class="well">house-style v3
+  └─ derived:house-style/tone → npub1s3x7p…1q4d   active · expires 3d · purpose "tone only"</div>
+        <div class="legend">Attenuation, rendered for the first time — the backend has always recorded it.</div></div>
+
+      <div class="card"><div class="sect">Where it acts <span class="src ok">2 apps answered</span></div>
+        <div class="row" style="padding-top:0"><div class="grow"><b>Ngage</b>
+            <span style="color:var(--dim);font-size:12.5px">trusted pen · 4 drafts penned, 3 posted in your hand</span></div>
+          <button class="btn">Ngage ↗</button></div>
+        <div class="row"><div class="grow"><b>waggle</b>
+            <span style="color:var(--dim);font-size:12.5px">not admitted anywhere</span></div>
+          <button class="btn">waggle ↗</button></div></div>
+
+      <div class="card"><div class="sect">Running now <span class="src no">no runtime answered</span></div>
+        <div class="srcnote"><b>No runtime answered.</b> This agent may still hold live grants — the
+          grants above are what you issued, not proof that anything is listening.</div></div>
+
+      <div class="card"><div class="sect">Recent activity <span class="src no">2 sources answered · Nact did not</span></div>
+        <div class="row" style="padding-top:0"><span class="mono" style="width:74px;flex:none">2h ago</span>
+          <span class="pill">Ledger</span><div class="grow">house-style updated to v3</div></div>
+        <div class="row"><span class="mono" style="width:74px;flex:none">6h ago</span>
+          <span class="pill">Ngage</span><div class="grow">draft “the shape of a week” — posted in your hand</div></div>
+        <div class="srcnote" style="margin-top:9px">Nact History did not answer; this box's activity is not shown.</div></div>
+
+      <div style="display:flex;gap:9px;margin-top:14px">
+        <button class="btn dgr">Revoke everything…</button>
+        <button class="btn">Forget on this device</button></div>
+      <div class="note-mock" style="margin:14px 0 0"><b>Revoke everything… enumerates before it
+        confirms, and states its limits:</b> “This revokes 3 grants: house-style, project-brief,
+        ngage-desk. It does not rotate any key on the box, and it does not remove this agent from
+        waggle — waggle did not answer.” And <b>Forget on this device</b> is named local-only, because
+        it is — that is precisely where Nact's <span class="mono">Remove identity</span> lies today.</div>
+    </div>
+  </div>
+  <div class="note-mock" style="margin-top:18px"><b>The honesty contract is the load-bearing decision.</b>
+    This page assembles from up to six stores, most unreachable from any one plane. So every section
+    carries one of three states: <b>a count</b>, <b>an affirmative “nothing here”</b> (only when the
+    store answered), or <b>a skeleton with a reason</b>. Never a zero, never a blank — a zero is a lie
+    and a blank is a shrug. This makes AD-11's “disconnected means empty” a component rather than a
+    doctrine, which is the only way it holds across four apps.</div>
+</section>
+
+<!-- ══════════════════════════ NVOY · REQUESTS ══════════════════════════ -->
+<section class="screen" id="s-nv-req">
+  <h2 class="st">Nvoy · Requests</h2>
+  <p class="stsub">promoted from a buried card to a badged tab · gains waggle's anti-phishing pill</p>
+  <div class="app" style="--accent:#6fa8a0;--accent-bright:#8fc4bc">
+    <div class="tb"><div class="seal">↗</div>
+      <div><div class="tbname">Nvoy</div><div class="tbtag">what your agents may see</div></div></div>
+    <div class="tabs"><button class="tab">Agents</button>
+      <button class="tab active">Requests <span class="bdg">2</span></button>
+      <button class="tab">Ledger</button><button class="tab">Settings</button></div>
+    <div class="body">
+      <p class="status">Agents asking for a delegation. Approving opens the composer pre-filled — you
+        still choose the data and the terms. Denying dismisses the request on this device only; the
+        agent learns nothing.</p>
+      <div class="card">
+        <div class="row" style="padding-top:0"><div class="av">S</div>
+          <div class="grow"><div class="nm">scratch-pen <span class="mono">npub1s3x7p…1q4d</span>
+              <span class="mono">· 14 Mar 09:12</span></div>
+            <div style="font-size:12.5px;color:var(--dim)">wants <span class="mono">credential:anthropic</span> · value carried, encrypted to you</div>
+            <div style="font-size:13px;margin-top:3px">“Re-voice long-form drafts against the house brief.”</div></div>
+          <div style="display:flex;gap:7px"><button class="btn pri">Approve…</button><button class="btn">Deny</button></div></div>
+        <div class="row"><div class="av q">?</div>
+          <div class="grow"><div class="nm">unknown key <span class="mono">npub1zz40q…7h2m</span></div>
+            <div style="font-size:13px;margin-top:3px">“Please list me so you can keep us straight.”</div>
+            <div class="warnrow">⚠ asked by npub1abc93…2f0e, not the key being admitted</div></div>
+          <div style="display:flex;gap:7px"><button class="btn pri">Approve…</button><button class="btn">Deny</button></div></div>
+      </div>
+      <div class="note-mock" style="margin:0">The warning pill is promoted verbatim from waggle — the
+        single best anti-phishing control in the estate, which this console currently lacks. The
+        purpose line is <b>attacker-authored text</b> and is framed as such: read it before you decide,
+        and remember who wrote it.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ NVOY · LEDGER ══════════════════════════ -->
+<section class="screen" id="s-nv-ledger">
+  <h2 class="st">Nvoy · Ledger</h2>
+  <p class="stsub">rail sections named (dissolving the duplicate “Grantee”) · Type reads tags, not substrings</p>
+  <div class="app" style="--accent:#6fa8a0;--accent-bright:#8fc4bc">
+    <div class="tb"><div class="seal">↗</div>
+      <div><div class="tbname">Nvoy</div><div class="tbtag">what your agents may see</div></div></div>
+    <div class="tabs"><button class="tab">Agents</button><button class="tab">Requests <span class="bdg">2</span></button>
+      <button class="tab active">Ledger</button><button class="tab">Settings</button></div>
+    <div class="body">
+      <p class="status"><b>6</b> active grants to <b>3</b> agents and <b>2</b> other identities, <b>1</b> revoked this month</p>
+      <div class="srcnote" style="margin-bottom:14px">⚠ Hard expiry runs <b>while this console is
+        open</b>. Console closed = soft expiry only. To cover the gap without the browser, run the
+        operator daemon.</div>
+      <div class="lg">
+        <div class="lgnav">
+          <div class="lgh">Group by</div>
+          <label><input type="radio" checked> Grantee</label>
+          <label><input type="radio"> Credential</label>
+          <label><input type="radio"> Type</label>
+          <label><input type="radio"> Status</label>
+          <div class="lgh">Grantee</div>
+          <label><input type="checkbox" checked> jafquill</label>
+          <label><input type="checkbox" checked> brain</label>
+          <label><input type="checkbox"> luke</label>
+          <div class="lgh">Type</div>
+          <label><input type="checkbox" checked> data</label>
+          <label><input type="checkbox" checked> credential</label>
+          <label><input type="checkbox" checked> action</label>
+          <label><input type="checkbox" checked> admission</label>
+          <div class="lgh">Status</div>
+          <label><input type="checkbox" checked> active</label>
+          <label><input type="checkbox"> revoked</label>
+          <label><input type="checkbox"> expired</label>
+          <div class="lgh">Expiry</div>
+          <label><input type="checkbox"> under 24h</label>
+        </div>
+        <div>
+          <div style="display:flex;gap:8px;margin-bottom:11px;align-items:center">
+            <button class="btn pri">＋ New grant</button>
+            <button class="btn">Expand all</button><button class="btn">Collapse all</button>
+            <span class="mono" style="margin-left:auto">search scope / grantee / purpose / id…</span></div>
+          <div class="card">
+            <div class="sect">▾ Agents (3)</div>
+            <div class="row" style="padding-top:0"><div class="av">J</div>
+              <div class="grow"><b>jafquill</b> <span class="mono">npub1w8e5x…kk09</span>
+                <span class="mono"> · 4 grants · 4 active</span></div>
+              <span class="pill w">⚠ 1 expiring under 24h</span></div>
+            <div class="card" style="margin:9px 0 0;background:var(--panel-2)">
+              <div class="row" style="padding-top:0"><div class="grow">
+                <div class="nm">🔑 house-style <span class="pill g">active</span> <span class="mono">v3</span>
+                  <span class="pill">credential</span></div>
+                <div style="font-size:12.5px;color:var(--dim);margin-top:2px">granted to jafquill · npub1w8e5x…kk09</div>
+                <div style="font-size:13px;margin-top:3px">“so it writes in my voice, not its own”</div>
+                <div style="margin-top:5px"><span class="pill">no_persist</span> <span class="pill">no redelegate</span>
+                  <span class="pill w">expires in 19h</span></div>
+                <div class="mono" style="margin-top:6px">12 Mar 09:14 granted · 14 Mar 11:02 rotated v2 → v3</div></div>
+                <div style="display:flex;flex-direction:column;gap:6px"><button class="btn dgr">Revoke now</button>
+                  <button class="btn">＋ grant to another identity</button></div></div>
+            </div>
+            <div class="row"><div class="av">B</div><div class="grow"><b>brain</b>
+              <span class="mono">npub1qh6y2…3xk2 · 2 grants · 2 active</span></div><span class="mono">▸</span></div>
+          </div>
+          <div class="card"><div class="sect">▸ Other identities (2)</div>
+            <div class="empty">Collapsed by default. Auto-opens when it holds something that needs attention.</div></div>
+        </div>
+      </div>
+      <div class="note-mock" style="margin:16px 0 0"><b>The Type facet reads tags now.</b> Today it is
+        <span class="mono">n.includes('steer')</span> and <span class="mono">/nactjaf|approval/</span>
+        over a display string — a facet that greps a display name lies the moment someone renames an
+        agent, and it currently hardcodes one identity's name. Four real values replace it:
+        <span class="mono">data · credential · action · admission</span>, parsed from the AD-8
+        namespace, with <span class="mono">unnamespaced</span> as an honest bucket for legacy scopes
+        rather than a guess. Steering becomes a <b>data</b> grant with an app badge;
+        <span class="mono">external</span> disappears with the word.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ NACT · QUEUE ══════════════════════════ -->
+<section class="screen" id="s-na-queue">
+  <h2 class="st">Nact · Queue</h2>
+  <p class="stsub">two sections · <b>raised</b> finally rendered — a queue may show what it cannot sign</p>
+  <div class="app" style="--accent:#c98f4f;--accent-bright:#e0a765">
+    <div class="tb"><div class="seal">▣</div>
+      <div><div class="tbname">Nact</div><div class="tbtag">what your agents may do</div></div>
+      <div class="tbright"><span class="kind">bunker</span><span class="npubpill">npub1gqg2c…4tcgrg</span></div></div>
+    <div class="planes"><span class="lbl">Planes</span>
+      <a class="pl nvoy" href="#s-nv-agents" data-s="s-nv-agents">Nvoy · data</a>
+      <a class="pl here nact" href="#s-na-queue" data-s="s-na-queue">Nact · action</a>
+      <span class="sep"></span><span class="lbl">Apps</span>
+      <a class="pl" href="#s-wg-routing" data-s="s-wg-routing">waggle</a>
+      <a class="pl" href="#s-ng-pens" data-s="s-ng-pens">Ngage</a></div>
+    <div class="tabs">
+      <button class="tab active">Queue <span class="bdg">2</span></button>
+      <button class="tab">Agents</button><button class="tab">Actions</button>
+      <button class="tab">Routing</button><button class="tab">History</button>
+      <button class="tab div">Channels</button><button class="tab">Policy</button><button class="tab">Deployment</button>
+    </div>
+    <div class="body">
+      <div class="sect">Awaiting your key here <span class="src ok">2</span></div>
+      <div class="card">
+        <div class="row" style="padding-top:0"><div class="grow">
+          <div class="nm">Enact as nact_jaf <span class="pill w">elevated</span>
+            <span class="mono">npub1qh6y2…3xk2 ↗</span></div>
+          <div class="well" style="margin-top:8px">▸ reveal content
+id 4c19af…  — the exact bytes; re-checked before signing
+▸ context (not published)</div></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><button class="btn pri">✅ Approve &amp; enact</button>
+            <button class="btn">Reject</button></div></div>
+      </div>
+      <div class="card">
+        <div class="row" style="padding-top:0"><div class="grow">
+          <div class="nm">Enact as treasury <span class="pill c">critical</span>
+            <span class="mono">npub1t0p9m…4z8s ↗</span></div>
+          <div class="well" style="margin-top:8px">▸ reveal content
+id 9be302…  — the exact bytes; re-checked before signing
+requirement: sign-on-device</div></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><button class="btn pri">🔐 Sign in bunker</button>
+            <button class="btn">Reject</button><button class="btn">Open in sign ↗</button></div></div>
+      </div>
+
+      <div class="sect" style="margin-top:20px">On your Ngage desk <span class="src ok">1</span></div>
+      <div class="srcnote" style="margin-bottom:10px">Your key is not on this box for these. They wait
+        on the desk where your signer is — <b>Nact raised them and can show them, but cannot sign
+        them.</b></div>
+      <div class="card">
+        <div class="row" style="padding-top:0"><div class="grow">
+          <div class="nm">Raised as jafquill <span class="pill a">director-path</span>
+            <span class="mono">npub1w8e5x…kk09 ↗</span></div>
+          <div class="well" style="margin-top:8px">▸ reveal content
+id 7ad441…  — the exact bytes; Ngage re-checks before signing
+raised 14 Mar 11:02 · scope draft:post/9be302a1</div></div>
+          <button class="btn pri">Open on your Ngage desk ↗</button></div>
+      </div>
+      <div class="note-mock" style="margin:16px 0 0"><b>Today this data is fetched and thrown away.</b>
+        <span class="mono">/api/state</span> returns <span class="mono">raised</span>;
+        <span class="mono">app.html</span> never mentions the field, so every director-path proposal is
+        invisible in the plane whose entire purpose is proposals. AD-10 rightly forbids Nact from
+        <i>signing</i> them — and both constraints hold at once, because a queue may show what it
+        cannot sign as long as it says so and hands you the door.<br><br>
+        <b>The divider in the tab bar is not cosmetic.</b> It encodes that five of these screens answer
+        questions about agents and three answer questions about a machine — and the machine questions
+        get asked once a month.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ NACT · AGENTS ══════════════════════════ -->
+<section class="screen" id="s-na-agents">
+  <h2 class="st">Nact · Agents ★</h2>
+  <p class="stsub">same component as Nvoy's roster, third column differs · keyed by pubkey, not by env-var name</p>
+  <div class="app" style="--accent:#c98f4f;--accent-bright:#e0a765">
+    <div class="tb"><div class="seal">▣</div>
+      <div><div class="tbname">Nact</div><div class="tbtag">what your agents may do</div></div></div>
+    <div class="tabs"><button class="tab">Queue <span class="bdg">2</span></button>
+      <button class="tab active">Agents</button><button class="tab">Actions</button>
+      <button class="tab">Routing</button><button class="tab">History</button>
+      <button class="tab div">Channels</button><button class="tab">Policy</button><button class="tab">Deployment</button></div>
+    <div class="body">
+      <div class="card">
+        <div class="sect">Agents <span class="src ok">from the registry · 4</span></div>
+        <div class="row click" style="padding-top:0"><div class="av">L</div>
+          <div class="grow"><div class="nm">luke</div><div class="mono">npub1f93kk…8m1p</div></div>
+          <span class="pill">custodial</span><span class="pill g">activated</span></div>
+        <div class="row click"><div class="av">B</div>
+          <div class="grow"><div class="nm">brain</div><div class="mono">npub1qh6y2…3xk2</div></div>
+          <span class="pill">custodial</span><span class="pill g">activated</span></div>
+        <div class="row click"><div class="av">J</div>
+          <div class="grow"><div class="nm">jafquill</div><div class="mono">npub1w8e5x…kk09</div></div>
+          <span class="pill a">Ngage desk</span><span class="pill">keyless</span></div>
+        <div class="row"><div class="av q">◌</div>
+          <div class="grow"><div class="nm" style="color:var(--dim)">jaf-scribe <span class="pill off">unregistered key on box</span></div>
+            <div class="mono">JAFSCRIBE_NSEC → npub1s3x7p…1q4d</div>
+            <div class="warnrow">⚠ a key slot exists here, but no registry row — so it cannot be bound to an approval path</div></div>
+          <button class="btn">Register in Nvoy ↗</button></div>
+      </div>
+      <div class="note-mock" style="margin:0"><b>This screen is where the reported symptom dies.</b>
+        Nvoy keys on a pubkey; Nact keys on the lowercased name of the env var holding the secret
+        (<span class="mono">JAFSCRIBE_NSEC → jafscribe</span>), and no code performs a join.
+        <span class="mono">HANDLE_OVERRIDES = { nactjaf: 'nact_jaf@nave.pub' }</span> exists solely to
+        paper over that for one identity, by hand — and is deleted here.
+        <br><br>Once both surfaces render the same registry, a disagreement becomes a
+        <b>row</b>, and an on-box key with no registry row is shown honestly rather than promoted to a
+        first-class agent. Degrading rule: with no registry grant, fall back to env names and label
+        every row <span class="mono">unregistered</span> — <b>degraded and honest, never fabricated</b>.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ NACT · ACTIONS ══════════════════════════ -->
+<section class="screen" id="s-na-actions">
+  <h2 class="st">Nact · Actions</h2>
+  <p class="stsub">new · receives Nvoy's dead “Authority” composer · <b>list first, composer second</b></p>
+  <div class="app" style="--accent:#c98f4f;--accent-bright:#e0a765">
+    <div class="tb"><div class="seal">▣</div>
+      <div><div class="tbname">Nact</div><div class="tbtag">what your agents may do</div></div></div>
+    <div class="tabs"><button class="tab">Queue <span class="bdg">2</span></button>
+      <button class="tab">Agents</button><button class="tab active">Actions</button>
+      <button class="tab">Routing</button><button class="tab">History</button>
+      <button class="tab div">Channels</button><button class="tab">Policy</button><button class="tab">Deployment</button></div>
+    <div class="body">
+      <p class="status">Standing authority to <b>propose</b> — never to sign. Every row is narrow,
+        expiring, rate-limited and revocable.</p>
+      <div class="card">
+        <div class="sect">Live action grants <span class="src ok">read back from relays · 3</span></div>
+        <table class="acl"><thead><tr><th>Who</th><th>Status</th><th>What they can do</th><th>Scope</th><th>Expires</th><th>Rate</th><th></th></tr></thead><tbody>
+          <tr><td><b>jafquill</b><br><span class="mono">npub1w8e5x…kk09</span></td>
+            <td><span class="pill g">Active</span></td><td>Take tasks from you<br><span class="mono">tier cap: low</span></td>
+            <td><span class="pill off">Hidden</span></td><td>in 12d</td><td><span class="mono">4 / 6 today</span></td>
+            <td><button class="btn dgr">Revoke</button></td></tr>
+          <tr><td><b>brain</b><br><span class="mono">npub1qh6y2…3xk2</span></td>
+            <td><span class="pill g">Active</span></td><td>Take tasks, and act on them<br><span class="mono">tier cap: elevated</span></td>
+            <td><span class="pill off">Hidden</span></td><td><span class="pill w">in 19h</span></td><td><span class="mono">0 / 20 today</span></td>
+            <td><button class="btn dgr">Revoke</button></td></tr>
+          <tr><td><b>waggle bridge</b><br><span class="mono">npub18475c…86e6</span></td>
+            <td><span class="pill c">Removed</span></td><td>Task relay carrier<br><span class="mono">transport, never the author</span></td>
+            <td><span class="pill off">Hidden</span></td><td>—</td><td>—</td><td></td></tr>
+        </tbody></table>
+      </div>
+      <div class="card"><div class="sect">Give standing authority</div>
+        <div class="fld"><label>May task</label><div class="inp">npub or 64-character public key</div></div>
+        <div class="fld"><label>Agent</label><div class="inp">agent npub or public key</div></div>
+        <div class="fld"><label>Can do</label><div class="inp">Task — wake and reply ▾</div></div>
+        <div class="fld"><label>Tier cap</label><div class="inp">low — one-tap approve ▾</div></div>
+        <div class="fld"><label>Expires</label><div class="inp">2026-08-19 09:00</div></div>
+        <div class="fld"><label>Rate limit</label><div class="inp">6 per day</div></div>
+        <div class="fld"><label>Approval path</label><div class="inp">derived from custody — box gate (Nactor signs)</div></div>
+        <button class="btn pri">Review and sign authority</button>
+        <div class="legend">The agent identity is bound into a salted scope hash, so this approval cannot
+          be replayed to a different agent. Your signer creates the authority; this page never receives
+          an nsec. Nothing is claimed active until it is read back from a relay.</div></div>
+      <div class="note-mock" style="margin:0"><b>The envelope is mandatory, and that is the doctrine
+        amendment made concrete.</b> A durable grant <i>cannot</i> authorize a signature — WYSIWYS binds
+        to a fingerprint over bytes that do not exist at issuance — so it can only ever confer queue
+        entry plus the gate tier. Hence tier cap, expiry, rate limit and exactly one bound path, all
+        refused if absent: <b>no standing authority to sign; standing authority to propose.</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ NACT · ADD AGENT ══════════════════════════ -->
+<section class="screen" id="s-na-add">
+  <h2 class="st">Nact · ＋ Add agent</h2>
+  <p class="stsub">stops fabricating identities · availability glyphs reuse the routing board's own legend</p>
+  <div class="app" style="--accent:#c98f4f;--accent-bright:#e0a765">
+    <div class="tb"><div class="seal">▣</div>
+      <div><div class="tbname">Nact</div><div class="tbtag">what your agents may do</div></div></div>
+    <div class="body">
+      <div class="card">
+        <div class="sect">＋ Add agent</div>
+        <div class="fld"><label>Name</label><div class="inp">the key slot on the box, e.g. JAFSCRIBE_NSEC</div></div>
+        <div class="sect" style="margin-top:14px">Signer</div>
+        <div class="opt"><span class="g">○</span><div><div class="t">Director-path (Ngage) — you approve &amp; sign; no key on the box</div>
+          <div class="r">Registers by npub. Available now.</div></div></div>
+        <div class="opt"><span class="g">◌</span><div><div class="t">NIP-46 bunker — key stays on your device</div>
+          <div class="r">Paste a bunker URI. <b>Nothing is created here until the box confirms.</b></div>
+          <div class="inp" style="margin-top:6px;max-width:420px">bunker://…</div></div></div>
+        <div class="opt dis"><span class="g">✕</span><div><div class="t">custodial — key generated on the box (SOPS)</div>
+          <div class="r"><b>Not provisionable from this console.</b> Add the key slot on the box and this
+            agent appears here on the next refresh.</div></div></div>
+        <div style="margin-top:12px"><button class="btn pri">Add agent</button></div>
+        <div class="legend">✓ wired &amp; live · ✕ severed · ◌ configured but not honored · ○ not wired · · wrong path</div>
+      </div>
+      <div class="note-mock" style="margin:0"><b>Today two of these three options fabricate an
+        identity</b> — they generate a random <span class="mono">npub1…</span>, push it into local JS
+        state, and never call the API, while the runtime's own README admits V1 cannot provision a
+        custodial key. AD-11 names the rule that breaks: <i>a control plane never renders fabricated
+        approvals as if real.</i>
+        <br><br>The glyphs are the routing board's own legend, reused — the Director has already been
+        taught that <span class="mono">◌</span> means “recorded, not honored,” so spending that
+        vocabulary here is free and exactly correct. And a greyed option with a reason <b>teaches</b>;
+        a missing option confuses.
+        <br><br>Two sibling buttons get the same treatment: <span class="mono">Remove identity</span> →
+        <b>Forget on this device</b> (it was always local-only), and
+        <span class="mono">Revoke authority (rotate key)</span> → <b>disabled</b>, with the path that
+        actually works today: revoke the agent's grants in the Nvoy Ledger.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ WAGGLE · ROUTING ══════════════════════════ -->
+<section class="screen" id="s-wg-routing">
+  <h2 class="st">waggle · Routing ★</h2>
+  <p class="stsub">a ladder, not a graph · lane labels imported from the module that classifies</p>
+  <div class="app" style="--accent:#cf8a2e;--accent-bright:#e8a545">
+    <div class="tb"><div class="seal">≋</div>
+      <div><div class="tbname">waggle console</div><div class="tbtag">who has access to your community</div></div></div>
+    <div class="tabs"><button class="tab">Access</button><button class="tab">Following</button>
+      <button class="tab">Config</button><button class="tab active">Routing</button><button class="tab">Setup</button></div>
+    <div class="body">
+      <h3 style="font:600 16px var(--sans);margin:0 0 4px">How this community treats what arrives</h3>
+      <p class="status">Every note that reaches this bridge lands in exactly one lane below. The lane is
+        decided by trust, not by content. Read top to bottom: the higher the lane, the less it is
+        questioned.<br><span class="mono">Verified signed state from 14 Mar 11:38 · 4/5 relays answered</span></p>
+
+      <div class="lane l1"><div class="top"><span class="fill">▓▓</span><span class="lname">mirrored feed</span>
+        <span class="dest">straight to the channel</span><span class="cnt">(3)</span></div>
+        <p class="why">Authors you chose to mirror. Not questioned.</p>
+        <div class="from">from the signed follow list · npub1abc93…2f0e <span class="pill g">consent active</span>
+          npub1def41…7c1a <span class="pill g">consent active</span> npub1ghi77…0b3e <span class="pill w">asked</span></div></div>
+
+      <div class="lane l2"><div class="top"><span class="fill">▓▓</span><span class="lname">granted participant</span>
+        <span class="dest">straight to the channel · + live @mentions</span><span class="cnt">(2)</span></div>
+        <p class="why">Holds an admission you signed. Revocable by you, any time.</p>
+        <div class="from">from a 440 you signed · npub1w8e5x…kk09 ⧉ · npub1qh6y2…3xk2 ⧉
+          <span class="pill">Post into the channel</span></div></div>
+
+      <div class="lane l3"><div class="top"><span class="fill">▒▒</span><span class="lname">standing follow</span>
+        <span class="dest">no queue</span><span class="cnt">(1)</span></div>
+        <p class="why">Vouched to reply without review. Cannot start a thread.</p>
+        <div class="from">count only — membership is not in signed state <span class="pill off">1 trusted replier</span></div></div>
+
+      <div class="lane l4"><div class="top"><span class="fill">░░</span><span class="lname">reply to our note</span>
+        <span class="dest">quarantine — held for you</span><span class="cnt">(4)</span></div>
+        <p class="why">A stranger replying to something of ours. Nobody sees it until you do.</p>
+        <div class="from">anyone · 4 held → <button class="btn">Review quarantine</button></div></div>
+
+      <div class="lane l5"><div class="top"><span class="fill">··</span><span class="lname">no match</span>
+        <span class="dest">dropped, silently</span><span class="cnt">(—)</span></div>
+        <p class="why">Not mirrored, not admitted, not vouched, not a reply to us. It never reaches the
+          channel and is not held for review. <b>Nothing is counted here — a drop leaves no record by
+          design.</b></p></div>
+
+      <div class="card" style="margin-top:16px"><div class="sect">Moving someone up a lane</div>
+        <div class="well">quarantined → granted participant    Admit them. You sign a 440.
+quarantined → standing follow        Vouch for them. You sign a signed owner command.
+any lane    → dropped                Revoke. You sign a 441.</div></div>
+
+      <div class="srcnote" style="margin-top:12px">⚠ <b>Consent gate is OFF.</b> Mirrored feeds and
+        stranger replies are not consent-checked. Turning it on changes which notes forward.</div>
+      <div class="srcnote" style="margin-top:8px"><b>Two facts this panel cannot yet state honestly.</b>
+        Membership for the middle three lanes is not in signed state — only counts are. And with no
+        staging channel configured, quarantine <i>holds</i> rather than delivers, and nothing published
+        says which. Four new public-safe fields close both.</div>
+
+      <div class="note-mock" style="margin:16px 0 0"><b>A ladder, not a graph.</b> The lanes are ordered
+        by trust, and the interesting facts are which lane someone is in and what moves them up — a
+        node-and-edge diagram would show topology instead. Two rules govern it: <b>a visualization must
+        import the thing it visualizes</b> (the lane labels come from the module that classifies,
+        exported the way the risk-tier spec is already shared between runtime, console and signing
+        page), and <b><span class="mono">(—)</span>, never <span class="mono">(0)</span></b> — a silent
+        drop leaves no record, so a zero would claim knowledge of an unrecorded event. Fill weight
+        carries the gradient so it survives greyscale and the light theme.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ WAGGLE · ACCESS LIST ══════════════════════════ -->
+<section class="screen" id="s-wg-access">
+  <h2 class="st">waggle · Access list</h2>
+  <p class="stsub">unchanged columns · gains the mirror pill, so an approval is no longer invisible in the grant plane</p>
+  <div class="app" style="--accent:#cf8a2e;--accent-bright:#e8a545">
+    <div class="tb"><div class="seal">≋</div>
+      <div><div class="tbname">waggle console</div><div class="tbtag">who has access to your community</div></div></div>
+    <div class="tabs"><button class="tab active">Access</button><button class="tab">Following</button>
+      <button class="tab">Config</button><button class="tab">Routing</button><button class="tab">Setup</button></div>
+    <div class="body">
+      <p class="status">2 live · 1 revoked · 4/4 relays answered</p>
+      <div class="card"><div class="sect">Access list</div>
+        <table class="acl"><thead><tr><th>Who</th><th>Status</th><th>What they can do</th><th>Where</th><th>Given</th><th>Record</th><th></th></tr></thead><tbody>
+          <tr><td><b>npub1w8e5x…kk09</b> ⧉<div class="pill g" style="display:inline-block;margin-top:4px">· recorded in Nvoy</div></td>
+            <td><span class="pill g">Active</span></td><td>Post into the channel</td>
+            <td><span class="pill off">Hidden</span></td><td>14 Mar</td><td class="mono">note1a9f…4c2e</td>
+            <td><button class="btn dgr">Revoke</button></td></tr>
+          <tr><td><b>npub1s3x7p…1q4d</b> ⧉<div class="pill w" style="display:inline-block;margin-top:4px">· ⚠ not recorded in Nvoy</div>
+              <div style="margin-top:4px"><button class="btn">Retry mirror</button></div></td>
+            <td><span class="pill g">Active</span></td><td>Take tasks, and act on them</td>
+            <td><span class="pill off">Hidden</span></td><td>02 Apr</td><td class="mono">note1b71…9d0f</td>
+            <td><button class="btn dgr">Revoke</button></td></tr>
+          <tr><td><b>npub1zz40q…7h2m</b> ⧉</td><td><span class="pill c">Removed</span></td>
+            <td>Post into the channel</td><td><span class="pill off">Hidden</span></td><td>28 Feb</td>
+            <td class="mono">note1c02…1a5b</td><td></td></tr>
+        </tbody></table>
+      </div>
+      <div class="card"><div class="sect">Why “Where” often says Hidden.</div>
+        <p style="margin:0;font-size:13px;color:var(--dim)">This approval names its channel as a salted
+          hash, so a passer-by cannot tell which one it is. Enter the channel above and it will resolve.
+          <b>Kept verbatim — the model for privacy-by-construction disclosure.</b></p></div>
+      <div class="note-mock" style="margin:0"><b>The mirror pill is the one pattern the whole estate
+        adopts.</b> Ngage invented it and it is the only cross-plane mirror that exists today. Every
+        write that should appear in a plane says, in words, on the row, whether it did — and offers a
+        retry when it did not. Here it closes a real gap: an admission currently publishes a public 440
+        and nothing else, so it is invisible in Nvoy. It also closes waggle's own spec, which requires
+        the index and never writes it — leaving the S2 rekey path with no roster to read.
+        <br><br>And the tally line's saddest fragment becomes an exit:
+        <span class="mono">3 for Nvoy (no channel named) → [Open in Nvoy ↗]</span>. Counting what you
+        cannot act on is honest; linking to who can is kind.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ NGAGE · PENS ══════════════════════════ -->
+<section class="screen" id="s-ng-pens">
+  <h2 class="st">Ngage · Pens</h2>
+  <p class="stsub">promoted out of Settings — “who may write in my name” is a roster, not a setting</p>
+  <div class="app" style="--accent:#b8874f;--accent-bright:#d1a068">
+    <div class="tb"><div class="seal">✒</div>
+      <div><div class="tbname">Ngage</div><div class="tbtag">the posting desk</div></div></div>
+    <div class="tabs"><button class="tab">Drafts <span class="bdg">1</span></button>
+      <button class="tab active">Pens</button><button class="tab">Steering</button><button class="tab">Relays</button></div>
+    <div class="body">
+      <h3 style="font:600 16px var(--sans);margin:0 0 4px">The pens</h3>
+      <p class="status">Agents that may draft in your name. <b>None of them can post</b> — posting is
+        your hand, always.<br><span class="mono">from your relays · 3/4 answered</span></p>
+      <div class="card">
+        <table class="acl"><thead><tr><th>Who</th><th>Status</th><th>What they can do</th><th>Where</th><th>Given</th><th>Record</th><th></th></tr></thead><tbody>
+          <tr><td><b>jafquill</b><br><span class="mono">npub1w8e5x…kk09</span>
+              <div class="pill g" style="display:inline-block;margin-top:4px">· recorded in Nvoy</div></td>
+            <td><span class="pill g">Active</span></td><td>Draft for your hand</td><td>this desk</td>
+            <td>12 Mar</td><td class="mono">note1a9f…4c2e</td><td><button class="btn dgr">Revoke</button></td></tr>
+          <tr><td><b>scratch-pen</b><br><span class="mono">npub1s3x7p…1q4d</span>
+              <div class="pill w" style="display:inline-block;margin-top:4px">· ⚠ not recorded in Nvoy (retry to mirror it)</div>
+              <div style="margin-top:4px"><button class="btn">Retry mirror</button></div></td>
+            <td><span class="pill g">Active</span></td><td>Draft for your hand</td><td>this desk</td>
+            <td>02 Apr</td><td class="mono">note1b71…9d0f</td><td><button class="btn dgr">Revoke</button></td></tr>
+        </tbody></table>
+      </div>
+      <div class="card"><div class="sect">Coordinators — delivery only, never steered</div>
+        <table class="acl"><tbody>
+          <tr><td><b>nactor</b><br><span class="mono">npub1c00d4…4dd1</span></td>
+            <td><span class="pill g">Active</span></td><td>Carry notes to relays</td><td>—</td><td>02 Apr</td>
+            <td class="mono">—</td><td><button class="btn dgr">Revoke</button></td></tr>
+        </tbody></table>
+        <div class="legend">A coordinator is a courier — admitted, never steered. Steering is sealed to pens only.</div></div>
+      <div class="card"><div class="sect">What this desk never does</div>
+        <p style="margin:0;font-size:13px;color:var(--dim)">It never holds your key. It never posts.
+          It never shows you words that were not signed by a pen you trust. <b>A required slot in every
+          slice.</b></p></div>
+      <div class="note-mock" style="margin:0"><b>The structural fix behind this screen:</b> inbound
+        <span class="mono">draft:</span> grants — every draft an agent grants the Director — are
+        recorded <b>only in localStorage</b> today, so half of this plane is invisible in the grant
+        console by construction. That is exactly why the honest
+        <span class="mono">· ⚠ not recorded in Nvoy</span> pill was doing so much work. Write the index
+        row on consume, and <b>keep the pill</b> — it is the mechanism that made this discoverable, and
+        it is now the estate-wide convention.
+        <br><br>On type: chrome converts to <span class="mono">--sans</span>, but the draft body keeps
+        its serif under the one named exception, <b>the signed artifact</b> — the note body <i>is</i>
+        the thing being signed and must not look like chrome.</div>
+    </div>
+  </div>
+</section>
+
+</main></div>
+<script>
+const screens = [...document.querySelectorAll('section.screen')];
+const links = [...document.querySelectorAll('[data-s]')];
+function show(id){
+  if(!screens.some(s=>s.id===id)) id = screens[0].id;
+  screens.forEach(s=>s.classList.toggle('on', s.id===id));
+  document.querySelectorAll('.rail a').forEach(a=>a.classList.toggle('on', a.dataset.s===id));
+  window.scrollTo(0,0);
+}
+links.forEach(a=>a.addEventListener('click',e=>{e.preventDefault();location.hash=a.dataset.s;show(a.dataset.s)}));
+addEventListener('hashchange',()=>show(location.hash.slice(1)));
+show(location.hash.slice(1) || screens[0].id);
+const root=document.documentElement, tt=document.getElementById('tt');
+const start = matchMedia('(prefers-color-scheme: light)').matches ? 'light':'dark';
+root.setAttribute('data-theme', start);
+tt.textContent = 'theme: ' + start + ' — click to switch';
+tt.addEventListener('click',()=>{
+  const next = root.getAttribute('data-theme')==='dark' ? 'light':'dark';
+  root.setAttribute('data-theme', next);
+  tt.textContent = 'theme: ' + next + ' — click to switch';
+});
+</script>
+</body></html>
