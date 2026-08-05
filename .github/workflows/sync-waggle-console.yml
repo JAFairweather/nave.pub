@@ -18,13 +18,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Pull and verify Waggle console
+        id: sync1
+        continue-on-error: true
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script_stop: true
-          script: |
+          script: &sync_script |
             set -eu
             if [ -f /root/nave.pub/deploy/.flipped ]; then ROOT=/root/nave.pub; else ROOT=/root/noir; fi
             SITE="$ROOT/deploy/sites/waggle"
@@ -45,3 +47,20 @@ jobs:
               https://waggle.nave.pub/console/config.html > "$TMP"
             cmp -s "$SITE/console/config.html" "$TMP"
             echo "waggle console live at $(git -C "$SITE" rev-parse HEAD)"
+
+      # GitHub-hosted runners intermittently time out opening port 22 to the healthy Nave host.
+      # This is the same bounded retry used by ops.yml: retry transport failure, while the remote
+      # operation itself stays idempotent and its verification still fails the job.
+      - name: Cooldown before SSH retry
+        if: steps.sync1.outcome == 'failure'
+        run: sleep 90
+
+      - name: Pull and verify Waggle console (retry after i/o timeout)
+        if: steps.sync1.outcome == 'failure'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: *sync_script
