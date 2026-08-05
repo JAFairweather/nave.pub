@@ -308,4 +308,12 @@ if (flag('--write-report')) {
   console.log('\n  wrote design/DRIFT.md')
 }
 
+// The completion sentinel. A caller cannot tell "the detector ran and found divergence" from "the
+// detector never started" by exit code alone — a missing interpreter exits 127, a failed image pull
+// exits 125, and both look like a nonzero verdict. On 2026-08-05 the deploy gate reported
+// "DIVERGENCE FOUND" for a run that died at `node: command not found`, which is the precise
+// inversion this estate refuses: being unable to check is not a check result. So the detector states
+// that it reached the end, and callers MUST require this line before believing any verdict. Its
+// absence means UNVERIFIED — never clean, and never diverged.
+console.log(`nave-drift: complete — ${rows.length} artifact(s) checked, verdict ${forks || gone ? 'diverged' : 'ok'}`)
 process.exit(forks || gone ? 1 : 0)
