@@ -64,6 +64,20 @@ This dissolved the overloaded-agent condition: Luke had been drafting as
 Drafting-for-the-Director is now **Quill's job** (AD-10, quill.md §9); Luke's
 charter already said "never speak as him or post for him."
 
+**A third transport state — `ungoverned` (AD-12).** A path has two values and a
+transport has three, not two. Beyond *wired* and *not wired* there is a transport the
+control plane **displays but the runtime does not consume** — today, the Telegram
+approval lane, where Nactor's only approval adapter is the web queue. The routing
+board is already honest about it in prose ("wiring this cell records intent, but
+changes nothing at runtime"), and AD-12 gives it a name so it cannot regress into
+rendering as wired. The rule: **a transport with no consumer is `ungoverned`, and a
+surface may never present it as an approval route.** This is nact#46 made
+unrepresentable rather than merely corrected.
+
+Note for readers coming from the `nact` repo: AD-10 is implemented there
+(`lib/routing.mjs`, `lib/routing.test.mjs`) but documented only *here*. The code is
+the better guide to the mechanics; this section is the better guide to why.
+
 ## 3 · The director path, end to end (the shipped pipeline)
 
 ```mermaid

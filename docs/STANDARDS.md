@@ -131,11 +131,44 @@ project, **in a single PR**:
 
 ## 7. Architecture rulings
 
-The binding design decisions are **AD-1…11** in `nave-architecture-decisions.md` —
+The binding design decisions are **AD-1…12** in `nave-architecture-decisions.md` —
 read them there; the newest carry equal weight to the thesis: **AD-9** (voice is
 evidence, per identity — real writing only, never AI-assisted output), **AD-10**
 (approval happens where the signing key lives), **AD-11** (one sign-in,
-promote-don't-level).
+promote-don't-level), **AD-12** (one agent, two planes, N slices).
+**Note AD-7 appears first in that file, before AD-1** — do not scan it by position.
+
+**The names are normative too.** `docs/architecture/06-glossary.md` is the
+vocabulary of record — one line per name. Use its words; do not coin synonyms for
+concepts it already covers (AD-8: *new synonyms fragment vocabulary the docs already
+rely on*). If a new name is genuinely needed, it lands in the glossary and the ADR
+log **in the same PR that introduces it.**
+
+## 7a. Design system
+
+`design/tokens.css` is the source of truth and `design/DESIGN.md` is the reference.
+Both are **normative** — this section exists because they previously were not cited
+anywhere, and the fleet drifted.
+
+- **Apps vendor (inline) the system; they never fetch it and there is no npm
+  package.** Every app is a no-build static client. Override only `--accent`,
+  `--accent-bright`, `--accent-ink`.
+- **Never re-vendor and re-selector in one commit.** Land the re-vendor with a
+  transitional alias (e.g. `--panel2: var(--panel-2)`), remove the alias a deploy
+  later. A token change that also moves markup is unreviewable.
+- **A shared component is promoted, never forked** (AD-11). If an app needs
+  different behaviour, change the shared component and re-vendor — a local edit to a
+  vendored file is drift, and `bin/nave-drift` reports it as `modified locally`.
+- **Vendored copies carry a hash provenance stamp**, and `design/VENDOR.json` is the
+  manifest. A prose stamp goes stale silently; a hash does not.
+- **Colour that encodes risk is shared like the risk spec it renders.** Nact's
+  ceremony spec is shared between its runtime, its console and its signing page *so
+  a signing surface can never show a softer picture than the review console* — the
+  same reasoning binds the tier colours. A softer colour is a softer picture.
+- **A count badge means a human decision is waiting.** Nothing else carries one.
+- **Disconnected means empty** (AD-11): a control plane never renders a fabricated
+  identity, approval or count as if real. Prefer an affirmative "did not answer,
+  so nothing is shown — this is not the same as nothing existing" over a zero.
 
 ## 8. Voice & posting
 
@@ -164,5 +197,5 @@ the stale local `main` that made a grep lie (→ "`git fetch` first"); the two-Q
 
 `HANDOFF.md` §Hard constraints + §Conventions · `PROJECTS.md` §Adding a project ·
 `IDENTITY-REGISTRY.md` §Custody map / §Bitwarden / §Convention going forward ·
-`NOPS.md` · `nave-architecture-decisions.md` (AD-1…11) · `SIDE-QUESTS.md` ·
+`NOPS.md` · `nave-architecture-decisions.md` (AD-1…12) · `SIDE-QUESTS.md` ·
 `nact/CONTRIBUTING.md` (repo-level). Deep narrative: `INVENTORY.md`, `JOURNEY.md`.

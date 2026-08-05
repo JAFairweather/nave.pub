@@ -31,6 +31,14 @@ Sans-serif throughout. `--sans` (system proportional) for wordmarks, UI, and
 prose; `--mono` (a clean sans monospace — SF Mono / Menlo, **not** Courier)
 only for keys, npubs, and code.
 
+**One named exception: the signed artifact.** Where a surface shows the *thing the
+Director is about to sign* — Ngage's draft body, Nact's proposal body on the signing
+page — that body may use `--serif`. The artifact must not look like chrome: the
+reader has to be able to tell, at a glance, which words are the app talking and
+which words will carry their signature. Everything around it (nav, buttons, labels,
+pills, metadata) stays `--sans`. The exception covers the artifact only, and it is
+never a licence for a serif UI.
+
 ## Components (`components/`)
 
 - **The seal** — each app's glyph on an ink rounded square in its accent.

@@ -352,6 +352,195 @@ cache-poisoned-browser case that had twice presented as "the deploy didn't work.
 
 ---
 
+## AD-12 — One agent, two planes, N slices: the canonical agent-governance model
+*(decided 2026-08-05; tracked in #110)*
+
+**Context.** Four surfaces govern "an agent" — Nvoy, Nact, waggle, Ngage — and none
+agree on what an agent *is*. The Director reported the symptom: **some agents show in
+Nvoy that do not show in Nact.** That is not a bug in either app. It is the visible
+edge of **seven disjoint stores with no join key**:
+
+| store | shape | keyed by |
+|---|---|---|
+| `nvoy_agents` on the delegator's `10440` | `{ pub, added_at }` — the whole record | pubkey |
+| Nact's env scan + imported map + `nact-config.json` | `{ key, handle, npub, signer, status, source, activated }` | **lowercased env-var name** |
+| `/etc/nvoy/instances/<id>.json` | ~20 fields (service users, UIDs, worker digest, carriers) | instance id |
+| public `440`s carrying `da-cap` | a capability + a salted subject hash | grantee pubkey |
+| `nvoy_derived_children` | parent→child lineage | scope |
+| Ngage's `localStorage` | two flat lists of bare hex | pubkey |
+| waggle's `config.json` | roster + policy fields | pubkey |
+
+The only registration bridge, `nact/nactor/request-register.mjs`, is
+**one-directional**: an identity publishes an access request, the Director approves it
+*in Nvoy*, `nvoy_agents` gains a row, and nothing in Nact changes. Nact's
+`HANDLE_OVERRIDES` exists solely because there is no join key.
+
+**Decisions.**
+
+1. **An Agent is one key.** A named principal, other than the Director, identified by
+   **exactly one** nostr public key. It is `key + custody + authority + runtime`, where
+   only the key is its identity; custody says where its signing key lives and therefore
+   which Approval Path it is on. **Authority is never a property of the Agent** — it is
+   the grants it holds, looked up in the Ledger. **The join key is the lowercase
+   32-byte hex pubkey, everywhere; `npub` is display only.** Consequence: "Luke is one
+   agent, two keys" is retired — `luke` and `brain` are two Agents sharing one voice
+   (AD-9).
+
+2. **One object, many slice roles.** agent ≡ identity ≡ role key ≡ pen ≡ deliverer ≡
+   granted participant ≡ admitted author. The differences are **roles inside a slice** —
+   an attribute of the record, not a type of Agent. One ruling retires the whole
+   vocabulary-collision list.
+
+3. **Action Grant = one object, two modes.** **Capability** (`standing`) confers the
+   right to *propose* in a class, with a mandatory envelope refused at issuance if
+   absent: action class · max risk tier · TTL · rate limit · exactly one bound Approval
+   Path · revocable by `441`. **Approval** (`discrete`) is one human tap over frozen
+   bytes (WYSIWYS), yielding `["approval", id, approver]`.
+
+   **The doctrine sentence is amended fleet-wide**, replacing "No standing 'post
+   whenever' authority — ever" in `nact/README.md`, `nact/DESIGN.md` and
+   `naction/index.html`:
+
+   > **No standing authority to sign. Standing authority to propose — always narrow,
+   > always short-TTL, always rate-limited, always revocable.**
+
+   This is a **strengthening, not a concession**, and the reason is structural: a
+   durable grant *cannot* authorize a signature, because WYSIWYS binds to a fingerprint
+   over bytes that do not exist at issuance time. So a durable grant can only ever
+   confer queue entry plus the gate tier. The estate already had durable action
+   authority — `da-cap: task`/`task+act` issued from Nvoy, waggle's admissions, and
+   waggle's unsigned in-channel verbs (ruling 9) — so the choice was never "durable or
+   not," it was **durable and named, or durable and hidden.**
+
+4. **`capability:*` and `da-cap` stay two mechanisms, and the seam is formalized.**
+   `da-cap` on a public `440` is the **enforcement** tag; a `30440` named
+   `capability:<slice>/<verb>` carries the terms. **Enforcement must never require a
+   key** — `nvoy/mcp/tools/attention.mjs` and `waggle/src/bridge.mjs` both check
+   `da-cap` without decrypting anything, default-closed ("being unable to check is not
+   permission"), and folding the capability into a namespaced *scope name* would trade
+   that for a key-dependent check. Also, `da-scope` is a salted hash so the subject
+   stays private and cannot be replayed to another agent — and a renderable namespace is
+   by definition not a hash. **The `da-cap` enum is CLOSED** at
+   `admit · admit+read · task · task+act · task-relay · mirror`; new capabilities are
+   new `capability:*` scope names, not new tags.
+
+5. **Exactly one new noun: `slice`.** An **Application Slice** manages the Agents,
+   grants and routing specific to itself. It **may** define role names, routing
+   visualization derived from grants, slice-local policy, and which scope prefixes it is
+   slice-of-record for. It **may not** define Agent identity, grant shapes, capability
+   enums, approval paths, or a second roster. **Every slice roster row is a projection
+   of the registry, never authority.**
+
+   "Universal plane" and "application plane" are **declined.** The estate already owns
+   *grant plane* (relay-carried grant traffic) and *control plane* (a per-app admin UI);
+   the Director's overarching-vs-application distinction is a **scope of view** over the
+   one grant plane, not two further planes. Structurally: *universal = the slice
+   component with the trivial predicate.* Same code, different filter — which is what
+   makes "shows in one, not the other" impossible rather than fixed once. Declined
+   synonyms, recorded so they do not return: *universal plane, application plane, app
+   plane, overarching plane*, *root grantor* (already declined in AD-8), and *Scoped
+   Action Grants* (`docs/PROJECTS.md` — a fifth name for the act side, in no glossary).
+   AD-8's rationale governs: **new synonyms fragment vocabulary the docs already rely
+   on.**
+
+6. **The registry lives in the delegator's `10440`**, as the upgraded `nvoy_agents`
+   field — not a new kind. It is already single-writer, already encrypted (the roster is
+   not public), already relay-replicated, already console-read. The record gains
+   `status`, `handle`, `display`, `custody{mode,ref}`, `voice`, `runtime`, `slices{}`.
+   **`path` is not stored** — it is derived from custody on read and pinned by a
+   conformance test; storing a derived path is how "chosen, not derived" creeps back in.
+   **`handle` is authority and kind-0 is a hint**: Nvoy resolves names by live kind-0
+   today, which means whoever holds an agent's key controls its label in the Director's
+   own console.
+
+   Headless slices (Nactor, the waggle bridge) cannot read the `10440`, so the Director
+   publishes a **registry projection** as `data:agents/registry` (a `30440`,
+   generation-rotated) and grants read per runtime key. AD-6's two tests force this and
+   not the other mode: the roster is content sensitive to Nave, and the bridge is
+   off-box — either yes → **grant-to-app**. Revoking a slice's view of the roster is
+   then a scope rotation, a mechanism the estate already has.
+
+7. **Nvoy is the front door and the only place an Agent is created.** This extends the
+   existing sign-in ruling (Nvoy keeps local-key onboarding; Nact stays signer-only)
+   from authentication to registration. `request-register.mjs` stops being a roster
+   writer and becomes a request *carrier*. Every other surface reads.
+
+8. **A console never receives host access; authority moves as signed events.** waggle
+   has already built this: the bridge publishes signed public state, the owner issues
+   narrow signed commands with an approver check, a replay watermark and freshness
+   bounds, and anything whose subject must stay private rides a sealed wrap. Its own
+   words — *"the bridge signs this record so the console can prove what it knows without
+   becoming a remote shell"* — are the invariant, and it generalizes to Nvoy, Nact and
+   Ngage.
+
+   This **supersedes an earlier draft ruling that `waggle.nave.pub/console` should
+   become read-only.** That framing conflated two orthogonal axes and would have deleted
+   working, well-built features for a reason that does not apply. The second axis is
+   real but separate: **supply-chain integrity of a signing UI** — whoever serves the
+   page chooses the JavaScript that shows you what you are about to sign. waggle's
+   loopback `tools/serve-console.mjs` addresses that axis and stays as the hardened
+   local option; the concern applies equally to every hosted console in the estate, none
+   of which currently discloses it.
+
+   waggle's **sealed task-route lane is the estate's reference implementation for a
+   command lane**: wrap-id dedup before any decryption, a decrypt budget charged before
+   the first decrypt, the approver check gating the *second* decryption, the rumor id
+   recomputed against its own hash, canonical-key checks at every layer, a refusal when
+   the participant is not admitted, and legacy plaintext commands hard-refused.
+
+9. **waggle's unsigned in-channel verbs are a path violation.** `approve`/`release`,
+   `follow`/`watch` and `mute` mutate routing authority on an unsigned channel message
+   and publish no signed event; two of them do not even refresh the signed counter an
+   observer would watch. This is **not** an outsider path — the handler gates on the
+   approver roster — but it is authority granted **off any signed path**, and it is the
+   widest such gap in the estate. Naming it is how it gets closed. Remediation is
+   tracked in JAFairweather/waggle#286; the one-line half (refresh the control state)
+   should not wait for the rest.
+
+10. **Nact issues and lists durable action grants; Nvoy's Ledger mirrors them
+    read-only.** Durable action authority belongs with the plane that executes action.
+    Nvoy's `Authority` tab dies, and with it three names for one thing (nav
+    `Authority`, code `Access`, Ledger type `external`) — the survivor is **action
+    grant**. Nvoy's Ledger keeps showing them as one read-only audit lens, which its
+    `capgrants.mjs` reader already does app-agnostically. Note that
+    `nvoy/console/task-authority-lib.mjs` already states that both surfaces use the
+    same event shape: the shared primitive shipped, the consumer was never built. AD-1
+    still holds — **Nvoy Ledger is grant lifecycle, Nact History is this box's
+    activity; two lenses, each honestly named, do not merge them.**
+
+**Rationale.** Every ruling above is either a *choice among words the estate already
+owns* or a *promotion of an implementation that already works* — AD-11's doctrine
+applied to the model rather than to sign-in: **promote the best implementation, never
+level down.** Two rulings merely complete specs that were already normative and unbuilt:
+waggle's `SPEC_EXTERNAL.md` §4.1 already specifies a **per-identity trust record** as
+the admin UI's core object, and already specifies a `10440` index the console never
+writes.
+
+**Consequences.**
+
+- The acceptance test is stated so it can fail: register one agent in Nvoy → it appears
+  in Nact within one poll with its path **derived from custody**, and in the
+  waggle/Ngage slices **only if** it holds a slice-scoped grant. Converse: no agent
+  appears in Nact that is absent from the registry; on-box keys without a registry row
+  render `unregistered`, never as agents.
+- **AD-10 gains its missing third state.** The doctrine and its mechanics are
+  already documented — `docs/architecture/03-delegated-actions.md` §2 has "derived
+  from custody, never chosen by preference" and the refused wrong-path click — but
+  nothing names a transport the runtime *displays and does not deliver to*. That is
+  now **`ungoverned`**. Separately, the `nact` repo documents AD-10 nowhere in its own
+  `docs/`, so a reader inside that repo finds only code comments; it should carry a
+  pointer here.
+- **AD-8's namespace gets implemented** in the Nvoy console, replacing a Type facet
+  that substring-matches display strings and contains a hardcoded identity name.
+- A transport the runtime does not deliver to gains a name, **`ungoverned`**, which
+  makes nact#46 unrepresentable rather than merely corrected.
+- The glossary gains a definition of **agent**, which it did not have.
+
+**Status.** Decided 2026-08-05 · docs landing under #110 · implementation sequenced in
+waves there, waggle first because it is the estate's only fast loop.
+
+---
+
 ## Not decisions — just queued builds (for completeness, not dangling)
 
 **Nvoy sign-in (confirmed, James 2026-07-18):** Nvoy **keeps** its local-key /
