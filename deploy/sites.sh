@@ -103,8 +103,14 @@ elif [ "${NAVE_DRIFT_ENFORCE:-0}" = "1" ]; then
   echo "    Reconcile it, or re-record the baseline: node bin/nave-drift --baseline"
   exit 1
 else
-  echo "  ⚠ drift gate found divergence — REPORTING ONLY (see the report it wrote)."
-  echo "    Set NAVE_DRIFT_ENFORCE=1 to make this stop the deploy."
+  # The verdict must be unmistakable in the deploy log. "REPORTING ONLY" was too soft: a
+  # reader skimming a green deploy could take it for a passing check. NOT ENFORCED says
+  # what actually happened — divergence was found and the deploy continued anyway. The
+  # detector's own table is above this line, so every divergence is named, not counted.
+  echo "  ⚠ drift gate: DIVERGENCE FOUND — NOT ENFORCED. The deploy is continuing."
+  echo "    Every divergence is named in the table above and in design/DRIFT.md."
+  echo "    This deploy serves a snapshot whose shared components disagree."
+  echo "    Set NAVE_DRIFT_ENFORCE=1 to make this stop the deploy (Wave 5 default)."
 fi
 
 # --- Platform secrets: decrypt SOPS ciphertext → the env the compose reads --

@@ -491,23 +491,53 @@ use the post-`04c77da` wording.
 Two constraints point in opposite directions, and the sequence falls out of them.
 
 `deploy/sites.sh` hard-resets **all thirteen app clones to `origin/main` on every hub
-deploy**. So nothing ships from a branch, a merged app PR is live on the *next* hub
-deploy whoever triggers it, and **you cannot ship one coupled app in isolation.**
-Cadence: merge hub → hub deploy → merge app PRs → next hub deploy. Docs are free —
-`**.md` is in `paths-ignore`.
+deploy**. So nothing ships from a branch, and a merged app PR is live on the *next* hub
+deploy whoever triggers it. Cadence: merge hub → hub deploy → merge app PRs → next hub
+deploy. Docs are free — `**.md` is in `paths-ignore`.
+
+**A deploy is not fleet-atomic, and this spec previously claimed the opposite.** An
+earlier revision said *"you cannot ship one coupled app in isolation"*, which reads as a
+guarantee that the fleet moves as one set. It does not, and the inversion matters:
+`sites.sh` resets the clones **sequentially under `set -e`**, and
+`deploy/docker-compose.yml` bind-mounts `./sites` into Caddy, which serves those trees
+directly. So if reset N succeeds and reset N+1 — or any post-loop gate — fails,
+production is **already serving clones 1…N new and N+1…13 old.** No later check can roll
+that back, because the promotion happened when the tree changed, not when the build
+finished. The true constraint is therefore the stronger one: you cannot *prevent* a
+partial set from shipping.
+
+**So every wave gate carries a prefix/abort compatibility requirement, not an atomicity
+assumption:**
+
+> A wave is shippable only if it is correct after **every prefix and every abort point**
+> of the thirteen-repo reset order — not merely after the complete set lands.
+
+Read as an obligation on each wave, that means: no wave may depend on two repos landing
+together; a new emitter ships at least one wave before its receiver requires it, and
+degrades when the receiver is old; a new consumer tolerates the absent primitive rather
+than assuming Wave 0 already propagated. Wave 0's *strictly additive* rule is one
+instance of this discipline and is **necessary but not sufficient** for Waves 2–5, which
+change existing surfaces.
+
+**nave.pub#115 is the release gate that retires the requirement.** Until `sites.sh`
+fetches and validates outside the mounted tree and then swaps the complete snapshot —
+with defined rollback for a failed activation — the in-place loop remains a known
+production risk, and **no release may describe a deploy as atomic.** The drift gate
+(§ Making drift detectable) *detects* a mixed snapshot; it does not prevent one, and
+must never be cited as though it did.
 
 waggle is the exception. It self-deploys in about three minutes, and its console now
 *also* syncs on a five-minute cron independent of the hub. **It is the estate's only
 fast feedback loop.**
 
-| wave | repo | content |
-|---|---|---|
-| **0** | nave.pub | AD-12 · glossary · this spec · mockups · the shared primitives · `VENDOR.json` + `nave-drift`. **Strictly additive**: between Wave 0 and Wave 2 the fleet is half-propagated *by design*, and that state must render identically to today |
-| **1** | **waggle alone** | routing view · index row on admit · the missing capability paths · shared signer session · signed moderation lanes |
-| **2** | nvoy | the IA refactor · **agent page v1** · re-vendor tokens |
-| **3** | nact | the join key · roster with divergence rows · render `raised` · `Actions` · hash routing |
-| **4** | ngage + cross-plane | slice pattern · plane switcher live · routing derived from grants |
-| **5** | — | runtime-manifest read panel · remove the aliases · CI drift gate |
+| wave | repo | content | prefix/abort gate — what must hold if the reset loop stops mid-fleet |
+|---|---|---|---|
+| **0** | nave.pub | AD-12 · glossary · this spec · mockups · the shared primitives · `VENDOR.json` + `nave-drift`. **Strictly additive**: between Wave 0 and Wave 2 the fleet is half-propagated *by design*, and that state must render identically to today | Nothing consumes the new primitives, so any prefix renders as today. The only new failure mode is the gate itself, which is why it is **report-only** until Wave 5 |
+| **1** | **waggle alone** | routing view · index row on admit · the missing capability paths · shared signer session · signed moderation lanes | waggle self-deploys outside `sites.sh` entirely, so it has no prefix to be correct after. It **copy-vendors** the Wave 0 primitives rather than importing from the hub, so a hub that has not deployed cannot break it |
+| **2** | nvoy | the IA refactor · **agent page v1** · re-vendor tokens | Agent page v1 must render with **Nact absent** — every Nact-owned section in the did-not-answer state, never a zero. The re-vendored tokens ship with the transitional alias, so an nvoy-new/hub-old prefix keeps its styling |
+| **3** | nact | the join key · roster with divergence rows · render `raised` · `Actions` · hash routing | The deep-link **emitter** ships here degrading to the plain Ngage root URL, so a prefix carrying nact-new/ngage-old still navigates. Divergence rows must render against an nvoy that has *not* yet published the registry projection — an unreadable registry is `did not answer`, not `no agents` |
+| **4** | ngage + cross-plane | slice pattern · plane switcher live · routing derived from grants | The plane switcher flips **only because** every surface became navigable in Waves 1–3; if a prefix leaves one surface old, the switcher must still resolve to its current root. The `#draft/<scopeId>` receiver lands here, one wave after its emitter |
+| **5** | — | runtime-manifest read panel · remove the aliases · CI drift gate | The alias removal is the one step that is **not** prefix-safe on its own — it requires a clean drift report against the same reset `sites/*` snapshot first, and therefore lands behind #115 |
 
 **Why waggle goes first**, out of dependency order: it delivers the two things the
 Director asked for by name — the routing illustration, and an end to
