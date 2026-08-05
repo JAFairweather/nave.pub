@@ -445,9 +445,18 @@ surface must not show a softer picture — and a softer colour is a softer pictu
 
 **Drift detection** is the piece with no prior art in the estate: a `VENDOR.json`
 manifest, **hash** provenance stamps, a `bin/nave-drift` reporting
-`ok` / `stale` / **`modified locally`** / `missing`, and the gate placed in
-`deploy/sites.sh` **immediately after the hard reset** — the one point in the system
-guaranteed to be hashing exactly what production is about to serve.
+`ok` / `stale` / **`diverged`** / `not adopted` / `missing`, and the gate placed in
+`deploy/sites.sh` **after the clone/reset loop and before secrets or build**, reading the
+trees Caddy actually mounts.
+
+**It is a diagnostic, not an atomicity guarantee**, and the distinction is a required
+release property rather than a nicety. `./sites` is a live bind mount and the loop promotes
+thirteen trees *in place*, so production has already served a mixed snapshot by the time the
+gate runs; a mid-loop failure leaves it half-promoted. The gate can report that the serving
+state disagrees with itself — it cannot prevent that state having been served. Atomic
+promotion is tracked separately as **#115** (stage outside the mounted tree, swap the
+serving root after a successful stage, roll back a failed activation), and nothing in the
+gate may be read as a claim that a deploy is atomic.
 
 ---
 

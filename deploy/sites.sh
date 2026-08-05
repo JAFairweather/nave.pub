@@ -42,14 +42,22 @@ done
 
 # --- Design-system drift gate (AD-12, #113) -------------------------------
 # Placed HERE deliberately: after the complete clone/reset loop, and BEFORE secret
-# generation or any build. This is the only point in the system guaranteed to be
-# hashing exactly what production is about to serve — every clone has just been
-# reset to origin/main, so what is on disk now is what Caddy will mount.
+# generation or any build. It reads the trees Caddy actually mounts, so it inspects the
+# real serving state rather than this checkout's copy of it.
 #
-# What it detects here is UNRECORDED CROSS-REPO DIVERGENCE IN THE SERVING SNAPSHOT
-# — not a box-local edit. The reset above just overwrote anything box-local, so a
-# difference at this point means an app repo's own main has diverged from the hub's
-# shared component without that being recorded in design/VENDOR.json.
+# THIS GATE IS A DIAGNOSTIC, NOT AN ATOMICITY GUARANTEE — and the distinction is a
+# required one (#115). `./sites` is a LIVE bind mount and the loop above promotes thirteen
+# trees IN PLACE, one at a time, so production has already served a mixed snapshot by the
+# time this runs. The gate can report that the serving state disagrees with itself; it
+# cannot prevent that state having been served, and a mid-loop failure still leaves
+# production half-promoted. Nothing here may be read as a claim that a deploy is atomic.
+# That property arrives only when #115 stages the complete set outside the mounted tree
+# and swaps the serving root after a successful stage, with rollback on failed activation.
+#
+# What it detects is UNRECORDED CROSS-REPO DIVERGENCE IN THE SERVING SNAPSHOT — not a
+# box-local edit. The reset above just overwrote anything box-local, so a difference at
+# this point means an app repo's own main has diverged from the hub's shared component
+# without that being recorded in design/VENDOR.json.
 #
 # Fail-closed is the right DESTINATION for this: shipping a snapshot whose shared
 # components disagree is how the console drift of 2026-07 reached production and
