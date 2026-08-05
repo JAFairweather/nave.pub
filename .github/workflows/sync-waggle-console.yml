@@ -1,0 +1,47 @@
+name: Sync Waggle console
+
+# App repositories do not push into the Nave host. The host pulls. The full estate deploy already
+# refreshes every app, but a Waggle-only merge must not wait for an unrelated Nave release before
+# its Console UI appears. This narrow pull updates only deploy/sites/waggle; Caddy serves that
+# directory through a read-only bind mount, so no container rebuild or reload is required.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
+
+concurrency:
+  group: deploy-nave
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull and verify Waggle console
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -eu
+            if [ -f /root/nave.pub/deploy/.flipped ]; then ROOT=/root/nave.pub; else ROOT=/root/noir; fi
+            SITE="$ROOT/deploy/sites/waggle"
+
+            if [ -d "$SITE/.git" ]; then
+              git -C "$SITE" fetch --depth 1 origin main
+              git -C "$SITE" reset --hard origin/main
+            else
+              mkdir -p "$(dirname "$SITE")"
+              git clone --depth 1 --branch main https://github.com/JAFairweather/waggle "$SITE"
+            fi
+
+            test -s "$SITE/console/index.html"
+            test -s "$SITE/console/config.html"
+            TMP=$(mktemp)
+            trap 'rm -f "$TMP"' EXIT
+            curl -fsS --retry 4 --retry-all-errors --connect-timeout 10 \
+              https://waggle.nave.pub/console/config.html > "$TMP"
+            cmp -s "$SITE/console/config.html" "$TMP"
+            echo "waggle console live at $(git -C "$SITE" rev-parse HEAD)"
