@@ -51,21 +51,32 @@ done
 # difference at this point means an app repo's own main has diverged from the hub's
 # shared component without that being recorded in design/VENDOR.json.
 #
-# Fail-closed is still the right policy for that: shipping a snapshot whose shared
+# Fail-closed is the right DESTINATION for this: shipping a snapshot whose shared
 # components disagree is how the console drift of 2026-07 reached production and
 # "rendered perfectly, then failed at the moment someone tried to sign in."
-# Override for a deliberate, recorded divergence: NAVE_DRIFT_ALLOW=1.
-if [ -x ../bin/nave-drift ] || [ -f ../bin/nave-drift ]; then
+#
+# But it REPORTS ONLY until the fleet is clean, and that is deliberate. The fleet has
+# two recorded divergences today (nact's --mono fallback, ngage's Courier/Georgia
+# override) that predate this gate. Enforcing on the first commit would red the very
+# next deploy for drift the gate did not cause — and it would break the rule this
+# whole wave is built on: Wave 0 is strictly additive and must behave identically to
+# today. A gate that blocks a deploy is not additive.
+#
+# Flip it with NAVE_DRIFT_ENFORCE=1, and make that the default in Wave 5 once nact
+# and ngage are reconciled (ngage's is a real design decision — the "signed artifact"
+# type exception — not a patch, so it lands in its own wave).
+if [ -f ../bin/nave-drift ]; then
   echo "→ design-system drift gate"
   if node ../bin/nave-drift --root "$PWD/sites" --write-report; then
     echo "  drift gate: clean"
-  elif [ "${NAVE_DRIFT_ALLOW:-0}" = "1" ]; then
-    echo "  ⚠ drift gate FAILED — continuing because NAVE_DRIFT_ALLOW=1 was set"
-  else
+  elif [ "${NAVE_DRIFT_ENFORCE:-0}" = "1" ]; then
     echo "  ✗ drift gate FAILED — stopping before secrets and build."
     echo "    A shared component diverges in the snapshot about to be served."
     echo "    Reconcile it, or re-record the baseline: node bin/nave-drift --baseline"
     exit 1
+  else
+    echo "  ⚠ drift gate found divergence — REPORTING ONLY (design/DRIFT.md)."
+    echo "    Set NAVE_DRIFT_ENFORCE=1 to make this stop the deploy."
   fi
 else
   echo "→ design-system drift gate: bin/nave-drift not present, skipping"
