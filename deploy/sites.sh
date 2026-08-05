@@ -40,6 +40,37 @@ for pair in "${apps[@]}"; do
   fi
 done
 
+# --- Design-system drift gate (AD-12, #113) -------------------------------
+# Placed HERE deliberately: after the complete clone/reset loop, and BEFORE secret
+# generation or any build. This is the only point in the system guaranteed to be
+# hashing exactly what production is about to serve — every clone has just been
+# reset to origin/main, so what is on disk now is what Caddy will mount.
+#
+# What it detects here is UNRECORDED CROSS-REPO DIVERGENCE IN THE SERVING SNAPSHOT
+# — not a box-local edit. The reset above just overwrote anything box-local, so a
+# difference at this point means an app repo's own main has diverged from the hub's
+# shared component without that being recorded in design/VENDOR.json.
+#
+# Fail-closed is still the right policy for that: shipping a snapshot whose shared
+# components disagree is how the console drift of 2026-07 reached production and
+# "rendered perfectly, then failed at the moment someone tried to sign in."
+# Override for a deliberate, recorded divergence: NAVE_DRIFT_ALLOW=1.
+if [ -x ../bin/nave-drift ] || [ -f ../bin/nave-drift ]; then
+  echo "→ design-system drift gate"
+  if node ../bin/nave-drift --root "$PWD/sites" --write-report; then
+    echo "  drift gate: clean"
+  elif [ "${NAVE_DRIFT_ALLOW:-0}" = "1" ]; then
+    echo "  ⚠ drift gate FAILED — continuing because NAVE_DRIFT_ALLOW=1 was set"
+  else
+    echo "  ✗ drift gate FAILED — stopping before secrets and build."
+    echo "    A shared component diverges in the snapshot about to be served."
+    echo "    Reconcile it, or re-record the baseline: node bin/nave-drift --baseline"
+    exit 1
+  fi
+else
+  echo "→ design-system drift gate: bin/nave-drift not present, skipping"
+fi
+
 # --- Platform secrets: decrypt SOPS ciphertext → the env the compose reads --
 # The nave-owned secret bundle lives in THIS repo at deploy/secrets/nave.enc.env
 # (SOPS/age; the private key is box-only). It decrypts to ./nave.env — the full

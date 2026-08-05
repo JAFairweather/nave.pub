@@ -12,21 +12,26 @@
 //   ok               byte-identical to the hub
 //   stale            differs, but matches the recorded fleet baseline — the hub moved
 //                    ahead and this app has not re-vendored yet. Warns.
-//   modified locally differs from BOTH the hub and the baseline: someone edited a
-//                    shared component in an app. The AD-11 case. Fails the run.
+//   diverged         differs from BOTH the hub and the baseline. On a dev machine that
+//                    means a shared component was edited in an app (the AD-11 fork
+//                    case). On the box, after the reset, it means an app repo's own
+//                    main has diverged from the hub in the snapshot about to be
+//                    served — there is no box-local edit left to find. Fails either
+//                    way, because shipping disagreeing shared components is how the
+//                    2026-07 console drift reached production.
 //   not adopted      declared in the manifest as a future consumer, carrying its own
 //                    implementation today. Informational, not a failure — waggle's
 //                    console, for instance, has a private token block rather than a
 //                    vendored one, and calling that a "fork" would be noise.
 //   missing          the consumer named in VENDOR.json has no such file
 //
-// Distinguishing `stale` from `modified locally` is the whole value of the tool, and
+// Distinguishing `stale` from `diverged` is the whole value of the tool, and
 // it needs two baselines, not one:
 //   sha256 / sha256Body      what the hub has NOW          (`--update`, at publish)
 //   fleetSha256 / …Body      what the fleet is known to carry (`--baseline`, once,
 //                            after a fleet-wide re-vendor)
-// Without the second, every hub edit reports the whole fleet as forked — and a tool
-// that cries fork on every commit is a tool nobody runs.
+// Without the second, every hub edit reports the whole fleet as diverged — and a tool
+// that cries wolf on every commit is a tool nobody runs.
 //
 // Where to run it: from a nave.pub checkout with sibling clones (nave-spine layout),
 // or on the box in deploy/sites/. The right hook is deploy/sites.sh IMMEDIATELY AFTER
@@ -34,17 +39,18 @@
 // exactly what production is about to serve, because every clone has just been reset
 // to origin/main.
 //
-//   node bin/nave-drift                 check, table to stdout, non-zero on a fork
+//   node bin/nave-drift                 check, table to stdout, non-zero on divergence
 //   node bin/nave-drift --update        rewrite VENDOR.json's hub hashes (at publish)
 //   node bin/nave-drift --baseline      record what the fleet carries right now
 //   node bin/nave-drift --write-report  also write design/DRIFT.md
-//   node bin/nave-drift --root <dir>    where the sibling clones live
+//   node bin/nave-drift --root <dir>    clone root; EXPLICIT --root overrides the
+//                                       per-consumer roots (the box layout)
 //   node bin/nave-drift --json          machine-readable
 //
-// Exit codes: 0 clean (stale allowed) · 1 a local fork or a missing consumer · 2 the
-// manifest itself is unusable. Deliberately: `stale` WARNS and `modified locally`
-// FAILS, because staleness is a deploy-ordering fact while a fork is a decision
-// nobody recorded.
+// Exit codes: 0 clean (stale allowed) · 1 a divergence or a missing consumer · 2 the
+// manifest itself is unusable. Deliberately: `stale` WARNS and `diverged` FAILS,
+// because staleness is a deploy-ordering fact while divergence is a decision nobody
+// recorded.
 
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
@@ -136,9 +142,19 @@ if (flag('--update')) {
   process.exit(0)
 }
 
-// Resolve where a consumer's clone lives. Not all are siblings of the hub.
+// Resolve where a consumer's clone lives.
+//
+// Two layouts, and --root decides which. On a developer's Mac the clones are
+// scattered (nave-spine siblings, plus ngage and waggle elsewhere), so each consumer
+// may carry its own `root`. On the box every clone sits under deploy/sites, so an
+// EXPLICIT --root is authoritative and the per-consumer roots must be ignored —
+// otherwise the deploy gate looks for $HOME/Projects/ngage, finds nothing, reports
+// `missing`, and fails a deploy for a path that was never supposed to apply there.
+const ROOT_EXPLICIT = argv.includes('--root')
 const consumerPath = (c) => {
-  const base = c.root ? resolve(c.root.replace(/^~|^\$HOME/, process.env.HOME || '~')) : ROOT
+  const base = (!ROOT_EXPLICIT && c.root)
+    ? resolve(c.root.replace(/^~|^\$HOME/, process.env.HOME || '~'))
+    : ROOT
   return join(base, c.repo === '.' ? '' : c.repo, c.path)
 }
 
@@ -210,7 +226,7 @@ for (const a of manifest.artifacts) {
       if (!missing.length && !changed.length) {
         rows.push({ artifact: a.path, repo: c.repo, verdict: 'ok', detail: 'all declarations present' })
       } else if (changed.length) {
-        rows.push({ artifact: a.path, repo: c.repo, verdict: 'modified locally',
+        rows.push({ artifact: a.path, repo: c.repo, verdict: 'diverged',
           detail: `redefined: ${changed.slice(0, 4).join(' ')}${changed.length > 4 ? ` +${changed.length - 4}` : ''}` })
         forks++
       } else {
@@ -244,7 +260,7 @@ for (const a of manifest.artifacts) {
         detail: `matches the last published hash; hub has moved ahead` })
       stale++
     } else {
-      rows.push({ artifact: a.path, repo: c.repo, verdict: 'modified locally',
+      rows.push({ artifact: a.path, repo: c.repo, verdict: 'diverged',
         detail: `${appHash.slice(0, 12)} ≠ ${hubCmp.slice(0, 12)}` })
       forks++
     }
@@ -257,15 +273,15 @@ if (flag('--json')) {
   console.log(JSON.stringify({ root: ROOT, rows, forks, stale, unadopted, missing: gone }, null, 2))
 } else {
   const w = (s, n) => String(s).padEnd(n)
-  const GLYPH = { ok: '✓', stale: '·', 'modified locally': '✗', 'not adopted': '○', missing: '?' }
+  const GLYPH = { ok: '✓', stale: '·', 'diverged': '✗', 'not adopted': '○', missing: '?' }
   console.log(`nave-drift — hub ${HUB}\n            clones ${ROOT}\n`)
   console.log(`  ${w('', 2)}${w('artifact', 34)}${w('repo', 10)}${w('verdict', 18)}detail`)
   console.log(`  ${'─'.repeat(90)}`)
   for (const r of rows) {
     console.log(`  ${w(GLYPH[r.verdict] ?? '?', 2)}${w(r.artifact, 34)}${w(r.repo, 10)}${w(r.verdict, 18)}${r.detail}`)
   }
-  console.log(`\n  ${rows.filter(r => r.verdict === 'ok').length} ok · ${stale} stale · ${forks} modified locally · ${unadopted} not adopted · ${gone} missing`)
-  if (forks) console.log(`\n  A shared component was edited in an app. Promote the change to the hub and\n  re-vendor — never fork (AD-11: promote the best implementation, never level down).`)
+  console.log(`\n  ${rows.filter(r => r.verdict === 'ok').length} ok · ${stale} stale · ${forks} diverged · ${unadopted} not adopted · ${gone} missing`)
+  if (forks) console.log(`\n  A shared component disagrees with the hub and with the recorded baseline.\n  Promote the change to the hub and re-vendor — never fork (AD-11: promote the\n  best implementation, never level down). If the divergence is deliberate,\n  record it: node bin/nave-drift --baseline`)
   if (gone) console.log(`\n  A consumer named in VENDOR.json has no such file. Either it has not adopted the\n  component yet (drop it from consumers) or the path moved.`)
   if (!forks && !gone && !stale) console.log(`\n  The fleet is consistent.`)
   if (!a_baselineSet) console.log(`\n  No fleet baseline recorded yet — run \`--baseline\` once after a\n  fleet-wide re-vendor so later runs can tell stale from forked.`)
@@ -276,11 +292,11 @@ if (flag('--write-report')) {
   const lines = [
     '# Design-system drift', '',
     `Generated by \`bin/nave-drift\` on ${when}. **Do not hand-edit.**`, '',
-    'Verdicts: `ok` byte-identical · `stale` re-vendor · **`modified locally`** a shared',
-    'component was edited in an app (AD-11: promote, never fork) · `missing` no such file.', '',
+    'Verdicts: `ok` byte-identical · `stale` re-vendor · **`diverged`** a shared',
+    'component disagrees with both the hub and the baseline (AD-11: promote, never fork) ·', '`not adopted` carries its own implementation · `missing` no such file.', '',
     '| artifact | repo | verdict | detail |', '|---|---|---|---|',
-    ...rows.map(r => `| \`${r.artifact}\` | ${r.repo} | ${r.verdict === 'modified locally' ? '**modified locally**' : r.verdict} | ${r.detail} |`),
-    '', `${rows.filter(r => r.verdict === 'ok').length} ok · ${stale} stale · ${forks} modified locally · ${unadopted} not adopted · ${gone} missing`, '',
+    ...rows.map(r => `| \`${r.artifact}\` | ${r.repo} | ${r.verdict === 'diverged' ? '**diverged**' : r.verdict} | ${r.detail} |`),
+    '', `${rows.filter(r => r.verdict === 'ok').length} ok · ${stale} stale · ${forks} diverged · ${unadopted} not adopted · ${gone} missing`, '',
   ]
   writeFileSync(join(HUB, 'design/DRIFT.md'), lines.join('\n'))
   console.log('\n  wrote design/DRIFT.md')

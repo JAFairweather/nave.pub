@@ -110,10 +110,15 @@ no definition of "agent" — which is how seven stores came to disagree about on
 - **operator** — the delegated day-to-day login signer in the bunker (iPhone
   path).
 - **nave / nactor / luke / brain / nact_jaf / noir** — the SOPS-custodied fleet
-  identities: fleet root · runtime · acting agent · proposer ("Luke is one
-  agent, two keys") · approvals carrier · legacy hub.
+  identities: fleet root · runtime · acting agent · proposer · approvals
+  carrier · legacy hub.
 - **Luke** — James's flagship agent (posts as himself, box path, Telegram
-  approval). **brain** — Luke's proposer identity; thinks, never acts.
+  approval). **brain** — holds the **proposer** role; thinks, never acts.
+  **`luke` and `brain` are two Agents sharing one voice** (AD-12 ruling 1 +
+  AD-9): one key each, so one Agent each; the shared thing is the steering file,
+  not the identity. The older phrasing — "Luke is one agent, two keys" — is
+  **retired**, because it is the exact ambiguity that let two rosters disagree
+  about what an agent is.
 - **Quill (canonical)** — warm.contact's reference reconnect-agent instance.
 - **James's Quill / jaf-quill** — the Director's own drafting hand. ONE key,
   sole custody Bunker46 (2026-07-24), NIP-46-scoped to draft kinds only;
