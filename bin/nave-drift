@@ -33,11 +33,17 @@
 // Without the second, every hub edit reports the whole fleet as diverged — and a tool
 // that cries wolf on every commit is a tool nobody runs.
 //
-// Where to run it: from a nave.pub checkout with sibling clones (nave-spine layout),
-// or on the box in deploy/sites/. The right hook is deploy/sites.sh IMMEDIATELY AFTER
-// the hard reset — that is the one point in the system guaranteed to be hashing
-// exactly what production is about to serve, because every clone has just been reset
-// to origin/main.
+// Where to run it: from a nave.pub checkout with sibling clones (nave-spine layout), or on
+// the box against deploy/sites. The hook is deploy/sites.sh, after the clone/reset loop and
+// before secrets or build, reading the trees Caddy actually mounts.
+//
+// IT IS A DIAGNOSTIC, NOT AN ATOMICITY GUARANTEE. `./sites` is a live bind mount and the
+// loop promotes thirteen trees IN PLACE, so production has already served a mixed snapshot
+// by the time this runs, and a mid-loop failure leaves it half-promoted. This reports that
+// the serving state disagrees with itself; it cannot prevent that state having been served.
+// Atomic promotion is nave.pub#115 — stage outside the mounted tree, swap the serving root
+// after a successful stage, roll back a failed activation. Nothing this prints may be read
+// as a claim that a deploy was atomic.
 //
 //   node bin/nave-drift                 check, table to stdout, non-zero on divergence
 //   node bin/nave-drift --update        rewrite VENDOR.json's hub hashes (at publish)
