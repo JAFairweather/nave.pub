@@ -62,6 +62,10 @@ import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+// The stamp comparator lives in its own module so it can be TESTED — this file is a script with side
+// effects and cannot be imported. Every defect in this tool has been a comparison rule that looked right
+// and was wrong on real files (nave.pub#120).
+import { stripStamp, isStamped } from './stamp.mjs'
 
 const HUB = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const argv = process.argv.slice(2)
@@ -76,12 +80,11 @@ const ROOT = resolve(opt('--root', join(HUB, '..')))
 
 const sha = (buf) => createHash('sha256').update(buf).digest('hex')
 
-/** Hash a file, optionally ignoring its first line (the provenance stamp). */
-function hashFile(path, { skipFirstLine = false } = {}) {
+/** Hash a file, optionally ignoring a leading provenance-stamp block. MATCH the stamp; never COUNT lines. */
+function hashFile(path, { body = false } = {}) {
   if (!existsSync(path)) return null
-  let text = readFileSync(path, 'utf8')
-  if (skipFirstLine) text = text.slice(text.indexOf('\n') + 1)
-  return sha(Buffer.from(text, 'utf8'))
+  const text = readFileSync(path, 'utf8')
+  return sha(Buffer.from(body ? stripStamp(text) : text, 'utf8'))
 }
 
 /**
@@ -140,7 +143,7 @@ if (flag('--update')) {
     a.sha256 = hashFile(p)
     // Body hash too: a consumer that rewrites the first line into a provenance
     // stamp can only be compared body-to-body.
-    a.sha256Body = hashFile(p, { skipFirstLine: true })
+    a.sha256Body = hashFile(p, { body: true })
     n++
   }
   writeFileSync(MANIFEST, JSON.stringify(manifest, null, 2) + '\n')
@@ -179,8 +182,8 @@ if (flag('--baseline')) {
       if (c.adopted === false) continue
       const p = consumerPath(c)
       if (!existsSync(p) || c.inline) continue
-      const h = hashFile(p, { skipFirstLine: c.skipFirstLine })
-      const key = c.skipFirstLine ? 'body' : 'file'
+      const h = hashFile(p, { body: isStamped(c) })
+      const key = isStamped(c) ? 'body' : 'file'
       if (!seen.has(key)) seen.set(key, h)
     }
     if (seen.has('file')) { a.fleetSha256 = seen.get('file'); n++ }
@@ -242,8 +245,8 @@ for (const a of manifest.artifacts) {
       }
       continue
     }
-    const appHash = hashFile(appPath, { skipFirstLine: c.skipFirstLine })
-    const hubCmp = c.skipFirstLine
+    const appHash = hashFile(appPath, { body: isStamped(c) })
+    const hubCmp = isStamped(c)
       ? sha(Buffer.from(hubText.slice(hubText.indexOf('\n') + 1), 'utf8'))
       : hubHash
     if (appHash === hubCmp) {
@@ -260,7 +263,7 @@ for (const a of manifest.artifacts) {
     // re-vendored yet" distinguishable from "was edited here." Two variants, because
     // consumers hash two ways: whole-file, or body-only when the first line is a
     // provenance stamp the app rewrites on vendoring.
-    const baseline = c.skipFirstLine ? a.fleetSha256Body : a.fleetSha256
+    const baseline = isStamped(c) ? a.fleetSha256Body : a.fleetSha256
     if (baseline && appHash === baseline && hubCmp !== baseline) {
       rows.push({ artifact: a.path, repo: c.repo, verdict: 'stale',
         detail: `matches the last published hash; hub has moved ahead` })
