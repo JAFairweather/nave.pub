@@ -36,7 +36,9 @@
           "repo": "ngage",
           "path": "index.html",
           "inline": true,
-          "root": "$HOME/Projects"
+          "root": "$HOME/Projects",
+          "adopted": false,
+          "note": "bespoke letterpress-noir palette (gold/cream/ink), not a vendored copy — a deliberate design identity, same status as waggle. The one shared rule it DOES follow is the type system: chrome is --sans and only the signed artifact keeps --serif (DESIGN.md §Type)."
         },
         {
           "repo": "waggle",
