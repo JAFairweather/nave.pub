@@ -63,16 +63,12 @@ done
 # components disagree is how the console drift of 2026-07 reached production and
 # "rendered perfectly, then failed at the moment someone tried to sign in."
 #
-# But it REPORTS ONLY until the fleet is clean, and that is deliberate. The fleet has
-# two recorded divergences today (nact's --mono fallback, ngage's Courier/Georgia
-# override) that predate this gate. Enforcing on the first commit would red the very
-# next deploy for drift the gate did not cause — and it would break the rule this
-# whole wave is built on: Wave 0 is strictly additive and must behave identically to
-# today. A gate that blocks a deploy is not additive.
-#
-# Flip it with NAVE_DRIFT_ENFORCE=1, and make that the default in Wave 5 once nact
-# and ngage are reconciled (ngage's is a real design decision — the "signed artifact"
-# type exception — not a patch, so it lands in its own wave).
+# IT NOW ENFORCES (Wave 5). It reported only through Waves 0–4, deliberately: the fleet carried
+# two divergences that predated the gate, and failing on drift the gate did not cause would have
+# redded a deploy for something nobody chose — which is how a gate comes to be routinely
+# overridden. Both are reconciled rather than tolerated, and the detector reported `0 diverged`
+# before this default changed. Which was a bug and which was a design is recorded at the
+# enforcement branch below.
 # THE GATE MUST RUN FROM THE SERVED SNAPSHOT, NOT FROM THIS CHECKOUT.
 # `sites/nave` is the clone Caddy mounts at /srv/apps/nave; this script lives in the
 # platform checkout, which is updated by a separate `git pull`. The two are normally the
@@ -133,13 +129,25 @@ if ! printf '%s' "$DRIFT_OUT" | grep -q 'nave-drift: complete —'; then
   exit 1
 fi
 
-# Divergence itself REPORTS ONLY until the fleet is clean, and that is deliberate: the
-# fleet has two divergences that predate this gate (nact's dropped --mono fallback,
-# ngage's Courier/Georgia override), and blocking on them would red a deploy for drift
-# the gate did not cause. Wave 5 flips the default once those are reconciled.
+# ENFORCEMENT IS ON (Wave 5). It was report-only until the fleet was clean, because blocking
+# on divergence the gate did not cause would have redded a deploy for drift nobody chose —
+# and a gate that fails for an unintended reason is one people learn to override.
+#
+# The two pre-existing divergences are now reconciled rather than tolerated:
+#   · nact's --mono had simply dropped "Roboto Mono" from the hub's stack. An omission, not a
+#     decision, so it was restored (nact#64).
+#   · ngage's palette is a bespoke letterpress-noir identity, NOT a stale copy, so it is
+#     classified `not adopted` — the status waggle's private token block already used. That
+#     verdict is informational; `diverged` is the one that stops a deploy (nave.pub#124).
+# The detector reported `0 diverged` before this flag changed, which is the only honest
+# precondition for turning it on.
+#
+# Set NAVE_DRIFT_ENFORCE=0 to fall back to report-only for one deploy. It is deliberately an
+# opt-OUT now rather than an opt-in: the default should be the safe one, and someone
+# suppressing a fork should have to say so.
 if [ "$DRIFT_RC" -eq 0 ]; then
   echo "  drift gate: clean"
-elif [ "${NAVE_DRIFT_ENFORCE:-0}" = "1" ]; then
+elif [ "${NAVE_DRIFT_ENFORCE:-1}" = "1" ]; then
   echo "  ✗ drift gate FAILED — stopping before secrets and build."
   echo "    A shared component diverges in the snapshot about to be served."
   echo "    Reconcile it, or re-record the baseline: node bin/nave-drift --baseline"
@@ -152,7 +160,8 @@ else
   echo "  ⚠ drift gate: DIVERGENCE FOUND — NOT ENFORCED. The deploy is continuing."
   echo "    Every divergence is named in the table above and in design/DRIFT.md."
   echo "    This deploy serves a snapshot whose shared components disagree."
-  echo "    Set NAVE_DRIFT_ENFORCE=1 to make this stop the deploy (Wave 5 default)."
+    echo "    Enforcement is normally ON — it is off for this run because NAVE_DRIFT_ENFORCE=0 was set."
+    echo "    Unset it to restore the safe default."
 fi
 
 # --- Platform secrets: decrypt SOPS ciphertext → the env the compose reads --
