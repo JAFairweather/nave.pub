@@ -438,11 +438,27 @@ The only registration bridge, `nact/nactor/request-register.mjs`, is
    *Examined and OUT of scope, with the reason, so this is not re-scanned:*
    - **Scope-key rotation** (`441`, generation bumps, the TTL daemon) — rotation *is*
      revocation. It publishes no act on anyone's behalf.
-   - **The carrier.** waggle re-publishing an already-public note under its poster identity
-     is transport with attribution, not composition. The admitted author already signed as
-     itself; `da-cap: admit` is standing authority to *be carried*, which is not standing
-     authority for anyone to sign on the Director's behalf. Ruling 4 keeps `admit` in the
-     closed enum deliberately.
+   - **The carrier, and this ruling requires NO waggle change.** waggle re-publishing an
+     already-public note under its poster identity is transport with attribution, not
+     composition: the author signed their own note, and waggle carries it with the byline
+     `renderReleased` derives from that signature. `da-cap: admit` is standing authority to
+     *be carried*, which is not standing authority for anyone to sign on the Director's
+     behalf. Ruling 4 keeps `admit` in the closed enum deliberately.
+
+     **All three released lanes are out of scope by name** — `mirrored feed`,
+     `granted participant`, `standing follow` — so that no later reading can reinterpret
+     them into violations. In each, the content was authored and signed by someone else, and
+     the trust gradient decides *whether to carry*, never *what to say*. The gradient is a
+     deliberate design the Director asked to be made visible (`waggle/console/#routing`), not
+     an unexamined convenience; it is also the only lane set in the estate whose authority is
+     already both signed and displayed. Tightening how a lane's authorization is *verified* —
+     as waggle#297 does by moving the standing-reply predicate to an off-box policy host — is
+     the encouraged direction. Removing the lanes is not what this ruling asks for.
+
+     The distinction that does bite: if waggle ever **composes** substantive content and
+     signs it as an agent for a principal, that is in scope. Today it composes only
+     infrastructure disclosures (a consent request, a deletion tombstone), which have no
+     principal and are covered below.
    - **Return-lane sealing and delivery** — NIP-59 wraps that move a message already
      authored elsewhere.
    - **Service self-description** — `10002` relay lists, `31990` handler adverts published
