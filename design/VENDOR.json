@@ -47,27 +47,27 @@
           "note": "private token block, not a vendored copy — adoption tracked in nave.pub#113"
         }
       ],
-      "sha256Body": "8bc53b815933a311d2e1831947cce1e59d23d026a867d0f83473493481127fab"
+      "sha256Body": "c1aca3d2cf40dbf179eaef4241b38e4374b4a920585bad93905c42ba88cc0347"
     },
     {
       "path": "components/nave-titlebar.mjs",
-      "sha256": "61a7e31cda51c2a125ae8a5a28b9071d3b11e0296acfc238cdef59e0cc16d749",
+      "sha256": "cb126abe0fb2b4f012e2d5ca35f91b618cad22a6c0f1aaffe6e486d9ca239b08",
       "consumers": [
         {
           "repo": "nvoy",
           "path": "lib/nave-titlebar.mjs",
-          "skipFirstLine": true
+          "stamped": true
         },
         {
           "repo": "nact",
           "path": "lib/nave-titlebar.mjs",
-          "skipFirstLine": true
+          "stamped": true
         },
         {
           "repo": "ngage",
           "path": "lib/nave-titlebar.mjs",
-          "skipFirstLine": true,
-          "root": "$HOME/Projects"
+          "root": "$HOME/Projects",
+          "stamped": true
         },
         {
           "repo": "waggle",
@@ -75,9 +75,9 @@
           "root": "$HOME/.buzz/REPOS"
         }
       ],
-      "sha256Body": "0487a14930899434814791008ef28bc7f5bb67ecfb0ec352ea1a3421a9d9f40a",
+      "sha256Body": "0be2c1aff740d07f0ca41a419a54d604ecd1d3d9e74c15faaca37d80e5819f8a",
       "fleetSha256": "c0f7d2d50bdd6cf9a4d51b2e302030b4b45a739525ff233822c059e9473a9b98",
-      "fleetSha256Body": "c0f7d2d50bdd6cf9a4d51b2e302030b4b45a739525ff233822c059e9473a9b98"
+      "fleetSha256Body": "ddc30acc6978207bda16c01d94b8bcd50a510efa2b835c2e83052b07c73af67f"
     },
     {
       "path": "components/nave-tabs.mjs",
@@ -108,7 +108,7 @@
       "sha256": "519bd081c1f1d8e0b3782b93e5e1df121b92454be078c7c19b292a10cd385b9c",
       "note": "Five different sibling lists exist across five copies today, and six surfaces carry no footer at all. Reconciling those is nave.pub#113 follow-up work, not a hash mismatch to silence.",
       "consumers": [],
-      "sha256Body": "ec54aa2679dc40e70ee9c68bfcc757ac14e8d338ed0d77bb33a3d2c46cc55577"
+      "sha256Body": "519bd081c1f1d8e0b3782b93e5e1df121b92454be078c7c19b292a10cd385b9c"
     }
   ],
   "apps": [
