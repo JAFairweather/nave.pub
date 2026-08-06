@@ -91,11 +91,53 @@ if [ ! -f sites/nave/bin/nave-drift ]; then
   echo "    The gate cannot verify what is about to be served. Stopping."
   exit 1
 fi
+# THIS HOST HAS NO `node`. Every node process in this estate runs inside a container —
+# `node:20-alpine` appears in docker-compose.yml only as a BUILD STAGE — and line 98 of the
+# first version of this gate was the sole place the deploy assumed a host interpreter. It
+# exited 127, the `if` fell through to the else branch, and the deploy logged
+# "DIVERGENCE FOUND" for a check that had never started. That is worse than no gate: it
+# manufactured a verdict. So the runner is resolved explicitly, and a run that cannot start
+# is reported as UNVERIFIED rather than as a finding.
+drift_run() {
+  if command -v node >/dev/null 2>&1; then
+    node sites/nave/bin/nave-drift --root "$PWD/sites" --write-report
+  elif command -v docker >/dev/null 2>&1; then
+    # The executable and every hash still come from the served snapshot — only the
+    # interpreter is borrowed. `sites` is mounted rw solely so --write-report can land
+    # design/DRIFT.md in sites/nave, the same tree this script just hard-reset.
+    docker run --rm -v "$PWD/sites:/w/sites" -w /w node:20-alpine \
+      node /w/sites/nave/bin/nave-drift --root /w/sites --write-report
+  else
+    echo "  (no host node and no docker — nothing can run the detector)"
+    return 127
+  fi
+}
+# `set -e` is on (line 10), and an assignment whose command substitution exits nonzero aborts the
+# script AT THIS LINE — which would kill the deploy with no message and make every branch below
+# unreachable, including the unverified one. The suspension is deliberate and minimal: this gate
+# decides its own exits explicitly, a few lines down, with a reason attached.
+set +e
+DRIFT_OUT="$(drift_run 2>&1)"; DRIFT_RC=$?
+set -e
+printf '%s\n' "$DRIFT_OUT"
+
+# REQUIRE THE COMPLETION SENTINEL BEFORE BELIEVING ANY VERDICT. Exit status alone cannot
+# distinguish "ran and found divergence" (1) from "never started" (127 no interpreter, 125
+# failed image pull, 137 OOM). The detector prints `nave-drift: complete —` as its last act;
+# absent that line the correct conclusion is unverified, and unverified is a HARD failure for
+# the same reason a missing executable is: being unable to check is not permission.
+if ! printf '%s' "$DRIFT_OUT" | grep -q 'nave-drift: complete —'; then
+  echo "  ✗ drift gate UNVERIFIED — the detector did not run to completion (exit $DRIFT_RC)."
+  echo "    This is NOT a divergence finding and must not be read as one. Nothing was checked."
+  echo "    Stopping before secrets and build. Fix the runner, do not skip the gate."
+  exit 1
+fi
+
 # Divergence itself REPORTS ONLY until the fleet is clean, and that is deliberate: the
 # fleet has two divergences that predate this gate (nact's dropped --mono fallback,
 # ngage's Courier/Georgia override), and blocking on them would red a deploy for drift
 # the gate did not cause. Wave 5 flips the default once those are reconciled.
-if node sites/nave/bin/nave-drift --root "$PWD/sites" --write-report; then
+if [ "$DRIFT_RC" -eq 0 ]; then
   echo "  drift gate: clean"
 elif [ "${NAVE_DRIFT_ENFORCE:-0}" = "1" ]; then
   echo "  ✗ drift gate FAILED — stopping before secrets and build."
