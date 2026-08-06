@@ -56,8 +56,13 @@ SDV='nave-drift: complete — 8 artifact(s) checked, verdict diverged'
 
 # The detector ran to completion: its exit status is a real verdict and is honoured.
 expect 'ran, clean'                        "$SOK" 0   0 0 'drift gate: clean'
-expect 'ran, diverged — report-only'       "$SDV" 1   0 0 'NOT ENFORCED'
-expect 'ran, diverged — ENFORCE=1 stops'   "$SDV" 1   1 1 'drift gate FAILED'
+# ENFORCEMENT IS NOW THE DEFAULT (Wave 5), so the unset case must STOP the deploy. Passing an empty
+# string for the env var exercises exactly that: `${NAVE_DRIFT_ENFORCE:-1}` treats unset and empty alike.
+expect 'ran, diverged — DEFAULT stops the deploy' "$SDV" 1  ''  1 'drift gate FAILED'
+expect 'ran, diverged — ENFORCE=1 stops'          "$SDV" 1  1   1 'drift gate FAILED'
+# Opting OUT is still possible for one deploy, and must still say so loudly. It is an opt-out rather than
+# an opt-in now: the default should be the safe one, and someone suppressing a fork should have to say so.
+expect 'ran, diverged — ENFORCE=0 reports only'   "$SDV" 1  0   0 'NOT ENFORCED'
 
 # The detector did NOT run to completion. Every one of these is unverified, never a finding.
 # 127 is the original bug; the others are the same class arriving by a different route.
