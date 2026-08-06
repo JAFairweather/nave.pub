@@ -412,6 +412,78 @@ The only registration bridge, `nact/nactor/request-register.mjs`, is
    waggle's unsigned in-channel verbs (ruling 9) — so the choice was never "durable or
    not," it was **durable and named, or durable and hidden.**
 
+   **3a. The templated-actuator exception is DECLINED (Director, 2026-08-06.)** A
+   template that fully determines its output bytes defeats the reasoning above — those
+   bytes *do* exist at issuance, so "WYSIWYS cannot bind yet" stops being true and the
+   structural argument for refusing evaporates. The exception is refused anyway, on a
+   different ground: **a template's substitution set is wider than it looks, and the
+   failure is silent.** A template signs what its substitutions turn out to permit, not
+   what its author pictured, and nothing in the flow ever contradicts the author. Against
+   that, queueing costs one tap. So **every instantiation queues, without exception**, and
+   the doctrine sentence stands unamended.
+
+   Consequence, and it is an obligation rather than an observation: **a recurring or
+   event-driven path that signs an agent's action without a fresh tap is now a named
+   violation**, not an unexamined convenience.
+
+   **The boundary, drawn precisely, because the first phrasing was too wide.** "Anything
+   on a timer" would have swept in the carrier that the whole design rests on. The test is
+   **whose act is being emitted**, not whether a timer fired:
+
+   *In scope — an agent's own act, composed and signed under its identity:* a queue drained
+   on a timer that publishes text a worker wrote; an unattended runtime holding a signer
+   with no approval step between prompt and publish; a signing tool an agent may call whose
+   only restraint is documentation.
+
+   *Examined and OUT of scope, with the reason, so this is not re-scanned:*
+   - **Scope-key rotation** (`441`, generation bumps, the TTL daemon) — rotation *is*
+     revocation. It publishes no act on anyone's behalf.
+   - **The carrier, and this ruling requires NO waggle change.** waggle re-publishing an
+     already-public note under its poster identity is transport with attribution, not
+     composition: the author signed their own note, and waggle carries it with the byline
+     `renderReleased` derives from that signature. `da-cap: admit` is standing authority to
+     *be carried*, which is not standing authority for anyone to sign on the Director's
+     behalf. Ruling 4 keeps `admit` in the closed enum deliberately.
+
+     **All three released lanes are out of scope by name** — `mirrored feed`,
+     `granted participant`, `standing follow` — so that no later reading can reinterpret
+     them into violations. In each, the content was authored and signed by someone else, and
+     the trust gradient decides *whether to carry*, never *what to say*. The gradient is a
+     deliberate design the Director asked to be made visible (`waggle/console/#routing`), not
+     an unexamined convenience; it is also the only lane set in the estate whose authority is
+     already both signed and displayed. Tightening how a lane's authorization is *verified* —
+     as waggle#297 does by moving the standing-reply predicate to an off-box policy host — is
+     the encouraged direction. Removing the lanes is not what this ruling asks for.
+
+     The distinction that does bite: if waggle ever **composes** substantive content and
+     signs it as an agent for a principal, that is in scope. Today it composes only
+     infrastructure disclosures (a consent request, a deletion tombstone), which have no
+     principal and are covered below.
+   - **Return-lane sealing and delivery** — NIP-59 wraps that move a message already
+     authored elsewhere.
+   - **Service self-description** — `10002` relay lists, `31990` handler adverts published
+     at boot. A replaceable statement about a service is not an act for a principal.
+   - **A zero-authority alarm key** whose sole capability is to send its own alert.
+   - **Offering a draft.** A cron that signs a scope and gift-wraps a draft to the Director
+     is the approval path *working*: the signature that matters is still his, on his desk.
+     Noted explicitly because the literal reading — signed events, under an agent identity,
+     on a schedule — invites re-litigation every time someone reads it fresh.
+
+   **3b. A standing capability is capped at `low`, fixed at issuance.** `elevated` and
+   `critical` already require a full render or on-device signing, which *is* a fresh tap
+   by definition — so a higher ceiling would be unreachable in practice and would exist
+   only to mislead the reader of a grant. The cap cannot be raised by any later event; a
+   different ceiling means a different grant.
+
+   **3c. Revoking a capability kills the proposals already queued under it**, and the
+   confirm must enumerate them before signing. A queued proposal is authority still in
+   flight; leaving it live would mean the revoke button does not mean what it says — the
+   same defect as `nact`'s rotate button, which claimed a revocation it never performed.
+
+   **3d. TTL and rate limit have estate-wide defaults that a grant may only TIGHTEN.**
+   Never widen. A forgotten field therefore fails safe, which is the opposite of the
+   `grantors`-defaults-to-`approvers` collapse in waggle's config.
+
 4. **`capability:*` and `da-cap` stay two mechanisms, and the seam is formalized.**
    `da-cap` on a public `440` is the **enforcement** tag; a `30440` named
    `capability:<slice>/<verb>` carries the terms. **Enforcement must never require a
