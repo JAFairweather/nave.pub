@@ -275,6 +275,37 @@ for (const a of manifest.artifacts) {
 
 const a_baselineSet = manifest.artifacts.some(a => a.fleetSha256 || a.fleetSha256Body)
 
+// THE ROSTER CHECK. `components/nave-titlebar.mjs` exports NAVE_PLANES so the plane switcher can
+// propagate by vendoring rather than by four apps each declaring a copy. That makes VENDOR.json's `apps`
+// and the module's roster two statements of one fact, and two statements of one fact drift. This compares
+// them, because the failure is silent and asymmetric: a roster edited in the manifest but not the module
+// means the new app is missing from every switcher in the fleet, and every screen still looks correct.
+//
+// Reported as its own line rather than folded into a hash verdict — "the menus disagree with the manifest"
+// is a different problem from "a vendored file was forked", and a reader needs to know which.
+{
+  const tb = join(HUB, 'components/nave-titlebar.mjs')
+  const appIds = (manifest.apps || []).map(a => a.id)
+  if (existsSync(tb) && appIds.length) {
+    const src = readFileSync(tb, 'utf8')
+    const block = src.slice(src.indexOf('export const NAVE_PLANES'))
+    const rosterIds = [...block.matchAll(/id:\s*'([^']+)'/g)].map(m => m[1])
+    const missing = appIds.filter(id => !rosterIds.includes(id))
+    const extra = rosterIds.filter(id => !appIds.includes(id))
+    if (missing.length || extra.length) {
+      rows.push({
+        artifact: 'NAVE_PLANES vs VENDOR.json apps', repo: 'nave', verdict: 'diverged',
+        detail: [missing.length ? `absent from the switcher: ${missing.join(' ')}` : '',
+          extra.length ? `not in the manifest: ${extra.join(' ')}` : ''].filter(Boolean).join(' · '),
+      })
+      forks++
+    } else {
+      rows.push({ artifact: 'NAVE_PLANES vs VENDOR.json apps', repo: 'nave', verdict: 'ok',
+        detail: `${rosterIds.length} apps, same set and same order` })
+    }
+  }
+}
+
 if (flag('--json')) {
   console.log(JSON.stringify({ root: ROOT, rows, forks, stale, unadopted, missing: gone }, null, 2))
 } else {
