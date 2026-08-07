@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>nave-login · reference</title>
+<meta name="robots" content="noindex">
+<!--
+  THE DEMO nave-login.mjs HAS CLAIMED TO PAIR WITH SINCE IT WAS WRITTEN.
+  Its header says "Keep in lock-step with components/nave-login.html" — a file that did not exist.
+
+  That is not a missing nicety. `nave-login.mjs` is adopted by ZERO apps, and a component nobody has
+  rendered is a component nobody has checked: every app still carries its own bespoke sign-in gate,
+  which is the drift the shared component was built to end. The cheapest way to find out whether a
+  shared surface is actually usable is to render every branch of it once, on a page that needs no
+  signer, no relay and no build step — so that is what this is.
+
+  NOTHING HERE SIGNS ANYTHING. Every callback drives `setLoginStatus` and returns. That is deliberate
+  and is the honest shape for a reference page: a demo that appeared to sign in would be the
+  fabricated-approval failure AD-11 forbids, on the one surface where a person is deciding whether to
+  trust a key prompt. The status line says so in every panel.
+
+  `bin/login-lockstep.test.mjs` asserts that every option in the component's documented API appears
+  here, so "keep in lock-step" is checkable instead of aspirational.
+-->
+<link rel="stylesheet" href="../design/tokens.css">
+<style>
+  body{margin:0;background:var(--ground,#0b0906);color:var(--text,#f4efe4);
+       font-family:var(--sans,system-ui,sans-serif);line-height:1.55}
+  header{max-width:900px;margin:0 auto;padding:34px 20px 0}
+  h1{font-size:22px;margin:0 0 6px;font-weight:600;letter-spacing:-.01em}
+  .lede{color:var(--dim,#9c927f);max-width:68ch;margin:0 0 4px}
+  .warn{border:1px dashed var(--line,#2a2317);border-radius:11px;padding:12px 15px;margin:20px 0 0;
+        color:var(--dim,#9c927f);font-size:13.5px;max-width:68ch}
+  .grid{max-width:1180px;margin:0 auto;padding:10px 20px 80px;display:grid;gap:26px;
+        grid-template-columns:repeat(auto-fit,minmax(360px,1fr))}
+  section{border:1px solid var(--line,#2a2317);border-radius:16px;padding:6px 4px 14px;
+          background:color-mix(in srgb,var(--panel,#14100a) 40%,transparent)}
+  section>h2{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim,#9c927f);
+             margin:16px 22px 0;font-weight:600}
+  section>p.why{margin:5px 22px 0;font-size:12.5px;color:var(--faint,#6f6555);max-width:46ch}
+  .mount .nave-login{margin:14px auto 0}
+  code{font-family:var(--mono,ui-monospace,monospace);font-size:12px}
+  a{color:var(--accent,#c39a56)}
+  @media (prefers-color-scheme:light){
+    :root:not([data-theme="dark"]) body{background:var(--ground,#fbf8f2);color:var(--text,#231d14)}
+  }
+  :root[data-theme="light"] body{background:var(--ground,#fbf8f2);color:var(--text,#231d14)}
+</style>
+</head>
+<body>
+<header>
+  <h1>nave-login — every branch, rendered once</h1>
+  <p class="lede">The shared sign-in surface from
+    <code><a href="nave-login.mjs">nave-login.mjs</a></code>. Each panel below is one real
+    <code>renderLogin()</code> call with a different set of callbacks, because the component shows a
+    control only when its callback is supplied — so the option set <em>is</em> the layout.</p>
+  <div class="warn"><b>Nothing on this page signs anything.</b> Every button reports what it would have
+    done and stops. A demo that appeared to sign you in would be a fabricated approval on the one
+    surface where a person is deciding whether to trust a key prompt.</div>
+</header>
+
+<div class="grid">
+  <section>
+    <h2>Control plane — everything on</h2>
+    <p class="why">Gold accent. Extension present, remote signer, bunker paste, and the advanced
+      local-key escape. The maximal surface.</p>
+    <div class="mount" id="m-full" style="--accent:#c39a56"></div>
+  </section>
+
+  <section>
+    <h2>No extension installed</h2>
+    <p class="why">The single most common first visit. <code>hasExtension:false</code> drops the
+      primary button entirely, so the remote-signer path must stand on its own.</p>
+    <div class="mount" id="m-noext" style="--accent:#c39a56"></div>
+  </section>
+
+  <section>
+    <h2>App family — extension only</h2>
+    <p class="why">Purple accent, one path, no bunker row. Themed by a single token on the mount, which
+      is the whole theming contract.</p>
+    <div class="mount" id="m-app" style="--accent:#8b7cc8"></div>
+  </section>
+
+  <section>
+    <h2>Error state</h2>
+    <p class="why"><code>setLoginStatus(el, msg, 'error')</code>. A refused or failed connect has to be
+      legible without a re-render.</p>
+    <div class="mount" id="m-err" style="--accent:#c39a56"></div>
+  </section>
+
+  <section>
+    <h2>Bunker only, mid-flight</h2>
+    <p class="why">No extension, no NIP-46 pairing link — just a pasted <code>bunker://</code>, with a
+      live status while the signer is asked to approve.</p>
+    <div class="mount" id="m-bunker" style="--accent:#c39a56"></div>
+  </section>
+
+  <section>
+    <h2>Minimum viable card</h2>
+    <p class="why">One callback and a title. Everything optional omitted — proof the component
+      degrades to a card rather than to a broken layout.</p>
+    <div class="mount" id="m-min" style="--accent:#c39a56"></div>
+  </section>
+</div>
+
+<script type="module">
+import { renderLogin, setLoginStatus } from './nave-login.mjs'
+
+// A trusted literal, per the component's contract — the caller owns sealSvg and it is not escaped.
+const SEAL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg>`
+
+/** Report, never pretend. Each callback names the step it would have taken. */
+const demo = (el, what) => () => setLoginStatus(el,
+  `${what}\n(reference page — nothing was signed and no signer was contacted)`)
+
+const full = document.getElementById('m-full')
+renderLogin(full, {
+  appName: 'Nvoy', tagline: 'what your agents may see', sealSvg: SEAL,
+  blurb: 'Sign in to see and change what your agents hold. Sign in only when you want to give or remove access.',
+  primaryLabel: 'Sign in with your extension',
+  signerNote: 'works with any NIP-07 signer — Alby · nos2x · Amber',
+  nostrConnectLabel: 'Connect a remote signer',
+  bunkerPlaceholder: 'bunker://… from your remote signer',
+  bunkerNote: 'Your key stays in the signer. This page receives signatures, never the key.',
+  advancedLabel: 'Advanced: use a local key in this tab',
+  hasExtension: true,
+  onExtension: demo(full, 'would request a signature from window.nostr'),
+  onNostrConnect: demo(full, 'would generate a nostrconnect:// pairing link'),
+  onBunker: (uri) => setLoginStatus(full,
+    `would connect to the pasted bunker URI (${uri.length} chars)\n(reference page — nothing was signed)`),
+  onLocal: demo(full, 'would fall back to a local key held in this tab only'),
+})
+
+const noext = document.getElementById('m-noext')
+renderLogin(noext, {
+  appName: 'Nvoy', tagline: 'what your agents may see', sealSvg: SEAL,
+  blurb: 'No browser signer found. Pair a remote one, or paste a bunker URI.',
+  nostrConnectLabel: 'Connect a remote signer',
+  bunkerPlaceholder: 'bunker://…',
+  bunkerNote: 'Nothing is created here until your signer confirms.',
+  hasExtension: false,
+  onExtension: demo(noext, 'unreachable — hasExtension is false'),
+  onNostrConnect: demo(noext, 'would generate a nostrconnect:// pairing link'),
+  onBunker: () => setLoginStatus(noext, 'would connect the pasted bunker URI\n(reference page)'),
+})
+setLoginStatus(noext, 'No NIP-07 signer detected in this browser.')
+
+const app = document.getElementById('m-app')
+renderLogin(app, {
+  appName: 'Ngage', tagline: 'your desk', sealSvg: SEAL,
+  blurb: 'Sign in to read your desk and post in your own hand.',
+  primaryLabel: 'Sign in', signerNote: 'any NIP-07 signer',
+  hasExtension: true,
+  onExtension: demo(app, 'would request a signature from window.nostr'),
+})
+
+const err = document.getElementById('m-err')
+renderLogin(err, {
+  appName: 'Nact', tagline: 'what your agents may do', sealSvg: SEAL,
+  blurb: 'Sign in to review what is waiting for your key.',
+  primaryLabel: 'Sign in with your extension', hasExtension: true,
+  onExtension: () => setLoginStatus(err, 'nothing changed: the signer refused the request.', 'error'),
+  onBunker: () => setLoginStatus(err, 'nothing changed: that bunker URI could not be parsed.', 'error'),
+  bunkerPlaceholder: 'bunker://…',
+})
+setLoginStatus(err, 'nothing changed: the signer refused the request.', 'error')
+
+const bunker = document.getElementById('m-bunker')
+renderLogin(bunker, {
+  appName: 'waggle', tagline: 'the community bridge', sealSvg: SEAL,
+  blurb: 'Sign in only when you want to give or remove access.',
+  bunkerPlaceholder: 'bunker://…', bunkerNote: 'Approve the request in your signer.',
+  hasExtension: false,
+  onBunker: () => setLoginStatus(bunker, 'waiting for approval in your signer…'),
+})
+setLoginStatus(bunker, 'waiting for approval in your signer…')
+
+const min = document.getElementById('m-min')
+renderLogin(min, {
+  appName: 'Sign in', hasExtension: true, keyNote: false,
+  onExtension: demo(min, 'would request a signature from window.nostr'),
+})
+</script>
+</body>
+</html>
