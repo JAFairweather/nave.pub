@@ -54,6 +54,12 @@ jobs:
       - name: login lock-step
         run: node bin/login-lockstep.test.mjs
 
+      # The known-drift page asks readers to trust its rulings. This cannot check that a ruling is
+      # TRUE — that is a judgement about the estate — but it checks that every ruling still points at
+      # something a reader can go and open.
+      - name: doc drift citations
+        run: node bin/doc-drift.test.mjs
+
       # And the detector itself must still run to completion in a bare checkout. It exits non-zero on
       # real divergence, which is not this job's business — sibling clones are absent here, so the
       # verdict is meaningless. What IS this job's business is that it reaches its completion
