@@ -223,8 +223,14 @@ that spec; it does not invent it.**
   because their copies are old — `tokens.css` has shipped both light mechanisms for
   some time; and every titlebar provenance stamp in the fleet is **stale while the
   bodies are current**, because the stamp is prose rather than a hash.
-- `components/nave-login.mjs` is built, documented, and adopted by **zero** apps. Its
-  documented twin `nave-login.html` does not exist.
+- `components/nave-login.mjs` is built, documented, and adopted by **zero** apps.
+  Its documented twin `nave-login.html` **now exists** (2026-08-06) and renders every
+  branch the component documents, checked by `bin/login-lockstep.test.mjs` against the
+  option list in the component's own header. Rendering it answered the question the
+  missing page had been hiding: the component is sound, including the
+  `hasExtension: false` layout that the most common first visit takes and that no app
+  had ever exercised. **Adoption is still open** — the "Nvoy first" ruling stands; the
+  page is its precondition, not its replacement.
 - The estate has already been bitten by exactly this: the Caddyfile records a waggle
   console copy that drifted, *"rendered perfectly and failed only at the moment
   someone tried to sign in."*
@@ -448,6 +454,20 @@ manifest, **hash** provenance stamps, a `bin/nave-drift` reporting
 `ok` / `stale` / **`diverged`** / `not adopted` / `missing`, and the gate placed in
 `deploy/sites.sh` **after the clone/reset loop and before secrets or build**, reading the
 trees Caddy actually mounts.
+
+**And one URL that answers it** (`/drift`, shipped 2026-08-06). The detector, the manifest
+and the report all existed while the answer still required cloning the hub and running a
+script — so the question nobody could ask casually was the one whose wrong answer cost the
+most. `--write-report` now also emits `design/drift.json` (the same rows, machine-readable,
+with the filesystem paths withheld because `file_server` serves it publicly), and the page
+consumes that rather than parsing the Markdown: two representations of one fact is the
+failure this detector exists to catch, and it must not reappear inside it.
+The page is **honest before it is reassuring**. It renders a snapshot, not a live check —
+a browser cannot hash thirteen clones — so the age of the answer is as prominent as the
+answer, past 24h the verdict is **demoted to `unverified`** rather than shown clean, and an
+unreadable report is a skeleton with a reason, never `0 diverged`. That demotion earned its
+place immediately: the committed `DRIFT.md` claimed **2 diverged** dated the 5th, and a
+fresh run said **0**. It had been stale for a day, and a failed deploy leaves it that way.
 
 **It is a diagnostic, not an atomicity guarantee**, and the distinction is a required
 release property rather than a nicety. `./sites` is a live bind mount and the loop promotes
