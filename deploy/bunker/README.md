@@ -53,8 +53,11 @@ so it can reach Bunker46's `:8080` on the host. If Bunker46 binds `:8080` to
    ```bash
    sops -d --input-type dotenv --output-type dotenv ~/Projects/Nave/nave-operator.env.sops | grep OPERATOR_NSEC
    ```
-4. **Set the signer's relays** to `wss://relay.nave.pub`, `wss://relay.damus.io`,
-   `wss://nos.lol` (own relay + 2 public fallback — no single-relay lockout).
+4. **Set the signer's relays** to `wss://transport.nave.pub`, `wss://relay.damus.io`,
+   `wss://nos.lol` (own transport relay + 2 public fallback — no single-relay
+   lockout). `transport.nave.pub` is the NIP-46-only relay from the
+   nave.pub#130 split (`../relay/SPLIT_RUNBOOK.md`) — not `relay.nave.pub`,
+   which holds the grant plane and no longer accepts 24133 post-split.
 5. **Lock it down:** set `ALLOW_REGISTRATION=false` in `/root/bunker46/.env` and
    `docker compose -f /root/bunker46/docker-compose.yml up -d` so no one else can
    sign up.
