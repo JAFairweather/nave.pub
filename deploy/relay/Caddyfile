@@ -7,6 +7,13 @@ relay.nave.pub {
 	reverse_proxy strfry:7777
 }
 
+# NIP-46 transport-only relay (nave.pub#130 split). DNS for transport.nave.pub
+# must point at this box before Caddy can obtain its cert — see
+# deploy/relay/split-02-bring-up-transport.sh.
+transport.nave.pub {
+	reverse_proxy strfry-transport:7777
+}
+
 # The bunker (Bunker46 NIP-46 signer) runs in its own compose, publishing :8080
 # on the host; Caddy reaches it via the host-gateway mapping on this service.
 # NOTE: this path depends on Docker's iptables chains being intact. If bunker.nave.pub

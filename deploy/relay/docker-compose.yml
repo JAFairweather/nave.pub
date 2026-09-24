@@ -16,6 +16,19 @@ services:
       - "7777"
     networks: [relaynet]
 
+  # NIP-46 transport-only relay (nave.pub#130 split) — same image, different
+  # conf/plugin/db, so it never shares strfry's LMDB or write-policy.py.
+  strfry-transport:
+    build: .
+    restart: unless-stopped
+    volumes:
+      - ./strfry-transport.conf:/etc/strfry.conf:ro
+      - strfry-transport-db:/app/strfry-transport-db
+    command: ["/app/strfry", "--config=/etc/strfry.conf", "relay"]
+    expose:
+      - "7777"
+    networks: [relaynet]
+
   caddy:
     image: caddy:2
     restart: unless-stopped
@@ -24,7 +37,7 @@ services:
     # Caddy for a mounted-file-only change).
     # image default command (known-good). A clean recreate re-reads the mounted
     # Caddyfile — loading the bunker vhost — without --watch churn.
-    depends_on: [strfry]
+    depends_on: [strfry, strfry-transport]
     ports:
       - "80:80"
       - "443:443"
@@ -43,5 +56,6 @@ networks:
 
 volumes:
   strfry-db:
+  strfry-transport-db:
   caddy-data:
   caddy-config:

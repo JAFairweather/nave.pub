@@ -113,6 +113,18 @@ whom, and when) off third‑party infra.
   | kind **24133** (NIP‑46) from anyone | accept, rate‑limited (E2E‑encrypted transport; the bunker itself authorizes) |
   | everything else | reject |
 
+  > **Update (nave.pub#130):** an anonymous full read of relay.nave.pub showed
+  > this carve-out is both an open write channel (anyone can write 24133, not
+  > just the bunker's real clients) and a metadata firehose (every signer
+  > round-trip is observable — 866 of them in the audit). The "split later if
+  > you want stricter isolation" option above is now done: NIP-46 traffic
+  > moved to its own relay, `transport.nave.pub`, and the rate limit this
+  > table always specced is now actually implemented (it never was on this
+  > relay, since the fleet allow-list was doing the real gating here). See
+  > `deploy/relay/SPLIT_RUNBOOK.md`. The row above and the gotcha below
+  > describe the original, colocated design — kept for the reasoning, not as
+  > current state.
+
   **Fleet allow‑list (hex):**
   ```
   nave      d8de5184a096e49b3f79730258c05f8ffb56cdf138c08b3c7b0b0685a0fb963e
