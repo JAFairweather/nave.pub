@@ -43,6 +43,25 @@ dashboard saved," an actual phone approval that completed.
   smoke tests in steps 3 and 4. Without it those steps skip the automated
   checks and fall back to telling you what to check by hand.
 
+## Gate before step 4: every paired client must already use the transport relay
+
+A bunker URI carries its relay (`relay=` parameter), and a paired client
+keeps using the relay it was paired on. Moving the dashboard's signer relay
+list (step 3) does not move clients that are already paired. The nvoy
+fleet brokers keep their pairing in `/etc/nvoy/credentials/<name>.bunker-uri`
+on the fleet host. After step 4, a broker whose URI still names
+relay.nave.pub cannot sign at all.
+
+So, before step 4:
+- re-issue each connection from the dashboard so its URI names
+  transport.nave.pub, and replace the fleet credential files;
+- restart each broker;
+- have each broker sign once and check that the signature comes back.
+
+The bunker's `bunker_connections` table lists the clients that need this.
+Check the URIs by their relay parameter only, and never print a whole URI:
+it carries the pairing secret.
+
 ## What step 4 actually flips
 
 `allowlist.json`'s `allowKinds: [24133]` is what lets any key write 24133 to
