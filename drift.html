@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>fleet drift · nave</title>
+<meta name="robots" content="noindex">
+<!--
+  ONE URL THAT ANSWERS "is the fleet consistent right now?"
+
+  The detector, the baseline manifest and the report have existed for a while, and the answer was
+  reachable only by cloning the hub and running a script. So the question nobody could answer
+  casually was the one whose wrong answer is most expensive: three apps lost their light theme and
+  `--panel2` silently diverged from `--panel-2` for weeks, because nothing made inconsistency
+  visible anywhere a person actually looks.
+
+  THE HONESTY CONTRACT IS THE POINT, and it is the reason this page is not a green tick.
+  `design/drift.json` is a SNAPSHOT written by the last completed `nave-drift --write-report` run.
+  It is not a live check and this page cannot make it one — it has no way to hash thirteen clones
+  from a browser. So:
+
+    · the age of the answer is rendered as loudly as the answer itself;
+    · past a day, the verdict is demoted to "unverified" rather than shown as clean, because a
+      consistent fleet eleven hours and four merges ago is a claim about the past;
+    · a fetch that fails renders a skeleton WITH A REASON, never `0 diverged`. Being unable to
+      check is not a check result — the same rule the detector's own completion sentinel enforces,
+      after a deploy gate reported "DIVERGENCE FOUND" for a run that died at `node: command not
+      found`.
+
+  Tokens are LINKED, not vendored, because this page lives in the hub. A vendored copy here would be
+  a copy the drift detector then has to check — a page about drift, drifting.
+-->
+<link rel="stylesheet" href="design/tokens.css">
+<style>
+  body{margin:0;background:var(--ground,#0b0906);color:var(--text,#e9e2d6);
+       font-family:var(--sans,system-ui,sans-serif);line-height:1.55}
+  main{max-width:920px;margin:0 auto;padding:38px 20px 90px}
+  h1{font-size:23px;margin:0 0 6px;font-weight:600;letter-spacing:-.01em}
+  .lede{color:var(--dim,#9a917f);max-width:66ch;margin:0 0 26px}
+  .dim{color:var(--dim,#9a917f)}
+  .mono{font-family:var(--mono,ui-monospace,monospace)}
+  /* The verdict banner. Four states, and `unverified` is a first-class one. */
+  .verdict{border:1px solid var(--line,#2a241b);border-radius:14px;padding:16px 18px;margin:0 0 8px;
+           background:color-mix(in srgb,var(--panel,#141009) 70%,transparent)}
+  .verdict h2{margin:0 0 4px;font-size:16px;font-weight:600}
+  .verdict.clean{border-color:color-mix(in srgb,var(--ok,#6fbf73) 55%,var(--line,#2a241b))}
+  .verdict.forked{border-color:color-mix(in srgb,var(--crit,#d97a6c) 55%,var(--line,#2a241b))}
+  .verdict.unverified{border-style:dashed}
+  .stamp{font-family:var(--mono,monospace);font-size:11.5px;color:var(--dim,#9a917f);
+         margin:0 0 26px;display:flex;gap:9px;flex-wrap:wrap;align-items:baseline}
+  .pill{border:1px solid var(--line,#2a241b);border-radius:999px;padding:2px 10px;font-size:11px}
+  .pill.warn{border-color:color-mix(in srgb,var(--crit,#c46a5e) 60%,var(--line,#2a241b))}
+  .totals{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0}
+  .t{border:1px solid var(--line,#2a241b);border-radius:8px;padding:4px 11px;font-size:12px;
+     font-family:var(--mono,monospace)}
+  .t.zero{color:var(--faint,#6b6353)}
+  .wrap{overflow-x:auto;border:1px solid var(--line,#2a241b);border-radius:14px;margin-top:26px}
+  table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+  th{text-align:left;font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;
+     color:var(--dim,#9a917f);padding:11px 14px;border-bottom:1px solid var(--line,#2a241b)}
+  td{padding:10px 14px;border-bottom:1px solid color-mix(in srgb,var(--line,#2a241b) 55%,transparent);
+     vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td.a{font-family:var(--mono,monospace);white-space:nowrap}
+  td.d{color:var(--dim,#9a917f);font-size:12px}
+  .v{font-family:var(--mono,monospace);font-size:12px;white-space:nowrap}
+  .v.ok{color:var(--ok,#6fbf73)}
+  .v.stale{color:var(--dim,#9a917f)}
+  .v.diverged{color:var(--crit,#d97a6c);font-weight:600}
+  .v.missing{color:var(--crit,#d97a6c)}
+  .legend{margin-top:22px;font-size:12.5px;color:var(--dim,#9a917f);max-width:74ch}
+  .legend code{font-family:var(--mono,monospace)}
+  a{color:var(--accent,#c39a56)}
+  @media (prefers-color-scheme:light){
+    :root:not([data-theme="dark"]) body{background:var(--ground,#fbf8f2);color:var(--text,#231d14)}
+  }
+  :root[data-theme="light"] body{background:var(--ground,#fbf8f2);color:var(--text,#231d14)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Is the fleet consistent?</h1>
+  <p class="lede">Every app vendors the same tokens and the same shared components. This is the last
+    answer the drift detector gave about whether those copies still agree — read the timestamp before
+    you believe the verdict.</p>
+
+  <div id="out">
+    <div class="verdict unverified">
+      <h2>Loading the last drift report…</h2>
+      <p class="dim" style="margin:0">Nothing is claimed until it arrives.</p>
+    </div>
+  </div>
+
+  <p class="legend">
+    <code>ok</code> byte-identical to the hub ·
+    <code>stale</code> matches an older published hash, re-vendor ·
+    <code>diverged</code> disagrees with both the hub and the recorded baseline — promote the change
+    to the hub and re-vendor, never fork (AD-11) ·
+    <code>not adopted</code> carries its own implementation ·
+    <code>missing</code> a consumer named in <code>VENDOR.json</code> has no such file.
+  </p>
+  <p class="legend">Generated by <code>bin/nave-drift --write-report</code>, which the deploy gate runs
+    immediately after the hard reset — the one moment the hub is hashing exactly what production is
+    about to serve. This page reads <code><a href="design/drift.json">design/drift.json</a></code>;
+    the same run writes <code><a href="design/DRIFT.md">design/DRIFT.md</a></code> for reading in the
+    repo.</p>
+</main>
+
+<script>
+const out = document.getElementById('out')
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+
+/** "4 minutes ago" / "2 days ago" — the load-bearing number on this page. */
+function ago (ms) {
+  const s = Math.max(0, Math.round(ms / 1000))
+  if (s < 90) return `${s} second${s === 1 ? '' : 's'} ago`
+  const m = Math.round(s / 60)
+  if (m < 90) return `${m} minute${m === 1 ? '' : 's'} ago`
+  const h = Math.round(m / 60)
+  if (h < 36) return `${h} hour${h === 1 ? '' : 's'} ago`
+  return `${Math.round(h / 24)} day${Math.round(h / 24) === 1 ? '' : 's'} ago`
+}
+
+/** The skeleton-with-a-reason. Never a zero, never a blank. */
+function unreachable (why) {
+  out.innerHTML = `
+    <div class="verdict unverified">
+      <h2>No answer — the drift report could not be read</h2>
+      <p style="margin:0 0 8px">${esc(why)}</p>
+      <p class="dim" style="margin:0">Nothing is shown because nothing could be verified. <b>This is not
+        the same as “the fleet is consistent.”</b> Being unable to check is not a check result. Run
+        <span class="mono">node bin/nave-drift</span> in the hub for a live answer.</p>
+    </div>`
+}
+
+fetch('design/drift.json', { cache: 'no-store' })
+  .then(r => r.ok ? r.json() : Promise.reject(new Error(`the server answered ${r.status} for design/drift.json`)))
+  .then(d => {
+    if (!d || d.v !== 1 || !Array.isArray(d.rows))
+      throw new Error('the report is in a shape this page does not know how to read (expected v:1).')
+
+    const t = d.totals || {}
+    const bad = (t.diverged || 0) + (t.missing || 0)
+    const when = d.generated_at ? new Date(d.generated_at) : null
+    const age = when && !isNaN(when) ? Date.now() - when.getTime() : null
+    // Past a day the verdict is DEMOTED, not decorated. A consistent fleet yesterday is a claim
+    // about yesterday, and the deploy that would have refreshed this may simply have failed.
+    const tooOld = age === null || age > 24 * 3600 * 1000
+
+    const state = tooOld ? 'unverified' : bad ? 'forked' : (t.stale ? '' : 'clean')
+    const head = tooOld
+      ? 'Unverified — this answer is too old to trust'
+      : bad ? `${bad} artifact${bad === 1 ? '' : 's'} disagree${bad === 1 ? 's' : ''} with the hub`
+      : t.stale ? `Consistent, with ${t.stale} cop${t.stale === 1 ? 'y' : 'ies'} behind the hub`
+      : 'The fleet is consistent'
+    const body = tooOld
+      ? `The last completed run was ${age === null ? 'at an unknown time' : ago(age)}. Merges since then
+         are not reflected here, and a deploy that failed would leave this file exactly as it is —
+         so it is reported as unverified rather than as clean.`
+      : bad ? `A shared component disagrees with both the hub and the recorded baseline. Promote the
+         change to the hub and re-vendor — never fork.`
+      : t.stale ? `Nothing has forked. The copies below marked <span class="mono">stale</span> match an
+         older published hash and need a re-vendor; none of them contradicts the hub.`
+      : `Every vendored artifact is byte-identical to the hub.`
+
+    const totalHtml = ['ok', 'stale', 'diverged', 'not adopted', 'missing']
+      .map(k => `<span class="t${(t[k] || 0) === 0 ? ' zero' : ''}">${t[k] || 0} ${esc(k)}</span>`).join('')
+
+    const rows = [...d.rows].sort((a, b) => {
+      const rank = v => ({ diverged: 0, missing: 1, stale: 2, 'not adopted': 3, ok: 4 }[v] ?? 5)
+      return rank(a.verdict) - rank(b.verdict) || String(a.artifact).localeCompare(String(b.artifact))
+    })
+
+    out.innerHTML = `
+      <div class="verdict ${state}">
+        <h2>${esc(head)}</h2>
+        <p style="margin:0">${body}</p>
+        <div class="totals">${totalHtml}</div>
+      </div>
+      <p class="stamp">
+        <span>from <span class="mono">design/drift.json</span></span>
+        <span class="pill${tooOld ? ' warn' : ''}">${when && !isNaN(when) ? `generated ${ago(age)}` : 'no timestamp'}</span>
+        ${when && !isNaN(when) ? `<span>${esc(when.toISOString().replace('T', ' ').slice(0, 16))} UTC</span>` : ''}
+        ${d.baseline_recorded === false ? '<span class="pill warn">no fleet baseline recorded — stale cannot be told from forked</span>' : ''}
+        <span>a snapshot of the last completed run, not a live check</span>
+      </p>
+      <div class="wrap"><table>
+        <thead><tr><th>artifact</th><th>repo</th><th>verdict</th><th>detail</th></tr></thead>
+        <tbody>${rows.map(r => `<tr>
+          <td class="a">${esc(r.artifact)}</td>
+          <td class="mono">${esc(r.repo)}</td>
+          <td><span class="v ${esc(String(r.verdict).replace(/\s+/g, '-'))}">${esc(r.verdict)}</span></td>
+          <td class="d">${esc(r.detail)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`
+  })
+  .catch(e => unreachable(e && e.message ? e.message : 'the request failed.'))
+</script>
+</body>
+</html>
