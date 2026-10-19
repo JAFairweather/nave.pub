@@ -280,3 +280,32 @@ console.nave.pub {
 		reverse_proxy luke:8790
 	}
 }
+
+# Comparte community sharing pilot
+comparte.nave.pub {
+    encode zstd gzip
+    request_body {
+        max_size 64KB
+    }
+    reverse_proxy comparte-web:3000
+}
+
+# The nvoy channel door: the agent channel MCP over HTTPS, for a harness host that cannot reach
+# SSH (nvoy mcp/tools/channel-https-door.mjs, docs/HARNESS_PLACEMENT.md). Each door is an nvoy
+# participant's `door` service on the `nave` network, and it authenticates every request itself
+# with a bearer token. No `encode` here: compression would buffer the MCP event stream, and
+# flush_interval -1 sends each event as it is written. An upstream that is not running is a 502,
+# so this block is safe to deploy before its door is.
+door.nave.pub {
+	request_body {
+		max_size 1MB
+	}
+	handle /door/grokdoggydog/* {
+		reverse_proxy nvoy-grokdoggydog-door:8790 {
+			flush_interval -1
+		}
+	}
+	handle {
+		respond 404
+	}
+}
