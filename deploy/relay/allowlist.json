@@ -8,7 +8,15 @@
     "nact_jaf":  "bb4ff7defbcdb189ae36ea2dad8e2402b81f00ee5c478e834606dcf4e6b6f97f",
     "noir":      "61c360eff984c56adce1c4a0735326b2a67e7f6dd65c17cd9dcdb9e18afbfc6a",
     "sovereign": "4010ac438206dc10018b814be3ea01ca6c92bcc22e9719e841d2413b287ea84d",
-    "operator":  "a7744c7e53490dcbccd20a9cd63cfcd8474f4536841e87dcf9e985f2059bbbe9"
+    "operator":  "a7744c7e53490dcbccd20a9cd63cfcd8474f4536841e87dcf9e985f2059bbbe9",
+    "dj_codex":     "231952cb5eb0652c04075f6a1b93e727819ed2ac0bf5238a96c6d2ca51617edd",
+    "mc_claude":    "ad05b00ee49200d5bd2788fba480621ba6009224f01e48b3e9bce10100421d5c",
+    "pi_dog":       "e4c0faf44d9aeabcb5459c6c3b76f2c704d7b55c7e0ddb3685fab4e4226935d8",
+    "grokdoggydog": "61cb9345ce61bb06d42bef251de746051e608a539c1430142a8afa6593db924c",
+    "my_dude":      "0a8e0720c3ec52c6bfd9e2545d620cf58e2e8d371244255efce3ddd57ba0a32c",
+    "neil":         "5d3848a699e82f81e218aaad2f481bb63c00ff69b813cfca1cafc58ca633eb08",
+    "dennis":       "9a07300d3295f392d295cd8f73c8f1d3c725809b2e50fc52815db8682ef940a5",
+    "kerouac":      "eb586b1e9c214c10762acc0dd4d428ac9156c284162f2d9dcc98562e644d71a5"
   },
   "allowKinds": [24133],
   "recipientKinds": [1059]
