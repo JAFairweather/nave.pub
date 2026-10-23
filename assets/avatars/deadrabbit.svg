@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Dead Rabbit">
+  <rect x="2" y="2" width="96" height="96" rx="20" fill="#0b0906" stroke="#c39a56" stroke-opacity="0.5" stroke-width="2"/>
+  <!-- a pocket device that grew ears: James's hand in the field, holding its own key, never his -->
+  <g fill="none" stroke="#e2c079" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <!-- one ear up, listening -->
+    <path d="M37 46 C 31 32 31 16 37 13 C 43 15 46 30 45 46"/>
+    <!-- one ear down: the name's joke, a thing written off and brought back to carry the mail -->
+    <path d="M55 46 C 58 33 66 23 75 25 C 79 30 70 38 64 46"/>
+  </g>
+  <rect x="26" y="46" width="48" height="36" rx="9"
+        fill="#c39a56" fill-opacity="0.18" stroke="#e2c079" stroke-width="3.2"/>
+  <!-- the eye: an X, because it has been dead before -->
+  <g stroke="#e2c079" stroke-width="2.8" stroke-linecap="round">
+    <line x1="40" y1="58" x2="48" y2="66"/>
+    <line x1="48" y1="58" x2="40" y2="66"/>
+  </g>
+  <!-- the scroll wheel -->
+  <circle cx="63" cy="62" r="4" fill="none" stroke="#e2c079" stroke-width="2.4"/>
+  <line x1="24" y1="88" x2="76" y2="88" stroke="#c39a56" stroke-width="1.8" stroke-linecap="round" opacity="0.7"/>
+</svg>
