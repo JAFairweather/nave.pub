@@ -218,7 +218,8 @@ services:
     # -browser variant bundles Chromium+Xvfb (Luke's browser tool needs it).
     # Upstream's entrypoint IS the openclaw CLI (node dist/index.js) and it runs
     # as user `node` (uid 1000) — openclaw-state/.openclaw is chowned 1000:1000.
-    image: ghcr.io/openclaw/openclaw:2026.7.1-browser
+    # Pinned by digest as well as tag; rehearse a bump on a state copy first.
+    image: ghcr.io/openclaw/openclaw:2026.10.6-browser@sha256:8a7b748c37fc0dedd6e0ecd304664d351c46a28afb53912f8ab855af796ca8ba
     restart: unless-stopped
     # --auth trusted-proxy: no shared token; the gateway trusts Caddy's asserted
     # user. Bind mode + trustedProxies/allowUsers come from the patched config.
@@ -235,6 +236,10 @@ services:
       - path: ./openclaw.env
         required: false
     volumes:
+      # $HOME itself, owned 1000:1000 mode 700. Without it Docker creates /data
+      # root-owned, and 2026.10.x refuses to start: it needs a private temp dir
+      # at $HOME/.cache and writes its pre-migration Git backup under $HOME.
+      - ./openclaw-home:/data
       # The migrated state (agents, memory, config), refreshed from the live
       # instance by ops/oc-resync-boot.sh. gitignored, box-local.
       - ./openclaw-state/.openclaw:/data/.openclaw
