@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="LukeDog">
+  <rect width="256" height="256" fill="#4a5a4e"/>
+  <circle cx="128" cy="128" r="112" fill="#d9cdb4"/>
+  <path d="M58 88q-6 70 26 86l14-74z" fill="#6b4f36"/>
+  <path d="M198 88q6 70-26 86l-14-74z" fill="#6b4f36"/>
+  <ellipse cx="128" cy="128" rx="58" ry="66" fill="#b8874f"/>
+  <path d="M96 92q32-22 64 0q-8-16-32-16t-32 16z" fill="#c9c3b6"/>
+  <ellipse cx="128" cy="160" rx="34" ry="28" fill="#e4d6bd"/>
+  <path d="M110 166q18 10 36 0" stroke="#e8e4dc" stroke-width="4" fill="none" opacity=".7"/>
+  <circle cx="106" cy="120" r="7" fill="#2b2118"/>
+  <circle cx="150" cy="120" r="7" fill="#2b2118"/>
+  <circle cx="108" cy="118" r="2" fill="#fff"/>
+  <circle cx="152" cy="118" r="2" fill="#fff"/>
+  <path d="M114 145q14-10 28 0q-2 12-14 14q-12-2-14-14z" fill="#2b2118"/>
+  <path d="M128 158v8m-10 4q10 6 20 0" stroke="#2b2118" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M84 196q44 22 88 0l-6 14q-38 16-76 0z" fill="#7a2e2a"/>
+  <circle cx="128" cy="212" r="6" fill="#c9a24a"/>
+</svg>
