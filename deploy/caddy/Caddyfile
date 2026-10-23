@@ -247,6 +247,24 @@ cockpit.nave.pub {
 	# `nvoy` hook mapping turns it into a turn in Luke's waggle session. Not gated: the hook token
 	# authenticates it, and the mapping's message is static, so the body never reaches the prompt.
 	# The operator header is stripped, so this route can never assert James to OpenClaw.
+	# The fleet's notifier reaches this through the host, so Caddy sees it from a docker bridge
+	# gateway, inside OpenClaw's trustedProxies; 2026.10 then finds no attributable client and
+	# answers 403 proxy_attribution_required. For private sources only, name the client with a
+	# TEST-NET-1 placeholder. It carries no authority (the token does); public callers keep theirs.
+	@nvoyhooklocal {
+		path /hooks/nvoy
+		method POST
+		remote_ip private_ranges
+	}
+	handle @nvoyhooklocal {
+		request_body {
+			max_size 4KB
+		}
+		reverse_proxy openclaw:57419 {
+			header_up -X-Forwarded-User
+			header_up X-Forwarded-For 192.0.2.46
+		}
+	}
 	@nvoyhook {
 		path /hooks/nvoy
 		method POST
