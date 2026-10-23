@@ -132,6 +132,13 @@ waggle.nave.pub {
 		file_server
 	}
 
+	# The status page (nvoy status S1), written every minute by nvoy-status.timer.
+	redir /status /status/ 308
+	handle_path /status/* {
+		root * /srv/apps/status
+		file_server
+	}
+
 	# The documentation front door stays in the hub repo, same shape as nscribe. The waggle
 	# BRIDGE itself is a Node service on its own host and is not served from here.
 	handle {
