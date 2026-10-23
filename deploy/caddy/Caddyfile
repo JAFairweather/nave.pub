@@ -242,6 +242,24 @@ cockpit.nave.pub {
 		reverse_proxy luke:8790
 	}
 
+	# The nvoy wake webhook for LukeDog (nvoy admitted-webhook-notify.mjs). The fleet notifier
+	# POSTs {"instance","envelope","type","at"} when a granted task is waiting, and OpenClaw's
+	# `nvoy` hook mapping turns it into a turn in Luke's waggle session. Not gated: the hook token
+	# authenticates it, and the mapping's message is static, so the body never reaches the prompt.
+	# The operator header is stripped, so this route can never assert James to OpenClaw.
+	@nvoyhook {
+		path /hooks/nvoy
+		method POST
+	}
+	handle @nvoyhook {
+		request_body {
+			max_size 4KB
+		}
+		reverse_proxy openclaw:57419 {
+			header_up -X-Forwarded-User
+		}
+	}
+
 	# OpenClaw 2026.10's service worker loads /chat/* pages through this endpoint
 	# (Accept */*), which would reach OpenClaw below without the skin. Refuse it:
 	# on any non-200 the worker falls back to a normal navigation, which @doc
@@ -318,6 +336,11 @@ door.nave.pub {
 	}
 	handle /door/grokdoggydog/* {
 		reverse_proxy nvoy-grokdoggydog-door:8790 {
+			flush_interval -1
+		}
+	}
+	handle /door/lukedog/* {
+		reverse_proxy nvoy-lukedog-door:8790 {
 			flush_interval -1
 		}
 	}
