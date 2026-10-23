@@ -340,6 +340,33 @@ if (flag('--write-report')) {
   ]
   writeFileSync(join(HUB, 'design/DRIFT.md'), lines.join('\n'))
   console.log('\n  wrote design/DRIFT.md')
+
+  // …and the same rows, machine-readable, for `/drift`.
+  //
+  // The page consumes THIS and never parses the Markdown above. A visualization must import the thing
+  // it visualizes: the moment a surface re-derives a verdict from prose there are two representations
+  // of one fact, and they drift — which is the exact failure this detector exists to catch, reappearing
+  // inside the tool that reports it.
+  //
+  // `generated_at` is a full timestamp, not the report's date-only stamp, because the page's whole job
+  // is to say how OLD this answer is. A report dated "today" that ran eleven hours and four merges ago
+  // is not a live answer, and only a precise time makes that visible.
+  //
+  // DELIBERATELY ABSENT: HUB and ROOT. `file_server` serves this off the public site, and filesystem
+  // layout is not something a page may disclose. Allowlist what ships rather than denylist what does
+  // not — the same rule the console's runtime-facts projection follows, for the same reason.
+  writeFileSync(join(HUB, 'design/drift.json'), JSON.stringify({
+    v: 1,
+    generated_at: new Date().toISOString(),
+    rows: rows.map(r => ({ artifact: r.artifact, repo: r.repo, verdict: r.verdict, detail: r.detail })),
+    totals: {
+      ok: rows.filter(r => r.verdict === 'ok').length,
+      stale, diverged: forks, 'not adopted': unadopted, missing: gone,
+    },
+    baseline_recorded: a_baselineSet,
+    note: 'A snapshot from the last completed nave-drift run, not a live check. Render generated_at.',
+  }, null, 2) + '\n')
+  console.log('  wrote design/drift.json')
 }
 
 // The completion sentinel. A caller cannot tell "the detector ran and found divergence" from "the

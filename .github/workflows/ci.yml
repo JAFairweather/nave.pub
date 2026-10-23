@@ -1,0 +1,65 @@
+name: CI
+
+# Run the hub's own test scripts on every PR and on pushes to main.
+#
+# WHY THIS DID NOT EXIST, AND WHAT IT COSTS. This repo had three test scripts and no runner. Every
+# other workflow here is an SSH job against the box — deploy, verify, ops, probe — because the hub
+# has historically been treated as a deploy surface rather than as code. But `bin/nave-drift` is the
+# gate that every app's design consistency now depends on, `bin/stamp.mjs` decides what counts as a
+# fork, and `bin/drift-json.test.mjs` guards a file that `file_server` serves to the public internet.
+# All three were verified only by whoever remembered to run them.
+#
+# That is the same shape as nvoy before its CI: a suite written specifically to catch a class of bug,
+# which had never once run unattended. The drift gate itself is the argument — it spent a day
+# reporting "DIVERGENCE FOUND" for a detector that died at `node: command not found`, and nothing
+# except a person reading output would ever have said so.
+#
+# Deliberately no SSH and no secrets. These are pure local checks on the tree, so this workflow can
+# run on a fork's PR and cannot touch production. The deploy-time gate in deploy/sites.sh stays where
+# it is — it hashes what production is about to serve, which this cannot.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hub-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The vendoring comparator: what counts as byte-identical, and what a provenance stamp means.
+      - name: stamp
+        run: node bin/stamp.test.mjs
+
+      # The gate's failure modes — every one of which must read as UNVERIFIED rather than as clean.
+      - name: drift gate
+        run: bash bin/drift-gate.test.sh
+
+      # The served report: no path disclosure, and the Markdown and JSON of one run must agree.
+      - name: drift report
+        run: node bin/drift-json.test.mjs
+
+      # And the detector itself must still run to completion in a bare checkout. It exits non-zero on
+      # real divergence, which is not this job's business — sibling clones are absent here, so the
+      # verdict is meaningless. What IS this job's business is that it reaches its completion
+      # sentinel; a detector that cannot start is the failure this whole gate was rebuilt around.
+      - name: detector reaches its completion sentinel
+        run: |
+          set -o pipefail
+          node bin/nave-drift > /tmp/drift.out 2>&1 || true
+          if ! grep -q '^nave-drift: complete' /tmp/drift.out; then
+            echo "::error::nave-drift did not reach its completion sentinel"
+            cat /tmp/drift.out
+            exit 1
+          fi
+          tail -5 /tmp/drift.out
