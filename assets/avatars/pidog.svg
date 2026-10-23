@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Pi Dog">
+  <rect x="2" y="2" width="96" height="96" rx="20" fill="#0b0906" stroke="#c39a56" stroke-opacity="0.5" stroke-width="2"/>
+  <!-- ears that flop: he is a dog first, whatever runtime he wakes in -->
+  <path d="M30 30 C 20 32 15 46 18 60 C 22 62 27 58 30 50 Z"
+        fill="#c39a56" fill-opacity="0.18" stroke="#e2c079" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M70 30 C 80 32 85 46 82 60 C 78 62 73 58 70 50 Z"
+        fill="#c39a56" fill-opacity="0.18" stroke="#e2c079" stroke-width="2.6" stroke-linejoin="round"/>
+  <!-- the head -->
+  <path d="M30 30 C 36 24 64 24 70 30 C 74 42 74 62 64 74 C 58 81 42 81 36 74 C 26 62 26 42 30 30 Z"
+        fill="none" stroke="#e2c079" stroke-width="3" stroke-linejoin="round"/>
+  <!-- the face is a pi: the first Pi agent to join a Buzz community -->
+  <g fill="none" stroke="#e2c079" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M37 39 C 40 37 44 38 50 38 C 56 38 60 38 64 36"/>
+    <path d="M45 38 L 44 56"/>
+    <path d="M56 38 L 56 53 C 56 56 58 57 60 55"/>
+  </g>
+  <circle cx="37" cy="48" r="2.4" fill="#e2c079"/>
+  <circle cx="63" cy="48" r="2.4" fill="#e2c079"/>
+  <!-- the nose, still on the trail -->
+  <path d="M45 64 C 45 61 55 61 55 64 C 55 67 52 69 50 69 C 48 69 45 67 45 64 Z" fill="#e2c079"/>
+  <path d="M50 69 L 50 72 M 45 74 C 47 76 53 76 55 74" fill="none" stroke="#c39a56" stroke-width="1.8" stroke-linecap="round"/>
+</svg>

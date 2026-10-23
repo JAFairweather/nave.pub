@@ -19,7 +19,8 @@
     "mcclaude": "ad05b00ee49200d5bd2788fba480621ba6009224f01e48b3e9bce10100421d5c",
     "oliver": "ebc6eec1a7c36304c8093d2f60337045b60678e858fe3997eb9740215bfdd2f3",
     "grokdoggydog": "61cb9345ce61bb06d42bef251de746051e608a539c1430142a8afa6593db924c",
-    "deadrabbit": "fab8083206712754a4d41698c202db01339b16c37652d110e5e0ab57b75b1432"
+    "deadrabbit": "fab8083206712754a4d41698c202db01339b16c37652d110e5e0ab57b75b1432",
+    "pidog": "e4c0faf44d9aeabcb5459c6c3b76f2c704d7b55c7e0ddb3685fab4e4226935d8"
   },
   "relays": {
     "d8de5184a096e49b3f79730258c05f8ffb56cdf138c08b3c7b0b0685a0fb963e": [
@@ -101,6 +102,11 @@
       "wss://relay.primal.net"
     ],
     "fab8083206712754a4d41698c202db01339b16c37652d110e5e0ab57b75b1432": [
+      "wss://relay.damus.io",
+      "wss://nos.lol",
+      "wss://relay.primal.net"
+    ],
+    "e4c0faf44d9aeabcb5459c6c3b76f2c704d7b55c7e0ddb3685fab4e4226935d8": [
       "wss://relay.damus.io",
       "wss://nos.lol",
       "wss://relay.primal.net"
