@@ -8,8 +8,12 @@
 # rules, avatar data-URI, rebranded title + favicon). Exits non-zero on any
 # drift, naming exactly what broke. Read-only.
 set -u
-oc(){   docker compose exec -T luke node -e 'fetch(process.argv[1]).then(r=>r.text()).then(t=>process.stdout.write(t)).catch(e=>process.stderr.write(""+e))' "$1" 2>/dev/null; }
-occk(){ docker compose exec -T luke node -e 'fetch(process.argv[1],{headers:{"x-forwarded-host":"cockpit.nave.pub"}}).then(r=>r.text()).then(t=>process.stdout.write(t)).catch(e=>process.stderr.write(""+e))' "$1" 2>/dev/null; }
+# OpenClaw 2026.10 answers 403 proxy_attribution_required to a proxied request
+# that doesn't name the client, so every probe sends the forwarding headers.
+# </dev/null: docker compose exec would otherwise eat a heredoc caller's stdin.
+XF='{"x-forwarded-for":"203.0.113.9","x-forwarded-proto":"https","x-forwarded-host":"cockpit.nave.pub"}'
+oc(){   docker compose exec -T luke node -e 'fetch(process.argv[1],{headers:JSON.parse(process.argv[2])}).then(r=>r.text()).then(t=>process.stdout.write(t)).catch(e=>process.stderr.write(""+e))' "$1" "$XF" </dev/null 2>/dev/null; }
+occk(){ oc "$1"; }
 FAIL=0
 pass(){ echo "  ✓ $1"; }
 fail(){ echo "  ✗ $1"; FAIL=1; }
@@ -21,19 +25,19 @@ echo
 
 HTML="$(oc http://openclaw:57419/)"
 CSSPATH="$(echo "$HTML" | grep -oE 'href="[^"]*\.css"' | sed 's/href="//;s/"$//' | head -1)"
-CSS="$(oc "http://openclaw:57419/${CSSPATH#./}")"
+CSSPATH="${CSSPATH#./}"; CSS="$(oc "http://openclaw:57419/${CSSPATH#/}")"
 echo "bundle css: ${CSSPATH:-<none>} (${#CSS} bytes)"; echo
 
 echo "=== 1. rebrand-critical CLASSES still in the bundle ==="
-# (v2026.7.1 removed sidebar-brand__eyebrow — the NAVE kicker now rides
-#  sidebar-brand__title::before; __identity is the new wrapper we also watch.)
-for c in sidebar-brand__logo sidebar-brand__identity sidebar-brand__title update-banner agent-chat__avatar--logo btn login-gate__logo; do
+# (v2026.10 replaced the brand block with the agent card: the NAVE kicker rides
+#  sidebar-agent-card__name::before, and the avatar rule paints Luke's seal.)
+for c in sidebar-brand sidebar-agent-card__name sidebar-agent-card__name-text sidebar-agent-card__avatar sidebar-workspace-header__mark btn login-gate__logo; do
   echo "$CSS" | grep -q "\.$c" && pass "class .$c" || fail "class .$c MISSING — rebrand selector drifted"
 done
 echo
 
 echo "=== 2. key theme TOKENS still defined ==="
-for t in --bg --bg-content --panel --card --border --text --chat-text --accent --primary --ring --muted --ok --warn --danger --destructive --font-display --mono --radius --shadow-md --tool-shell --secondary --chrome --popover --input --cm-bg --md-preview-document-bg; do
+for t in --bg --bg-content --panel --card --border --text --chat-text --accent --primary --ring --muted --ok --warn --danger --destructive --font-display --mono --radius --shadow-md --secondary --chrome --popover --input --md-preview-document-bg; do
   echo "$CSS" | grep -q -- "$t" && pass "token $t" || fail "token $t MISSING — skin override is now dead"
 done
 echo
@@ -45,8 +49,8 @@ echo
 echo "=== 4. luke serves + injects the skin ==="
 SKIN="$(occk http://localhost:8790/__nave-skin.css)"
 echo "  (served skin: ${#SKIN} bytes)"
-echo "$SKIN" | grep -q -- '--tool-shell' && pass "served skin carries tokens" || fail "served skin stale/empty"
-echo "$SKIN" | grep -q 'sidebar-brand__logo' && pass "served skin carries rebrand rules" || fail "served skin missing rebrand"
+echo "$SKIN" | grep -q -- '--accent' && pass "served skin carries tokens" || fail "served skin stale/empty"
+echo "$SKIN" | grep -q 'sidebar-agent-card__name' && pass "served skin carries rebrand rules" || fail "served skin missing rebrand"
 echo "$SKIN" | grep -q 'data:image/png;base64' && pass "served skin carries the avatar data-URI" || fail "avatar data-URI missing"
 DOC="$(occk http://localhost:8790/)"
 echo "$DOC" | grep -q '__nave-skin.css' && pass "document: skin <link> injected" || fail "document: skin link missing"
