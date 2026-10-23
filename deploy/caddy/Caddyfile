@@ -242,6 +242,15 @@ cockpit.nave.pub {
 		reverse_proxy luke:8790
 	}
 
+	# OpenClaw 2026.10's service worker loads /chat/* pages through this endpoint
+	# (Accept */*), which would reach OpenClaw below without the skin. Refuse it:
+	# on any non-200 the worker falls back to a normal navigation, which @doc
+	# routes through luke.
+	@entry path /__openclaw__/session-entry
+	handle @entry {
+		respond 404
+	}
+
 	# The SPA document (browser navigations send Accept: text/html): route through
 	# luke, which fetches the shell from OpenClaw and injects the skin <link>.
 	# Assets (text/css, */*, image/*) and the gateway WebSocket (Upgrade, Accept
