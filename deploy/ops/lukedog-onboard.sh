@@ -41,8 +41,12 @@ code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$DOOR_URL" || true)
 ok "door route answers ($code)"
 
 # 1. NIP-46 client key: a fresh one, so the fleet pairing is new and the old Mac one can be revoked.
+#    It must be an nsec: the broker's Bunker path decodes it as bech32 (until nvoy#248 is live).
 if [ ! -s "$CRED/$ID.nip46-client" ]; then
-  openssl rand -hex 32 > "$CRED/$ID.nip46-client"
+  docker exec -i "nvoy-$TEMPLATE-broker-1" node --input-type=module -e \
+    "import { generateSecretKey } from 'nostr-tools/pure'; import { nsecEncode } from 'nostr-tools/nip19'; process.stdout.write(nsecEncode(generateSecretKey()) + '\\n')" \
+    </dev/null > "$CRED/$ID.nip46-client"
+  grep -qE '^nsec1[02-9ac-hj-np-z]{58}$' "$CRED/$ID.nip46-client" || { rm -f "$CRED/$ID.nip46-client"; die "could not mint an nsec client key"; }
   ok "minted $CRED/$ID.nip46-client"
 else ok "kept $CRED/$ID.nip46-client"; fi
 
@@ -70,6 +74,8 @@ MAPPING=$(jq -cn --arg m "$MESSAGE" '[{id:"nvoy-waggle", match:{path:"nvoy"}, ac
 oc openclaw config set hooks.path '"/hooks"' --strict-json >/dev/null
 oc openclaw config set hooks.allowedAgentIds '["main"]' --strict-json >/dev/null
 oc openclaw config set hooks.allowedSessionKeyPrefixes '["hook:nvoy-"]' --strict-json >/dev/null
+# OpenClaw refuses hooks.enabled unless the prefixes include 'hook:' or a default key is set.
+oc openclaw config set hooks.defaultSessionKey '"hook:nvoy-waggle"' --strict-json >/dev/null
 oc openclaw config set hooks.allowRequestSessionKey false --strict-json >/dev/null
 oc openclaw config set hooks.mappings "$MAPPING" --strict-json >/dev/null
 oc openclaw config set hooks.enabled true --strict-json >/dev/null
