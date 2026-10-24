@@ -132,6 +132,11 @@ waggle.nave.pub {
 		file_server
 	}
 
+	# beeswarm (nvoy docs/BEESWARM.md): who may instruct, wake and speak for whom. Its page sits
+	# beside the status page, written by the same collector; this is the short address for it.
+	redir /beeswarm /status/beeswarm.html 302
+	redir /beeswarm/ /status/beeswarm.html 302
+
 	# The status page (nvoy status S1), written every minute by nvoy-status.timer.
 	redir /status /status/ 308
 	handle_path /status/* {
