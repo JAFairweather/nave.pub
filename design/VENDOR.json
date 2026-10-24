@@ -74,7 +74,8 @@
         {
           "repo": "waggle",
           "path": "console/vendor/nave-titlebar.mjs",
-          "root": "$HOME/.buzz/REPOS"
+          "root": "$HOME/.buzz/REPOS",
+          "stamped": true
         }
       ],
       "sha256Body": "0be2c1aff740d07f0ca41a419a54d604ecd1d3d9e74c15faaca37d80e5819f8a",
