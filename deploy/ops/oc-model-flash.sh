@@ -12,7 +12,7 @@
 #      Fallbacks are left as they are; Pro stays selectable with /model for a hard task.
 #   2. an agents.list entry that pins its own Pro model is moved to MODEL too (named, never silently kept)
 #   3. sessions holding a /model override are counted: they keep their model until /model or /new
-#   4. restart openclaw, wait for healthy, then look for a live call to MODEL answered 200.
+#   4. restart openclaw, wait up to 5 min for healthy, then look for a live call to MODEL answered 200.
 #      Unhealthy → the backup is restored and openclaw recreated.
 set -u
 MODEL=google/gemini-3.5-flash
@@ -77,10 +77,13 @@ fi
 echo
 echo "── 4. restart + verify ──"
 docker compose up -d --force-recreate --no-deps openclaw >/dev/null 2>&1 && echo "  recreated"
-for i in $(seq 1 20); do
+# Up to 5 min: a boot that probes the model takes over a minute (the first run, 2026-10-25, was still
+# "starting" at 60 s and rolled back for nothing). Only "unhealthy", or not healthy by then, restores.
+for i in $(seq 1 60); do
   ST="$(docker inspect --format '{{.State.Health.Status}}' "$OC" 2>/dev/null || echo '?')"
-  [ "$ST" = healthy ] && { echo "  openclaw: healthy"; break; }
-  sleep 3
+  [ "$ST" = healthy ] && { echo "  openclaw: healthy after $((i * 5)) s"; break; }
+  [ "$ST" = unhealthy ] && break
+  sleep 5
 done
 if [ "${ST:-}" != healthy ]; then
   echo "  ✗ not healthy (status: ${ST:-unknown}) — restoring $(basename "$B") and recreating"
