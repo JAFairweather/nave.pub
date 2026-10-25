@@ -12,8 +12,8 @@
 #      Fallbacks are left as they are; Pro stays selectable with /model for a hard task.
 #   2. an agents.list entry that pins its own Pro model is moved to MODEL too (named, never silently kept)
 #   3. sessions holding a /model override are counted: they keep their model until /model or /new
-#   4. restart openclaw, wait up to 5 min for healthy, then look for a live call to MODEL answered 200.
-#      Unhealthy → the backup is restored and openclaw recreated.
+#   4. restart openclaw, wait up to 5 min for the gateway's ready line, then look for a live call to MODEL answered 200.
+#      Not ready, or the container restarting → the backup is restored and openclaw recreated.
 set -u
 MODEL=google/gemini-3.5-flash
 THINK=low
@@ -76,17 +76,20 @@ fi
 
 echo
 echo "── 4. restart + verify ──"
+T0=$(date -u +%Y-%m-%dT%H:%M:%SZ)   # this boot's logs only, from here on
 docker compose up -d --force-recreate --no-deps openclaw >/dev/null 2>&1 && echo "  recreated"
-# Up to 5 min: a boot that probes the model takes over a minute (the first run, 2026-10-25, was still
-# "starting" at 60 s and rolled back for nothing). Only "unhealthy", or not healthy by then, restores.
+# Up to 5 min for the gateway's own "[gateway] ready", with the container running and not restarting. Not Docker's
+# health status: on 2026-10-25 it said unhealthy (restarts=0) while the gateway was ready and answering 200s, and
+# the first two runs rolled back on it for nothing. It is printed, not gated on.
 for i in $(seq 1 60); do
-  ST="$(docker inspect --format '{{.State.Health.Status}}' "$OC" 2>/dev/null || echo '?')"
-  [ "$ST" = healthy ] && { echo "  openclaw: healthy after $((i * 5)) s"; break; }
-  [ "$ST" = unhealthy ] && break
+  RUN="$(docker inspect -f '{{.State.Status}} {{.RestartCount}}' "$OC" 2>/dev/null || echo '? ?')"
+  [ "$RUN" != "running 0" ] && { ST="not running cleanly ($RUN)"; break; }
+  docker logs --since "$T0" "$OC" 2>&1 | grep -q '\[gateway\] ready' && { ST=ready; echo "  gateway ready after $((i * 5)) s (docker health: $(docker inspect -f '{{.State.Health.Status}}' "$OC" 2>/dev/null))"; break; }
+  ST="no [gateway] ready in 5 min"
   sleep 5
 done
-if [ "${ST:-}" != healthy ]; then
-  echo "  ✗ not healthy (status: ${ST:-unknown}) — restoring $(basename "$B") and recreating"
+if [ "${ST:-}" != ready ]; then
+  echo "  ✗ ${ST:-unknown} — restoring $(basename "$B") and recreating"
   # Why, before the recreate throws this container away: restarts, the last exit, the health probe's own
   # output, and the log's error lines (the tail alone is just the next boot's startup phases).
   echo "  restarts: $(docker inspect -f '{{.RestartCount}}' "$OC" 2>/dev/null), last exit: $(docker inspect -f '{{.State.ExitCode}} {{.State.Error}}' "$OC" 2>/dev/null)"
@@ -101,14 +104,13 @@ fi
 # A live call to the new model, answered 200 (boot usually fires one; else the next turn or beat will).
 NAME=${MODEL#google/}
 for i in $(seq 1 18); do
-  LOGS=$(docker logs --tail 400 "$OC" 2>&1)
-  echo "$LOGS" | grep -q "model-fetch] start .*$NAME" && echo "$LOGS" | grep -qE 'model-fetch] response provider=google .*status=200' && { OK=1; break; }
+  docker logs --since "$T0" "$OC" 2>&1 | grep -qE "model-fetch] response provider=google .*model=$NAME status=200" && { OK=1; break; }
   sleep 10
 done
 if [ "${OK:-}" = 1 ]; then
   echo "  ✓ a call to $NAME went out and was answered 200:"
-  docker logs --tail 400 "$OC" 2>&1 | grep -E "model-fetch] (start .*$NAME|response provider=google)" | tail -2 | sed 's/^/    /'
+  docker logs --since "$T0" "$OC" 2>&1 | grep -E "model-fetch] response provider=google .*model=$NAME" | tail -1 | cut -c1-220 | sed 's/^/    /'
 else
-  echo "  · no call to $NAME seen in 3 min — healthy, so not rolled back; send Luke a message and check luke-logs"
+  echo "  · no call to $NAME seen in 3 min — the gateway is ready, so not rolled back; send Luke a message and check luke-logs"
 fi
 echo "== model-flash done — backup: $(basename "$B") =="
