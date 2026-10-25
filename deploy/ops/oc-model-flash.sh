@@ -87,7 +87,13 @@ for i in $(seq 1 60); do
 done
 if [ "${ST:-}" != healthy ]; then
   echo "  ✗ not healthy (status: ${ST:-unknown}) — restoring $(basename "$B") and recreating"
-  docker logs --tail 20 "$OC" 2>&1 | sed 's/^/  | /'
+  # Why, before the recreate throws this container away: restarts, the last exit, the health probe's own
+  # output, and the log's error lines (the tail alone is just the next boot's startup phases).
+  echo "  restarts: $(docker inspect -f '{{.RestartCount}}' "$OC" 2>/dev/null), last exit: $(docker inspect -f '{{.State.ExitCode}} {{.State.Error}}' "$OC" 2>/dev/null)"
+  echo "  health probe (last 3):"
+  docker inspect -f '{{range .State.Health.Log}}{{.ExitCode}} {{.Output}}{{"\n"}}{{end}}' "$OC" 2>/dev/null | grep -v '^$' | tail -3 | cut -c1-300 | sed 's/^/    /'
+  echo "  log errors:"
+  docker logs --tail 600 "$OC" 2>&1 | grep -iE 'error|fatal|invalid|unknown|unsupported|exit|thinking|gemini-3\.5' | grep -v 'startup phase' | tail -25 | cut -c1-300 | sed 's/^/  | /'
   cp "$B" "$J"; chown 1000:1000 "$J" 2>/dev/null || true
   docker compose up -d --force-recreate --no-deps openclaw >/dev/null 2>&1
   exit 1
