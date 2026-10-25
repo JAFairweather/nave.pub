@@ -45,68 +45,30 @@ jobs:
   ops:
     runs-on: ubuntu-latest
     steps:
-      - name: Run over SSH
-        id: ssh1
-        continue-on-error: true
-        uses: appleboy/ssh-action@v1.2.0
+      # Retry the CONNECT, never the script (#30). A dial timeout happens before
+      # anything runs on the box, so it is safe to retry. A script failure (the
+      # drift gate, a failed build, verify.sh) is not: the old retry step re-ran
+      # the whole script after ANY failure, re-promoting trees in place (#115),
+      # and its name made eleven weeks of drift-gate reds read as an SSH flake.
+      # So probe :22 with backoff here, then run the script exactly once.
+      - name: Wait for SSH (connect-only retry)
         env:
-          TASK: ${{ github.event.inputs.task }}
-          CMD: ${{ github.event.inputs.command }}
-          SCRIPT: ${{ github.event.inputs.script }}
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          envs: TASK,CMD,SCRIPT
-          script: |
-            set -u
-            # Live deploy root (flip-aware): ROOT is the repo, D is the deploy dir
-            # where `docker compose` finds the project.
-            if [ -f /root/nave.pub/deploy/.flipped ]; then ROOT=/root/nave.pub; else ROOT=/root/noir; fi
-            D="$ROOT/deploy"
-            cd "$D" 2>/dev/null || true
-            run() { echo "▸ $*"; eval "$@"; }
-            echo "== ops: ${TASK} @ $D =="
-            case "$TASK" in
-              status)
-                run 'docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
-                echo; run 'df -h / | tail -2'; run 'free -h | head -2'; run 'uptime'
-                ;;
-              run-script)
-                # Only allow a bare filename under deploy/ops/ — no path traversal.
-                case "$SCRIPT" in
-                  ''|*/*|*..*) echo "bad or empty script name: '$SCRIPT' (use a bare filename like health.sh)"; exit 1 ;;
-                esac
-                # Fast refresh of THIS repo only (no app pulls, no build) so the
-                # script is the current version on main — adding a script never
-                # needs a full deploy.
-                echo "▸ git -C $ROOT pull --ff-only (nave.pub repo only)"
-                git -C "$ROOT" pull --ff-only
-                F="$D/ops/$SCRIPT"
-                [ -f "$F" ] || { echo "no such script: deploy/ops/$SCRIPT"; echo "available:"; ls "$D/ops"; exit 1; }
-                echo "▸ bash deploy/ops/$SCRIPT"; echo
-                bash "$F"
-                ;;
-              reload-caddy)     run 'docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile && echo reloaded' ;;
-              restart-caddy)    run 'docker compose restart caddy' ;;
-              restart-luke)     run 'docker compose restart luke' ;;
-              restart-director) run 'docker compose restart director' ;;
-              caddy-logs)       run 'docker logs --tail 80 deploy-caddy-1 2>&1' ;;
-              luke-logs)        run 'docker logs --tail 80 deploy-luke-1 2>&1' ;;
-              brain-log)        run 'tail -n 60 /var/log/luke-brain.log 2>/dev/null || echo "(no brain log yet — cron has not run)"' ;;
-              show-cron)        run 'crontab -l 2>/dev/null | grep -A1 "CRON_TZ" || echo "(no crontab)"' ;;
-              custom)
-                [ -n "${CMD}" ] || { echo "task=custom but the command field is empty"; exit 1; }
-                run "${CMD}"
-                ;;
-              *) echo "unknown task: ${TASK}"; exit 1 ;;
-            esac
-            echo "== done =="
-      - name: Cooldown before SSH retry
-        if: steps.ssh1.outcome == 'failure'
-        run: sleep 90
-      - name: Run over SSH (retry after i/o timeout)
-        if: steps.ssh1.outcome == 'failure'
+          HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          for wait in 0 30 60 90; do
+            sleep "$wait"
+            if timeout 10 bash -c ': </dev/tcp/$HOST/22' 2>/dev/null; then
+              echo "ssh reachable"; exit 0
+            fi
+            # :443 answering while :22 is dark means port filtering upstream of
+            # the box (its own nft input accepts 22 from anywhere); both dark
+            # means the route. Recorded so the next red says which.
+            if timeout 10 bash -c ': </dev/tcp/$HOST/443' 2>/dev/null; then t=open; else t=dark; fi
+            echo "  :22 timed out after ${wait}s backoff (:443 $t)"
+          done
+          echo "::error::SSH to the box is unreachable from this runner. Nothing ran on the box."
+          exit 1
+      - name: Run over SSH
         uses: appleboy/ssh-action@v1.2.0
         env:
           TASK: ${{ github.event.inputs.task }}
