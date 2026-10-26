@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="waggle-dev">
+  <rect x="2" y="2" width="96" height="96" rx="20" fill="#0b0906" stroke="#c39a56" stroke-opacity="0.5" stroke-width="2"/>
+  <!-- a hive frame under construction: waggle-dev builds the comb that lets the hive work -->
+  <g fill="none" stroke="#e2c079" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M25 24 H75 V76 H25 Z"/>
+    <path d="M38 36 L50 29 L62 36 V50 L50 57 L38 50 Z"/>
+    <path d="M38 50 L26 57 M62 50 L74 57 M50 57 V71"/>
+  </g>
+  <path d="M50 57 L62 64 L62 76 M50 57 L38 64 L38 76" fill="none" stroke="#c39a56" stroke-width="2.5" stroke-linejoin="round"/>
+  <line x1="20" y1="87" x2="80" y2="87" stroke="#c39a56" stroke-width="1.8" stroke-linecap="round" opacity="0.7"/>
+</svg>
