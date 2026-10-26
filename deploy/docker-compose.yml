@@ -126,6 +126,11 @@ services:
       # per-credential, so a not-yet-migrated credential like telegram stays open
       # until its owner exists). Grant-derived, not an ACL. Flip to 0 to revert.
       - NACT_ENFORCE_CREDENTIAL_OWNERSHIP=1
+      # Relays are public config, so they live here rather than in the SOPS bundle, and `environment`
+      # beats env_file. relay.nave.pub comes first: it is ours and keeps what we publish. The public three
+      # pruned every credential grant and scope by 2026-09-29, leaving nactor with none until
+      # 2026-10-22. Keep in step with nvoy-mcp's NVOY_RELAYS below.
+      - LUKE_RELAYS=wss://relay.nave.pub,wss://relay.ditto.pub,wss://relay.damus.io,wss://nos.lol,wss://relay.primal.net
     expose:
       - "8791"
     volumes:
@@ -185,6 +190,8 @@ services:
     environment:
       - NVOY_HTTP_PORT=8799
       - NVOY_HTTP_HOST=0.0.0.0
+      # Overrides the NVOY_RELAYS that sites.sh derives from LUKE_RELAYS; same list as nactor's (see there).
+      - NVOY_RELAYS=wss://relay.nave.pub,wss://relay.ditto.pub,wss://relay.damus.io,wss://nos.lol,wss://relay.primal.net
     expose:
       - "8799"                    # internal to the nave network only — never published
     networks: [nave]
