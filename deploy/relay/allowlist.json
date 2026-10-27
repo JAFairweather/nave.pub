@@ -16,7 +16,9 @@
     "my_dude":      "0a8e0720c3ec52c6bfd9e2545d620cf58e2e8d371244255efce3ddd57ba0a32c",
     "neil":         "5d3848a699e82f81e218aaad2f481bb63c00ff69b813cfca1cafc58ca633eb08",
     "dennis":       "9a07300d3295f392d295cd8f73c8f1d3c725809b2e50fc52815db8682ef940a5",
-    "kerouac":      "eb586b1e9c214c10762acc0dd4d428ac9156c284162f2d9dcc98562e644d71a5"
+    "kerouac":      "eb586b1e9c214c10762acc0dd4d428ac9156c284162f2d9dcc98562e644d71a5",
+    "lukedog":      "1b53f548acebe8dd47252717104350006f49b5c981a86ad4cfaf58d3fd7a0f1e",
+    "waggle_dev":   "38889d4ce187469d41dc0ef3f610a79d42120603fbc8a68b92d8bd67ae63a536"
   },
   "allowKinds": [24133],
   "recipientKinds": [1059]
