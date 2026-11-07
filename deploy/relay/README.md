@@ -66,6 +66,32 @@ docker compose up -d --build   # rebuild bakes the new allowlist into the image
 # (or, since allowlist.json is bind-mounted read-only, just: docker compose restart strfry)
 ```
 
+## Add a new agent's key without a PR (nave.pub#157)
+
+A key in `allowlist.json` `owners` may sign a **writer list**: a kind 30000 with
+`d` = `nave-relay-writers` and one `p` tag per extra writer. The write policy
+checks it at the door (id, signature, `p` tags, size, date) and rejects it whole
+if anything fails, with the reason in the `OK` message.
+
+Passing the door admits nobody by itself, because strfry can still refuse the
+event afterwards (an expiry, a deletion, a newer list already stored). The extra
+writers are read back from what the relay has **stored**: the newest unexpired
+owner list it holds, by `strfry scan`, at most every two seconds. So a new key
+can write within a couple of seconds of its list landing, with no rebuild or
+restart, and the relay's admission never disagrees with what it serves.
+
+- Each list **replaces** the last: sign the whole set every time.
+- To remove every extra writer, publish an empty list or delete the list (kind 5).
+- A list with an `expiration` tag admits its keys until then.
+- The static `allow` keys always stay, so a bad or empty list can't lock the fleet out.
+- A kind 30000 from anyone else changes nothing, and is accepted or rejected as before.
+
+`python3 write-policy.strfry.test.py` checks all of this against the real image
+(it needs docker): a list refused, expired, replaced or deleted by the relay
+admits nobody, a stored one admits its key, and a restart keeps it.
+
+waggle's Add-an-agent page signs this list in step 3.
+
 ## Verify
 
 ```bash
