@@ -8,13 +8,17 @@
 #
 # Policy, in order:
 #   0. an owner's writer list (allowlist.json `owners`; kind 30000, d =
-#      nave-relay-writers) is checked here — id and BIP-340 signature — and,
-#      when newer than the list held, its `p` tags become the extra writers
-#      (nave.pub#157). It replaces the held set, never adds to it, and is saved
-#      to WRITERS_STATE_PATH so a restart keeps it. A kind 30000 from anyone
-#      else is judged by the rules below, exactly as before;
+#      nave-relay-writers) is checked at the door — id, BIP-340 signature, p
+#      tags, size, date — and rejected whole if any fails (nave.pub#157).
+#      Passing the door changes nobody's admission: strfry may still refuse the
+#      event after this plugin accepts it (an expiry, a deletion, a newer stored
+#      list). The extra writers are read back from what the relay has STORED
+#      (`strfry scan`, at most every WRITERS_SCAN_TTL seconds): the newest
+#      unexpired owner list held by the relay. So a list the relay refused,
+#      deleted or expired admits nobody, and a restart needs no state of its
+#      own. A kind 30000 from anyone else is judged by the rules below;
 #   1. accept events AUTHORED by a fleet pubkey: allowlist.json `allow`, which
-#      always stays, plus the owner's extra writers;
+#      always stays, plus the extra writers in the relay's stored owner list;
 #   2. accept `allowKinds` from anyone (NIP-46 transport 24133 — end-to-end
 #      encrypted, leaks nothing but timing; lets the bunker's ephemeral client
 #      keys through);
@@ -33,12 +37,17 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CONF = os.environ.get("ALLOWLIST_PATH", os.path.join(HERE, "allowlist.json"))
-STATE = os.environ.get("WRITERS_STATE_PATH", os.path.join(HERE, "state", "writers.json"))
+# How to read the relay's own store; tests point this at a fake. The filter JSON is appended.
+SCAN_CMD = json.loads(os.environ.get("WRITERS_SCAN_CMD") or
+                      '["/app/strfry", "--config=/etc/strfry.conf", "scan"]')
+SCAN_TTL = float(os.environ.get("WRITERS_SCAN_TTL", "2"))
+SCAN_TIMEOUT = 10
 
 WRITERS_KIND = 30000
 WRITERS_D = "nave-relay-writers"
@@ -133,73 +142,77 @@ def event_ok(ev):
         return False
 
 
-# --- The owner's writer list, held in memory and on disk. ---
-def read_state():
-    try:
-        with open(STATE) as f:
-            s = json.load(f)
-        writers = s["writers"]
-        if not (isinstance(s["id"], str) and isinstance(s["created_at"], int) and isinstance(writers, list)
-                and len(writers) <= MAX_WRITERS and all(isinstance(w, str) and HEX64.match(w) for w in writers)):
-            raise ValueError("malformed")
-        return {"id": s["id"], "created_at": s["created_at"], "writers": set(writers)}
-    except FileNotFoundError:
-        return None
-    except Exception as e:
-        sys.stderr.write(f"write-policy: ignoring writer list at {STATE}: {e}\n")
-        return None
+# --- The owner's writer list: checked at the door, admitted from the store. ---
+def is_writer_list(ev):
+    return ev.get("kind") == WRITERS_KIND and \
+        [t[1] for t in ev.get("tags") or [] if isinstance(t, list) and len(t) >= 2 and t[0] == "d"] == [WRITERS_D]
 
 
-HELD = read_state()
+def list_fault(ev):
+    # Why an owner's writer list is unacceptable, or "" when it is sound.
+    if not event_ok(ev):
+        return "invalid: writer list id or signature does not verify"
+    ps = [t[1] for t in ev.get("tags") or [] if isinstance(t, list) and len(t) >= 2 and t[0] == "p"]
+    if any(not isinstance(p, str) or not HEX64.match(p) for p in ps):
+        return "invalid: every p tag in a writer list must be a lowercase 64-hex key"
+    if len(set(ps)) > MAX_WRITERS:
+        return f"invalid: a writer list holds at most {MAX_WRITERS} keys"
+    if ev["created_at"] > time.time() + MAX_FUTURE_SEC:
+        return "invalid: writer list is dated in the future"
+    return ""
+
+
+def expired(ev, now):
+    # NIP-40: the relay stops serving an event once its expiration has passed.
+    for t in ev.get("tags") or []:
+        if isinstance(t, list) and len(t) >= 2 and t[0] == "expiration":
+            try:
+                if int(t[1]) <= now:
+                    return True
+            except (TypeError, ValueError):
+                return True
+    return False
+
+
+def stored_writers():
+    # The newest sound, unexpired owner list the relay holds; NIP-01 order (later
+    # created_at, then lower id). strfry keeps one per owner, so this picks between owners.
+    flt = {"kinds": [WRITERS_KIND], "authors": sorted(OWNERS), "#d": [WRITERS_D]}
+    out = subprocess.run(SCAN_CMD + [json.dumps(flt)], capture_output=True, text=True,
+                         timeout=SCAN_TIMEOUT, check=True).stdout
+    now, best = time.time(), None
+    for line in out.splitlines():
+        try:
+            ev = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(ev, dict) or ev.get("pubkey") not in OWNERS or not is_writer_list(ev) \
+                or list_fault(ev) or expired(ev, now):
+            continue
+        if best is None or (ev["created_at"], -int(ev["id"], 16)) > (best["created_at"], -int(best["id"], 16)):
+            best = ev
+    return {t[1] for t in best["tags"] if t[0] == "p"} if best else set()
+
+
+CACHE = {"at": None, "writers": set()}
 
 
 def writers():
-    return HELD["writers"] if HELD else set()
+    if not OWNERS:
+        return set()
+    now = time.monotonic()
+    if CACHE["at"] is None or now - CACHE["at"] >= SCAN_TTL:
+        try:
+            CACHE["writers"] = stored_writers()
+        except Exception as e:
+            # Keep the last set read; the static allow-list is unaffected either way.
+            sys.stderr.write(f"write-policy: cannot read the stored writer list: {e}\n")
+        CACHE["at"] = now
+    return CACHE["writers"]
 
 
 def fleet(pk):
     return pk in ALLOW or pk in writers()
-
-
-def save(state):
-    os.makedirs(os.path.dirname(STATE), exist_ok=True)
-    tmp = STATE + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump({"id": state["id"], "created_at": state["created_at"], "writers": sorted(state["writers"])}, f)
-        f.flush()
-        os.fsync(f.fileno())
-    os.replace(tmp, STATE)
-
-
-def take_writer_list(ev):
-    global HELD
-    if not event_ok(ev):
-        return "reject", "invalid: writer list id or signature does not verify"
-    ps = [t[1] for t in ev.get("tags") or [] if isinstance(t, list) and len(t) >= 2 and t[0] == "p"]
-    if any(not isinstance(p, str) or not HEX64.match(p) for p in ps):
-        return "reject", "invalid: every p tag in a writer list must be a lowercase 64-hex key"
-    if len(set(ps)) > MAX_WRITERS:
-        return "reject", f"invalid: a writer list holds at most {MAX_WRITERS} keys"
-    if ev["created_at"] > time.time() + MAX_FUTURE_SEC:
-        return "reject", "invalid: writer list is dated in the future"
-    # NIP-01 replaceable order: the later created_at wins; in the same second, the lower id.
-    # A list that loses is still stored by strfry's own rules, but changes nothing here.
-    if HELD and not (ev["created_at"] > HELD["created_at"]
-                     or (ev["created_at"] == HELD["created_at"] and ev["id"] < HELD["id"])):
-        return "accept", ""
-    state = {"id": ev["id"], "created_at": ev["created_at"], "writers": set(ps)}
-    try:
-        save(state)
-    except Exception as e:
-        sys.stderr.write(f"write-policy: cannot save writer list: {e}\n")
-        return "reject", "error: the relay could not save this writer list; nothing changed"
-    HELD = state
-    return "accept", ""
-
-
-def is_writer_list(ev):
-    return ev.get("kind") == WRITERS_KIND and \
-        [t[1] for t in ev.get("tags") or [] if isinstance(t, list) and len(t) >= 2 and t[0] == "d"] == [WRITERS_D]
 
 
 def addressed_to_fleet(ev):
@@ -213,7 +226,8 @@ def addressed_to_fleet(ev):
 def decide(ev):
     pk = (ev.get("pubkey") or "").lower()
     if pk in OWNERS and is_writer_list(ev):
-        return take_writer_list(ev)
+        fault = list_fault(ev)
+        return ("reject", fault) if fault else ("accept", "")
     if fleet(pk):
         return "accept", ""
     if ev.get("kind") in ALLOW_KINDS:

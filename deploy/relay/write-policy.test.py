@@ -28,10 +28,26 @@ ALLOWLIST = {
 }
 
 
-def run(requests, conf=ALLOWLIST, state=None):
-    # Each call is a fresh plugin process. `state` is the writer-list file; by default a new,
-    # empty one per call, so earlier tests can't leak writers into later ones.
-    state = state or os.path.join(tempfile.mkdtemp(), "writers.json")
+# The relay's store, as `strfry scan` would print it: one event per line. The fake ignores the
+# filter, so the plugin's own checks on what it reads back are exercised too.
+FAKE_SCAN = "import sys; sys.stdout.write(open(sys.argv[1]).read())"
+
+
+def store_file(events=()):
+    path = os.path.join(tempfile.mkdtemp(), "store.jsonl")
+    with open(path, "w") as f:
+        f.writelines(json.dumps(e) + "\n" for e in events)
+    return path
+
+
+def plugin_env(conf_path, store, ttl="2"):
+    return {**os.environ, "ALLOWLIST_PATH": conf_path, "WRITERS_SCAN_TTL": ttl,
+            "WRITERS_SCAN_CMD": json.dumps([sys.executable, "-c", FAKE_SCAN, store])}
+
+
+def run(requests, conf=ALLOWLIST, store=None):
+    # Each call is a fresh plugin process over a store; by default an empty one.
+    store = store or store_file()
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
         json.dump(conf, f)
         path = f.name
@@ -40,7 +56,7 @@ def run(requests, conf=ALLOWLIST, state=None):
             [sys.executable, os.path.join(HERE, "write-policy.py")],
             input="\n".join(json.dumps(r) for r in requests) + "\n",
             capture_output=True, text=True, timeout=15,
-            env={**os.environ, "ALLOWLIST_PATH": path, "WRITERS_STATE_PATH": state},
+            env=plugin_env(path, store),
         )
         assert proc.returncode == 0, proc.stderr
         return [json.loads(l) for l in proc.stdout.strip().splitlines() if l.strip()]
@@ -165,16 +181,12 @@ OWNED = {**ALLOWLIST, "allow": {**ALLOWLIST["allow"], "fleet_signer": FLEET_SIGN
          "owners": {"james": OWNER, "pending": "REPLACE_WITH_OWNER"}}
 
 
-def writer_list(sk, keys, created_at=NOW, d="nave-relay-writers"):
-    return signed(sk, 30000, [["d", d]] + [["p", k] for k in keys], created_at)
+def writer_list(sk, keys, created_at=NOW, d="nave-relay-writers", tags=()):
+    return signed(sk, 30000, [["d", d]] + [["p", k] for k in keys] + list(tags), created_at)
 
 
 def post(pk, i="p1"):
     return {"id": i, "pubkey": pk, "kind": 1, "tags": [], "content": "hello"}
-
-
-def fresh_state():
-    return os.path.join(tempfile.mkdtemp(), "writers.json")
 
 
 # Interop anchor: an event signed by nostr-tools (throwaway key), with non-ASCII and escaped content.
@@ -182,79 +194,120 @@ NOSTR_TOOLS_EVENT = {"kind": 30000, "created_at": 1794000000, "tags": [["d", "na
 t("interop: an event signed by nostr-tools verifies", wp.event_ok(NOSTR_TOOLS_EVENT), True)
 t("interop: the same event with one content byte changed does not", wp.event_ok({**NOSTR_TOOLS_EVENT, "content": "x"}), False)
 
-out = run([new(post(NEW_A))], conf=OWNED)
-t("negative control: a key on no list is rejected", out[0]["action"], "reject")
+# -- the door: what the plugin says about an incoming owner list --
+out = run([new(writer_list(OWNER_SK, [NEW_A]))], conf=OWNED)
+t("a sound owner list passes the door", out[0]["action"], "accept")
 
-st = fresh_state()
-out = run([new(writer_list(OWNER_SK, [NEW_A])), new(post(NEW_A)), new(wrap(NEW_A))], conf=OWNED, state=st)
-t("owner's writer list accepted, then its key may write in the same stream (no restart)",
-  [o["action"] for o in out], ["accept", "accept", "accept"])
-
-out = run([new(post(NEW_A, "p2"))], conf=OWNED, state=st)
-t("the owner's list survives a plugin restart", out[0]["action"], "accept")
-
-out = run([new(writer_list(STRANGER_SK, [NEW_A])), new(post(NEW_A))], conf=OWNED)
-t("a stranger's writer list is rejected and admits nobody", [o["action"] for o in out], ["reject", "reject"])
-
-out = run([new(writer_list(FLEET_SK, [NEW_A])), new(post(NEW_A))], conf=OWNED)
-t("a fleet key that is not an owner: its list is stored as a fleet post, but admits nobody",
-  [o["action"] for o in out], ["accept", "reject"])
+out = run([new(writer_list(STRANGER_SK, [NEW_A]))], conf=OWNED)
+t("a stranger's writer list is rejected", out[0]["action"], "reject")
 
 bad = writer_list(OWNER_SK, [NEW_A])
 bad["sig"] = bad["sig"][:-1] + ("0" if bad["sig"][-1] != "0" else "1")
-out = run([new(bad), new(post(NEW_A))], conf=OWNED)
-t("an owner list with a bad signature is rejected and admits nobody", [o["action"] for o in out], ["reject", "reject"])
+out = run([new(bad)], conf=OWNED)
+t("an owner list with a bad signature is rejected", out[0]["action"], "reject")
 t("  ...and says why", out[0]["msg"].startswith("invalid:"), True)
 
 forged = writer_list(OWNER_SK, [NEW_A])
 forged["tags"] = forged["tags"] + [["p", NEW_B]]
-out = run([new(forged), new(post(NEW_B))], conf=OWNED)
-t("an owner list with tags changed after signing is rejected", [o["action"] for o in out], ["reject", "reject"])
+t("an owner list with tags changed after signing is rejected", run([new(forged)], conf=OWNED)[0]["action"], "reject")
 
-st = fresh_state()
-out = run([new(writer_list(OWNER_SK, [NEW_A], NOW - 100)), new(writer_list(OWNER_SK, [NEW_B], NOW - 50)),
-           new(post(NEW_A)), new(post(NEW_B, "p2"))], conf=OWNED, state=st)
-t("a newer list replaces the held set, never adds to it", [o["action"] for o in out], ["accept", "accept", "reject", "accept"])
-
-out = run([new(writer_list(OWNER_SK, [NEW_A], NOW - 200)), new(post(NEW_A)), new(post(NEW_B, "p2"))], conf=OWNED, state=st)
-t("an older list changes nothing", [o["action"] for o in out], ["accept", "reject", "accept"])
-
-x, y = writer_list(OWNER_SK, [NEW_A], NOW - 10), writer_list(OWNER_SK, [NEW_B], NOW - 10)
-low, high = (x, y) if x["id"] < y["id"] else (y, x)
-low_key = NEW_A if low is x else NEW_B
-out = run([new(high), new(low), new(post(low_key))], conf=OWNED)
-t("same second: the lower id wins (NIP-01), whatever the arrival order", out[2]["action"], "accept")
-out = run([new(low), new(high), new(post(low_key))], conf=OWNED)
-t("same second, other order: the lower id still holds", out[2]["action"], "accept")
-
-out = run([new(writer_list(OWNER_SK, [NEW_A], NOW + 3600)), new(post(NEW_A))], conf=OWNED)
-t("a list dated an hour ahead is rejected", [o["action"] for o in out], ["reject", "reject"])
+out = run([new(writer_list(OWNER_SK, [NEW_A], NOW + 3600))], conf=OWNED)
+t("a list dated an hour ahead is rejected", out[0]["action"], "reject")
 
 for label, k in [("uppercase", NEW_A.upper()), ("short", "ab" * 31)]:
-    out = run([new(writer_list(OWNER_SK, [NEW_B, k])), new(post(NEW_B))], conf=OWNED)
-    t(f"a list with a {label} p tag is rejected whole", [o["action"] for o in out], ["reject", "reject"])
+    out = run([new(writer_list(OWNER_SK, [NEW_B, k]))], conf=OWNED)
+    t(f"a list with a {label} p tag is rejected whole", out[0]["action"], "reject")
 
-out = run([new(writer_list(OWNER_SK, [])), new(post(FLEET)), new(post(NEW_A, "p2"))], conf=OWNED)
+out = run([new(writer_list(OWNER_SK, [NEW_A], d="something-else"))], conf=OWNED)
+t("an owner's kind 30000 with another d is judged as before (owner not in allow: rejected)", out[0]["action"], "reject")
+
+# -- admission: only what the relay has stored counts (mydude's review of a52cae9) --
+out = run([new(post(NEW_A))], conf=OWNED)
+t("negative control: a key on no list is rejected", out[0]["action"], "reject")
+
+out = run([new(writer_list(OWNER_SK, [NEW_A])), new(post(NEW_A)), new(wrap(NEW_A))], conf=OWNED)
+t("a list the plugin passed but the relay did not store admits nobody (expired, deleted, replaced)",
+  [o["action"] for o in out], ["accept", "reject", "reject"])
+
+st = store_file([writer_list(OWNER_SK, [NEW_A])])
+out = run([new(post(NEW_A)), new(wrap(NEW_A)), new(post(NEW_B, "p2"))], conf=OWNED, store=st)
+t("a list the relay holds admits its keys as authors and as wrap recipients, nobody else",
+  [o["action"] for o in out], ["accept", "accept", "reject"])
+
+out = run([new(post(NEW_A))], conf=OWNED, store=st)
+t("a fresh plugin process reads the same store: a restart keeps it", out[0]["action"], "accept")
+
+st = store_file([writer_list(OWNER_SK, [NEW_A], tags=[["expiration", str(NOW - 1)]])])
+t("a stored list past its expiration admits nobody", run([new(post(NEW_A))], conf=OWNED, store=st)[0]["action"], "reject")
+st = store_file([writer_list(OWNER_SK, [NEW_A], tags=[["expiration", str(NOW + 3600)]])])
+t("  ...and admits its keys until then", run([new(post(NEW_A))], conf=OWNED, store=st)[0]["action"], "accept")
+
+OWNER2_SK = 0x44 * 19 + 7
+TWO = {**OWNED, "owners": {"james": OWNER, "other": pubkey(OWNER2_SK)}}
+st = store_file([writer_list(OWNER_SK, [NEW_A], NOW - 100), writer_list(OWNER2_SK, [NEW_B], NOW - 50)])
+out = run([new(post(NEW_A)), new(post(NEW_B, "p2"))], conf=TWO, store=st)
+t("between owners, the newer stored list replaces the older, never adds to it", [o["action"] for o in out], ["reject", "accept"])
+
+x, y = writer_list(OWNER_SK, [NEW_A], NOW - 10), writer_list(OWNER2_SK, [NEW_B], NOW - 10)
+low_key = NEW_A if x["id"] < y["id"] else NEW_B
+for order in ([x, y], [y, x]):
+    out = run([new(post(low_key))], conf=TWO, store=store_file(order))
+    t("same second: the lower id wins (NIP-01), whatever the store order", out[0]["action"], "accept")
+
+st = store_file([writer_list(STRANGER_SK, [NEW_A]), writer_list(FLEET_SK, [NEW_A])])
+out = run([new(post(NEW_A))], conf=OWNED, store=st)
+t("stored lists from a stranger or a non-owner fleet key admit nobody", out[0]["action"], "reject")
+
+bad_stored = writer_list(OWNER_SK, [NEW_A])
+bad_stored["tags"] = bad_stored["tags"] + [["p", NEW_B]]
+t("a stored owner list that no longer verifies admits nobody",
+  run([new(post(NEW_A))], conf=OWNED, store=store_file([bad_stored]))[0]["action"], "reject")
+
+out = run([new(writer_list(OWNER_SK, [])), new(post(FLEET)), new(post(NEW_A, "p2"))], conf=OWNED,
+          store=store_file([writer_list(OWNER_SK, [])]))
 t("an empty owner list never removes the static allow-list", [o["action"] for o in out], ["accept", "accept", "reject"])
 
-out = run([new(writer_list(OWNER_SK, [NEW_A], d="something-else")), new(post(NEW_A))], conf=OWNED)
-t("an owner's kind 30000 with another d is judged as before (owner not in allow: rejected)",
-  [o["action"] for o in out], ["reject", "reject"])
+broken = json.dumps([sys.executable, "-c", "import sys; sys.exit(3)"])
+with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+    json.dump(OWNED, f)
+proc = subprocess.run([sys.executable, os.path.join(HERE, "write-policy.py")],
+                      input=json.dumps(new(post(FLEET))) + "\n" + json.dumps(new(post(NEW_A, "p2"))) + "\n",
+                      capture_output=True, text=True, timeout=15,
+                      env={**os.environ, "ALLOWLIST_PATH": f.name, "WRITERS_SCAN_CMD": broken})
+os.unlink(f.name)
+out = [json.loads(l) for l in proc.stdout.split("\n") if l.strip()]
+t("a store that cannot be read: the static list works, nobody extra, no crash",
+  [o["action"] for o in out], ["accept", "reject"])
 
-st = fresh_state()
-with open(st, "w") as f:
-    f.write('{"id": "x", "created_at": 1, "writers": ["not-a-key"]}')
-out = run([new(post(FLEET)), new(post(NEW_A, "p2"))], conf=OWNED, state=st)
-t("a malformed state file is ignored: the static list works, nobody extra", [o["action"] for o in out], ["accept", "reject"])
-
-blocked = os.path.join(tempfile.mkdtemp(), "file-not-dir")
-open(blocked, "w").close()
-out = run([new(writer_list(OWNER_SK, [NEW_A])), new(post(NEW_A))], conf=OWNED, state=os.path.join(blocked, "writers.json"))
-t("a list that cannot be saved is rejected, and admits nobody", [o["action"] for o in out], ["reject", "reject"])
-t("  ...and says nothing changed", "nothing changed" in out[0]["msg"], True)
-
-out = run([new(writer_list(OWNER_SK, [NEW_A])), new(post(NEW_A))], conf=ALLOWLIST)
+out = run([new(writer_list(OWNER_SK, [NEW_A])), new(post(NEW_A))], conf=ALLOWLIST,
+          store=store_file([writer_list(OWNER_SK, [NEW_A])]))
 t("a config with no owners: an owner-shaped list changes nothing", [o["action"] for o in out], ["reject", "reject"])
+
+# -- the store changes under a running plugin: admission follows it --
+with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+    json.dump(OWNED, f)
+st = store_file()
+proc = subprocess.Popen([sys.executable, os.path.join(HERE, "write-policy.py")], stdin=subprocess.PIPE,
+                        stdout=subprocess.PIPE, text=True, env=plugin_env(f.name, st, ttl="0"))
+
+
+def ask(ev):
+    proc.stdin.write(json.dumps(new(ev)) + "\n")
+    proc.stdin.flush()
+    return json.loads(proc.stdout.readline())["action"]
+
+
+seen = [ask(post(NEW_A))]
+with open(st, "w") as g:
+    g.write(json.dumps(writer_list(OWNER_SK, [NEW_A])) + "\n")
+seen.append(ask(post(NEW_A, "p2")))
+open(st, "w").close()
+seen.append(ask(post(NEW_A, "p3")))
+proc.stdin.close()
+proc.wait(timeout=15)
+os.unlink(f.name)
+t("live: rejected before the relay stores the list, admitted once it does, rejected once it is gone",
+  seen, ["reject", "accept", "reject"])
 
 print(f"\n{pass_}/{n} passed")
 sys.exit(0 if pass_ == n else 1)
