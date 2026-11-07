@@ -309,5 +309,24 @@ os.unlink(f.name)
 t("live: rejected before the relay stores the list, admitted once it does, rejected once it is gone",
   seen, ["reject", "accept", "reject"])
 
+# -- the store becomes unreadable after a key was admitted: that key is refused --
+with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+    json.dump(OWNED, f)
+st = store_file([writer_list(OWNER_SK, [NEW_A])])
+proc = subprocess.Popen([sys.executable, os.path.join(HERE, "write-policy.py")], stdin=subprocess.PIPE,
+                        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+                        env=plugin_env(f.name, st, ttl="0"))
+seen = [ask(post(NEW_A, "q1"))]
+os.unlink(st)  # the fake scan now exits non-zero, as a failing `strfry scan` would
+seen += [ask(post(NEW_A, "q2")), ask(post(FLEET, "q3"))]
+with open(st, "w") as g:
+    g.write(json.dumps(writer_list(OWNER_SK, [NEW_A])) + "\n")
+seen.append(ask(post(NEW_A, "q4")))
+proc.stdin.close()
+proc.wait(timeout=15)
+os.unlink(f.name)
+t("live: a failed read drops an admitted key, keeps the static list, and a good read restores it",
+  seen, ["accept", "reject", "accept", "accept"])
+
 print(f"\n{pass_}/{n} passed")
 sys.exit(0 if pass_ == n else 1)

@@ -16,7 +16,8 @@
 #      (`strfry scan`, at most every WRITERS_SCAN_TTL seconds): the newest
 #      unexpired owner list held by the relay. So a list the relay refused,
 #      deleted or expired admits nobody, and a restart needs no state of its
-#      own. A kind 30000 from anyone else is judged by the rules below;
+#      own. A failed read admits no extra writers until a read succeeds. A kind
+#      30000 from anyone else is judged by the rules below;
 #   1. accept events AUTHORED by a fleet pubkey: allowlist.json `allow`, which
 #      always stays, plus the extra writers in the relay's stored owner list;
 #   2. accept `allowKinds` from anyone (NIP-46 transport 24133 — end-to-end
@@ -205,8 +206,10 @@ def writers():
         try:
             CACHE["writers"] = stored_writers()
         except Exception as e:
-            # Keep the last set read; the static allow-list is unaffected either way.
-            sys.stderr.write(f"write-policy: cannot read the stored writer list: {e}\n")
+            # Fail closed: a list deleted or expired during the outage must not keep
+            # admitting. The static allow-list is unaffected.
+            CACHE["writers"] = set()
+            sys.stderr.write(f"write-policy: cannot read the stored writer list, admitting no extra writers: {e}\n")
         CACHE["at"] = now
     return CACHE["writers"]
 
