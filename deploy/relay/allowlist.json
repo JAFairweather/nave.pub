@@ -20,7 +20,8 @@
     "lukedog":      "1b53f548acebe8dd47252717104350006f49b5c981a86ad4cfaf58d3fd7a0f1e",
     "waggle_dev":   "38889d4ce187469d41dc0ef3f610a79d42120603fbc8a68b92d8bd67ae63a536",
     "crystalclaude": "a135942aa05d90fff5d2062c78c61c1208903be241d3a93cb55e7009e87a3d8b",
-    "biggy":        "b7b844a2bed1b64a6e294330e119fa7f3b2941275697f5854ba5ad536a42307c"
+    "biggy":        "b7b844a2bed1b64a6e294330e119fa7f3b2941275697f5854ba5ad536a42307c",
+    "curator":      "e689acc24d9fef5bc6739cb8e025188a686c4efc1a66a63a957445bfe9a55361"
   },
   "allowKinds": [24133],
   "recipientKinds": [1059]
