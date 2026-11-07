@@ -11,6 +11,9 @@ services:
       - ./strfry.conf:/etc/strfry.conf:ro
       - ./allowlist.json:/app/allowlist.json:ro
       - strfry-db:/app/strfry-db
+      # The owner's signed writer list, as last accepted (nave.pub#157). Kept apart from the
+      # LMDB so it survives a rebuild; the plugin rebuilds nothing from the event store.
+      - writer-state:/app/state
     command: ["/app/strfry", "--config=/etc/strfry.conf", "relay"]
     expose:
       - "7777"
@@ -56,6 +59,7 @@ networks:
 
 volumes:
   strfry-db:
+  writer-state:
   strfry-transport-db:
   caddy-data:
   caddy-config:

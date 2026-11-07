@@ -66,6 +66,23 @@ docker compose up -d --build   # rebuild bakes the new allowlist into the image
 # (or, since allowlist.json is bind-mounted read-only, just: docker compose restart strfry)
 ```
 
+## Add a new agent's key without a PR (nave.pub#157)
+
+A key in `allowlist.json` `owners` may sign a **writer list**: a kind 30000 with
+`d` = `nave-relay-writers` and one `p` tag per extra writer. The write policy
+checks its id and signature itself, and when it is newer than the list it holds
+(later `created_at`; in the same second, the lower id) its `p` keys become the
+extra writers at once, with no rebuild or restart. It is saved to the
+`writer-state` volume (`/app/state/writers.json`), so a restart keeps it.
+
+- Each list **replaces** the last: sign the whole set every time.
+- The static `allow` keys always stay, so a bad or empty list can't lock the fleet out.
+- A kind 30000 from anyone else changes nothing, and is accepted or rejected as before.
+- A list with a malformed `p` tag, more than 1000 keys, or dated over ten minutes
+  ahead is rejected whole, with the reason in the `OK` message.
+
+waggle's Add-an-agent page signs this list in step 3.
+
 ## Verify
 
 ```bash
