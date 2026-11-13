@@ -200,6 +200,24 @@ NOSTR_TOOLS_EVENT = {"kind": 30000, "created_at": 1794000000, "tags": [["d", "na
 t("interop: an event signed by nostr-tools verifies", wp.event_ok(NOSTR_TOOLS_EVENT), True)
 t("interop: the same event with one content byte changed does not", wp.event_ok({**NOSTR_TOOLS_EVENT, "content": "x"}), False)
 
+# The public transport kind must not trigger the expensive stored-writer scan.
+# It is admitted regardless of writer/deny state, even when that state cannot be read.
+saved_writers = wp.writers
+try:
+    wp.writers = lambda: (_ for _ in ()).throw(AssertionError("unexpected writer scan"))
+    t("open transport kind bypasses the writer snapshot",
+      wp.decide({"id": "fast", "pubkey": STRANGER, "kind": 24133, "tags": [], "content": "enc"})[0], "accept")
+finally:
+    wp.writers = saved_writers
+
+# A stored event appears again on every snapshot. Rechecking its NIP-01 id
+# preserves tamper detection; the same verified signature need not repeat EC math.
+wp.schnorr_verify.cache_clear()
+t("stored event verifies before signature cache", wp.event_ok(NOSTR_TOOLS_EVENT), True)
+t("stored event verifies with cached signature", wp.event_ok(NOSTR_TOOLS_EVENT), True)
+t("repeat signature verification hits bounded cache", wp.schnorr_verify.cache_info().hits, 1)
+t("changed content still fails with cached signature", wp.event_ok({**NOSTR_TOOLS_EVENT, "content": "x"}), False)
+
 # -- the door: what the plugin says about an incoming owner list --
 out = run([new(writer_list(OWNER_SK, [NEW_A]))], conf=OWNED)
 t("a sound owner list passes the door", out[0]["action"], "accept")
