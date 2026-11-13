@@ -35,6 +35,7 @@
 # Everything else is rejected. allowlist.json is read once; a change to it is a
 # plugin restart (strfry respawns it). The owner's list needs no restart.
 import hashlib
+import functools
 import json
 import os
 import re
@@ -133,7 +134,11 @@ def _tagged(tag, msg):
     return hashlib.sha256(t + t + msg).digest()
 
 
+@functools.lru_cache(maxsize=4096)
 def schnorr_verify(msg, pubkey, sig):
+    # The relay store returns the same signed events on every snapshot. Cache
+    # only the signature calculation; event_ok still hashes the current event
+    # fields and compares its id before this result can authorize anything.
     if len(msg) != 32 or len(pubkey) != 32 or len(sig) != 64:
         return False
     pt = _lift_x(int.from_bytes(pubkey, "big"))
@@ -495,9 +500,11 @@ def decide(ev):
         except Exception as e:
             sys.stderr.write(f"write-policy: delegate policy read failed: {e}\n")
             return "reject", "delegate policy unavailable"
-    if fleet(pk):
-        return "accept", ""
     if ev.get("kind") in ALLOW_KINDS:
+        # This kind is public by configuration. No writer, grant, or deny
+        # state can change its verdict, so avoid a full relay-store snapshot.
+        return "accept", ""
+    if fleet(pk):
         return "accept", ""
     if ev.get("kind") in RECIPIENT_KINDS and addressed_to_fleet(ev):
         return "accept", ""
