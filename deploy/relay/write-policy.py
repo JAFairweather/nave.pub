@@ -327,12 +327,10 @@ def is_list(ev, d):
 def delegate_snapshot():
     """Read the stored grants/lists; first observed 441 pins the last delegate set."""
     grants, live, revocations = onboard_grants()
-    # A revoked or expired grant is history, not a competing active delegate.
-    # Its first observed 441 is still handled below by the durable freeze.
-    delegates = {only_tag(ev, "p") for ev in live.values()}
-    if len(delegates) > 1:
-        raise ValueError("more than one onboarding delegate is configured")
-    delegate = next(iter(delegates), None)
+    # The stored list survives terms changes and grant expiry. Only a new
+    # addition needs a live grant; revocation is handled by the durable freeze.
+    latest_grant = newest([ev for gid, ev in grants.items() if gid not in revocations])
+    delegate = only_tag(latest_grant, "p") if latest_grant else None
     current = stored_list(delegate, DELEGATE_D) if delegate else None
     freeze = freeze_state()
     if revocations and not freeze:
@@ -460,30 +458,31 @@ def decide(ev):
         fault = list_fault(ev)
         return ("reject", fault) if fault else ("accept", "")
     # The delegate key is not a general fleet writer. Only these two event
-    # shapes can pass it, and only with a fresh stored grant and no 441 freeze.
+    # shapes can pass it; new additions need a fresh grant and no 441 freeze.
     if RUNNER and (is_list(ev, DELEGATE_D) or
                    (ev.get("kind") == 30078 and REQUEST_RE.match(only_tag(ev, "d") or ""))):
         try:
             state = delegate_snapshot()
             if pk == state["delegate"]:
-                if not ONBOARD_POLICY or current_terms_version() != ONBOARD_POLICY:
-                    return "reject", "onboard grant policy is not the current hive terms version"
                 if is_list(ev, DELEGATE_D):
                     fault = list_fault(ev)
                     if fault:
                         return "reject", fault
                     if state["freeze"]:
                         return "reject", "delegate writer list frozen by stored 441"
-                    if not any(only_tag(g, "p") == pk for g in state["live"].values()):
-                        return "reject", "no live onboard grant for delegate"
                     if tags(ev, "expiration"):
                         return "reject", "delegate writer list must be durable"
                     old = set(tags(state["current"], "p")) if state["current"] else set()
-                    for target in set(tags(ev, "p")) - old:
+                    additions = set(tags(ev, "p")) - old
+                    if additions and not any(only_tag(g, "p") == pk for g in state["live"].values()):
+                        return "reject", "no live onboard grant for delegate"
+                    if additions and (not ONBOARD_POLICY or current_terms_version() != ONBOARD_POLICY):
+                        return "reject", "onboard grant policy is not the current hive terms version"
+                    for target in additions:
                         if not request_authorizes(target, pk, state["live"]):
                             return "reject", f"no live unfinished delegate request for {target}"
                     return "accept", ""
-                if ev.get("kind") == 30078 and \
+                if ONBOARD_POLICY and current_terms_version() == ONBOARD_POLICY and ev.get("kind") == 30078 and \
                         valid_delegate_request(ev, only_tag(ev, "p"), pk, state["live"], time.time()):
                     return "accept", ""
                 return "reject", "delegate may only submit its scoped onboarding request or writer list"

@@ -413,6 +413,35 @@ t("a runner event with extra terminal content does not close the request",
 stored_delegate = base + [accepted(req), delegate_list]
 t("stored delegate list admits the added agent after the request completes",
   run([new(post(NEW_A))], conf=DELEGATED, store=store_file(stored_delegate + [terminal(req)]))[0]["action"], "accept")
+
+# Terms changes and expiry end authority to add keys, not admission already
+# recorded in the durable delegate list.
+terms_store = store_file(stored_delegate + [terminal(req)])
+t("terms bump preserves an existing delegate writer",
+  run([new(post(NEW_A))], conf={**DELEGATED, "onboardPolicy": "v2"},
+      store=terms_store, policy="v2")[0]["action"], "accept")
+t("terms bump rejects a new delegate writer even with an accepted old request",
+  run([new(writer_list(DELEGATE_SK, [NEW_A, NEW_B], NOW + 1, d="nave-relay-writers-delegate"))],
+      conf={**DELEGATED, "onboardPolicy": "v2"},
+      store=store_file(stored_delegate + [request(NEW_B), accepted(request(NEW_B))]),
+      policy="v2")[0]["action"], "reject")
+t("terms bump permits a delegate list with no additions",
+  run([new(writer_list(DELEGATE_SK, [], NOW + 1, d="nave-relay-writers-delegate"))],
+      conf={**DELEGATED, "onboardPolicy": "v2"}, store=terms_store, policy="v2")[0]["action"], "accept")
+
+expired_grant = signed(OWNER_SK, 440, GRANT["tags"] + [["expiration", str(NOW - 1)]], NOW - 100)
+expired_store = store_file([expired_grant, delegate_list])
+t("expired grant preserves an existing delegate writer",
+  run([new(post(NEW_A))], conf=DELEGATED, store=expired_store)[0]["action"], "accept")
+t("expired grant rejects a new delegate writer even with an accepted request",
+  run([new(writer_list(DELEGATE_SK, [NEW_A, NEW_B], NOW + 1, d="nave-relay-writers-delegate"))],
+      conf=DELEGATED,
+      store=store_file([expired_grant, delegate_list, request(NEW_B, expired_grant["id"]),
+                        accepted(request(NEW_B, expired_grant["id"]))]))[0]["action"], "reject")
+t("expired grant permits a delegate list with no additions",
+  run([new(writer_list(DELEGATE_SK, [], NOW + 1, d="nave-relay-writers-delegate"))],
+      conf=DELEGATED, store=expired_store)[0]["action"], "accept")
+
 deny = writer_list(OWNER_SK, [NEW_A], d="nave-relay-writers-deny")
 t("James's deny overrides the stored delegate list",
   run([new(post(NEW_A))], conf=DELEGATED, store=store_file(stored_delegate + [deny]))[0]["action"], "reject")
