@@ -92,6 +92,57 @@ admits nobody, a stored one admits its key, and a restart keeps it.
 
 waggle's Add-an-agent page signs this list in step 3.
 
+## Onboarding delegate writer gate (pending relay signer and live rollout)
+
+The delegate may sign only its kind 30000 `d=nave-relay-writers-delegate`
+writer list and a scoped kind 30078 `add_agent` request. The relay reads James's
+stored, signed kind 440 `onboard` grant and kind 441 revocations fresh. A new
+list entry requires a live, unexpired request naming that key, carrying the
+live grant ID as `consent`, with the grant's `policy` equal to the current
+`onboardPolicy` configured in `allowlist.json`, plus a separate runner-signed
+acceptance proof stored by the relay. The proof is kind 30078, empty content,
+with exactly `d=nvoy-onboard:<request-id>:accepted`, `e=<request-id>`,
+`p=<target>`, and `consent=<grant-id>` in that order. The runner must publish it
+only after its request checks pass and read it back before proceeding; this
+runner integration is pending. A
+runner-signed terminal marker (`d=nvoy-onboard:<request-id>:terminal`,
+`e=<request-id>`) closes the window for adding the target. That marker also
+covers refusals, so it cannot serve as the acceptance proof.
+
+The delegate list is durable. A kind 441 observed in the relay store pins the
+last accepted delegate list's event ID and keys in
+`relay-policy-state:/app/policy-state/delegate-freeze.json`. This volume must
+survive image rebuilds and restarts. Further delegate lists are refused even
+if backdated. Without a 441, a successor grant keeps writers from every
+non-revoked grantee's stored list, including expired grants; only the newest
+grantee with a live grant can add writers. James's `nave-relay-writers-deny`
+list takes precedence over static, owner, and delegate writer entries; an empty
+newer deny list lifts a deny. A failed store read or corrupt freeze file admits
+no writers until repaired. The owner writer-list and deny-list write path remains
+available so James can recover the relay.
+The freeze also survives a later re-grant: it preserves existing delegate
+writers but blocks new delegate lists. Restoring additions after a revocation
+requires a separately reviewed operator reset of the persistent freeze; merely
+signing another grant does not unfreeze the list.
+
+`onboardPolicy` is intentionally unset in the checked-in allowlist. The
+operator must set it to the version returned by the live hive terms API before
+delegate additions can pass. A terms change requires updating this field; the
+old grant then stops new additions, while already stored writer entries remain
+until James denies them.
+
+`python3 write-policy.py --effective-snapshot` emits sorted effective keys and
+the stored owner, delegate, deny and freeze event IDs as JSON. It exits
+nonzero if any required read or freeze check fails. This is the publisher's
+source of truth, not a signature. Once James chooses a relay signing identity
+and its reviewed provisioning path, a separate publisher will sign kind 30000
+under that identity with `d=nave-relay-writers-effective` and one `p` tag per
+key. It must publish the complete set, read back the exact event ID from the
+relay, and recheck the snapshot before claiming success. Readers must pin the
+relay public key and reject an absent, expired, or unverifiable effective list.
+No effective list is published by this plugin. The publisher and live rollout
+stay gated on the signer/custody decision and a reviewed deploy.
+
 ## Verify
 
 ```bash
