@@ -1,0 +1,69 @@
+{
+  "v": 1,
+  "generated_at": "2026-08-07T00:03:30.261Z",
+  "rows": [
+    {
+      "artifact": "design/tokens.css",
+      "repo": "nvoy",
+      "verdict": "ok",
+      "detail": "all declarations present"
+    },
+    {
+      "artifact": "design/tokens.css",
+      "repo": "nact",
+      "verdict": "stale",
+      "detail": "absent: --ground --panel-2 --line-strong --field +20"
+    },
+    {
+      "artifact": "design/tokens.css",
+      "repo": "ngage",
+      "verdict": "not adopted",
+      "detail": "bespoke letterpress-noir palette (gold/cream/ink), not a vendored copy — a deliberate design identity, same status as waggle. The one shared rule it DOES follow is the type system: chrome is --sans and only the signed artifact keeps --serif (DESIGN.md §Type)."
+    },
+    {
+      "artifact": "design/tokens.css",
+      "repo": "waggle",
+      "verdict": "not adopted",
+      "detail": "private token block, not a vendored copy — adoption tracked in nave.pub#113"
+    },
+    {
+      "artifact": "components/nave-titlebar.mjs",
+      "repo": "nvoy",
+      "verdict": "ok",
+      "detail": "0be2c1aff740"
+    },
+    {
+      "artifact": "components/nave-titlebar.mjs",
+      "repo": "nact",
+      "verdict": "ok",
+      "detail": "0be2c1aff740"
+    },
+    {
+      "artifact": "components/nave-titlebar.mjs",
+      "repo": "ngage",
+      "verdict": "ok",
+      "detail": "0be2c1aff740"
+    },
+    {
+      "artifact": "components/nave-titlebar.mjs",
+      "repo": "waggle",
+      "verdict": "stale",
+      "detail": "matches the last published hash; hub has moved ahead"
+    },
+    {
+      "artifact": "NAVE_PLANES vs VENDOR.json apps",
+      "repo": "nave",
+      "verdict": "ok",
+      "detail": "4 apps, same set and same order"
+    }
+  ],
+  "totals": {
+    "ok": 5,
+    "stale": 2,
+    "diverged": 0,
+    "not adopted": 2,
+    "missing": 0
+  },
+  "baseline_recorded": true,
+  "note": "A snapshot from the last completed nave-drift run, not a live check. Render generated_at."
+}
