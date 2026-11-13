@@ -325,13 +325,17 @@ def is_list(ev, d):
 
 
 def delegate_snapshot():
-    """Read the stored grants/lists; first observed 441 pins the last delegate set."""
+    """Read stored grants/lists; a 441 pins its revoked delegate's last set."""
     grants, live, revocations = onboard_grants()
-    # The stored list survives terms changes and grant expiry. Only a new
-    # addition needs a live grant; revocation is handled by the durable freeze.
-    latest_grant = newest([ev for gid, ev in grants.items() if gid not in revocations])
+    # Every non-revoked grantee retains its stored admissions across a successor
+    # grant, terms change, or grant expiry. Only the newest grantee can submit
+    # a new list, and additions still require a live grant and runner proof.
+    unrevoked = [ev for gid, ev in grants.items() if gid not in revocations]
+    latest_grant = newest(unrevoked)
     delegate = only_tag(latest_grant, "p") if latest_grant else None
-    current = stored_list(delegate, DELEGATE_D) if delegate else None
+    delegate_lists = {grantee: stored_list(grantee, DELEGATE_D)
+                      for grantee in {only_tag(ev, "p") for ev in unrevoked}}
+    current = delegate_lists.get(delegate)
     freeze = freeze_state()
     if revocations and not freeze:
         revoked_id, first_revoke = min(
@@ -340,9 +344,10 @@ def delegate_snapshot():
         last_revoked_list = stored_list(revoked_delegate, DELEGATE_D)
         pin_freeze(first_revoke["id"], last_revoked_list)
         freeze = freeze_state()
-    if freeze and freeze["list_id"] and current and current["id"] != freeze["list_id"]:
-        sys.stderr.write("write-policy: stored delegate list differs from pinned 441 freeze; using pinned keys\n")
-    delegate_keys = set(freeze["keys"]) if freeze else set(tags(current, "p")) if current else set()
+    delegate_keys = set(freeze["keys"]) if freeze else set()
+    for admitted in delegate_lists.values():
+        if admitted:
+            delegate_keys.update(tags(admitted, "p"))
     owner_lists = [stored_list(owner, WRITERS_D) for owner in OWNERS]
     owner_lists = [ev for ev in owner_lists if ev]
     owner_list = newest(owner_lists)
@@ -353,7 +358,8 @@ def delegate_snapshot():
     denied = set(tags(deny, "p")) if deny else set()
     effective = (ALLOW | owner_keys | delegate_keys) - denied
     return {"delegate": delegate, "grants": grants, "live": live, "revocations": revocations,
-            "current": current, "freeze": freeze, "owner": owner_list, "deny": deny,
+            "current": current, "delegate_lists": delegate_lists,
+            "freeze": freeze, "owner": owner_list, "deny": deny,
             "effective": effective}
 
 
@@ -508,6 +514,7 @@ if __name__ == "__main__":
             "owner_list": state["owner"]["id"] if state["owner"] else None,
             "delegate_list": state["freeze"]["list_id"] if state["freeze"] else
                              state["current"]["id"] if state["current"] else None,
+            "delegate_lists": sorted(ev["id"] for ev in state["delegate_lists"].values() if ev),
             "deny_list": state["deny"]["id"] if state["deny"] else None,
             "freeze_revocation": state["freeze"]["revocation"] if state["freeze"] else None,
         }, sort_keys=True) + "\n")

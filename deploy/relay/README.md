@@ -113,11 +113,13 @@ The delegate list is durable. A kind 441 observed in the relay store pins the
 last accepted delegate list's event ID and keys in
 `relay-policy-state:/app/policy-state/delegate-freeze.json`. This volume must
 survive image rebuilds and restarts. Further delegate lists are refused even
-if backdated. James's `nave-relay-writers-deny` list takes precedence over
-static, owner, and delegate writer entries; an empty newer deny list lifts a
-deny. A failed store read or corrupt freeze file admits no writers until
-repaired. The owner writer-list and deny-list write path remains available so
-James can recover the relay.
+if backdated. Without a 441, a successor grant keeps writers from every
+non-revoked grantee's stored list, including expired grants; only the newest
+grantee with a live grant can add writers. James's `nave-relay-writers-deny`
+list takes precedence over static, owner, and delegate writer entries; an empty
+newer deny list lifts a deny. A failed store read or corrupt freeze file admits
+no writers until repaired. The owner writer-list and deny-list write path remains
+available so James can recover the relay.
 The freeze also survives a later re-grant: it preserves existing delegate
 writers but blocks new delegate lists. Restoring additions after a revocation
 requires a separately reviewed operator reset of the persistent freeze; merely

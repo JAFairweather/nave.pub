@@ -442,6 +442,38 @@ t("expired grant permits a delegate list with no additions",
   run([new(writer_list(DELEGATE_SK, [], NOW + 1, d="nave-relay-writers-delegate"))],
       conf=DELEGATED, store=expired_store)[0]["action"], "accept")
 
+# A successor grant does not revoke the first delegate's stored admissions.
+DELEGATE2_SK = 0x77 * 31 + 13
+DELEGATE2 = pubkey(DELEGATE2_SK)
+successor_grant = signed(OWNER_SK, 440, [
+    ["p", DELEGATE2], ["da-cap", "onboard"],
+    ["da-scope", wp.scope_hash(OWNER, "22" * 16), "22" * 16],
+    ["policy", "v1"], ["age", "confirmed"]], NOW + 1)
+successor_store = store_file([GRANT, delegate_list, successor_grant])
+t("successor grant preserves the first delegate's admitted writer",
+  run([new(post(NEW_A))], conf=DELEGATED, store=successor_store)[0]["action"], "accept")
+t("successor grant after expiry preserves the first delegate's admitted writer",
+  run([new(post(NEW_A))], conf=DELEGATED,
+      store=store_file([expired_grant, delegate_list, successor_grant]))[0]["action"], "accept")
+successor_request = signed(DELEGATE2_SK, 30078, [
+    ["d", "nvoy-onboard/new-agent/add_agent"], ["p", NEW_B],
+    ["op", "add_agent"], ["consent", successor_grant["id"]]], NOW)
+successor_list = writer_list(DELEGATE2_SK, [NEW_B], NOW + 2, d="nave-relay-writers-delegate")
+successor_proof = [successor_request, accepted(successor_request)]
+t("superseded delegate cannot add another writer",
+  run([new(writer_list(DELEGATE_SK, [NEW_A, NEW_B], NOW + 2, d="nave-relay-writers-delegate"))],
+      conf=DELEGATED, store=store_file([GRANT, delegate_list, successor_grant]))[0]["action"], "reject")
+t("successor still needs runner acceptance for a new writer",
+  run([new(successor_list)], conf=DELEGATED,
+      store=store_file([GRANT, delegate_list, successor_grant, successor_request]))[0]["action"], "reject")
+t("live successor can add a writer with runner acceptance",
+  run([new(successor_list)], conf=DELEGATED,
+      store=store_file([GRANT, delegate_list, successor_grant] + successor_proof))[0]["action"], "accept")
+t("both delegates' stored writers remain admitted",
+  [r["action"] for r in run([new(post(NEW_A)), new(post(NEW_B))], conf=DELEGATED,
+      store=store_file([GRANT, delegate_list, successor_grant, successor_list]))],
+  ["accept", "accept"])
+
 deny = writer_list(OWNER_SK, [NEW_A], d="nave-relay-writers-deny")
 t("James's deny overrides the stored delegate list",
   run([new(post(NEW_A))], conf=DELEGATED, store=store_file(stored_delegate + [deny]))[0]["action"], "reject")
