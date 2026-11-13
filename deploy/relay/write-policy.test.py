@@ -10,6 +10,7 @@
 # are addressed TO — and only the fleet; a wrap to a stranger stays rejected.
 import json
 import os
+from pathlib import Path
 import subprocess
 import sys
 import tempfile
@@ -40,12 +41,17 @@ def store_file(events=()):
     return path
 
 
-def plugin_env(conf_path, store, ttl="2"):
+def plugin_env(conf_path, store, ttl="2", freeze=None, policy="v1"):
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+        json.dump({"policy": {"version": policy, "terms_markdown": "Current terms"}}, f)
+        policy_url = Path(f.name).as_uri()
     return {**os.environ, "ALLOWLIST_PATH": conf_path, "WRITERS_SCAN_TTL": ttl,
+            "DELEGATE_FREEZE_PATH": freeze or os.path.join(tempfile.mkdtemp(), "freeze.json"),
+            "JOIN_POLICY_URL": policy_url,
             "WRITERS_SCAN_CMD": json.dumps([sys.executable, "-c", FAKE_SCAN, store])}
 
 
-def run(requests, conf=ALLOWLIST, store=None):
+def run(requests, conf=ALLOWLIST, store=None, freeze=None, policy="v1"):
     # Each call is a fresh plugin process over a store; by default an empty one.
     store = store or store_file()
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
@@ -56,7 +62,7 @@ def run(requests, conf=ALLOWLIST, store=None):
             [sys.executable, os.path.join(HERE, "write-policy.py")],
             input="\n".join(json.dumps(r) for r in requests) + "\n",
             capture_output=True, text=True, timeout=15,
-            env=plugin_env(path, store),
+            env=plugin_env(path, store, freeze=freeze, policy=policy),
         )
         assert proc.returncode == 0, proc.stderr
         return [json.loads(l) for l in proc.stdout.strip().splitlines() if l.strip()]
@@ -276,8 +282,8 @@ proc = subprocess.run([sys.executable, os.path.join(HERE, "write-policy.py")],
                       env={**os.environ, "ALLOWLIST_PATH": f.name, "WRITERS_SCAN_CMD": broken})
 os.unlink(f.name)
 out = [json.loads(l) for l in proc.stdout.split("\n") if l.strip()]
-t("a store that cannot be read: the static list works, nobody extra, no crash",
-  [o["action"] for o in out], ["accept", "reject"])
+t("a store that cannot be read: unknown deny state admits nobody",
+  [o["action"] for o in out], ["reject", "reject"])
 
 out = run([new(writer_list(OWNER_SK, [NEW_A])), new(post(NEW_A))], conf=ALLOWLIST,
           store=store_file([writer_list(OWNER_SK, [NEW_A])]))
@@ -325,8 +331,105 @@ seen.append(ask(post(NEW_A, "q4")))
 proc.stdin.close()
 proc.wait(timeout=15)
 os.unlink(f.name)
-t("live: a failed read drops an admitted key, keeps the static list, and a good read restores it",
-  seen, ["accept", "reject", "accept", "accept"])
+t("live: a failed read drops all keys until a good read restores them",
+  seen, ["accept", "reject", "reject", "accept"])
+
+# -- delegated writer list: stored grant/request, deny, and durable 441 freeze --
+DELEGATE_SK, RUNNER_SK = 0x55 * 23 + 9, 0x66 * 29 + 11
+DELEGATE, RUNNER = pubkey(DELEGATE_SK), pubkey(RUNNER_SK)
+DELEGATED = {**OWNED, "onboardRunner": RUNNER, "onboardPolicy": "v1"}
+GRANT = signed(OWNER_SK, 440, [
+    ["p", DELEGATE], ["da-cap", "onboard"],
+    ["da-scope", wp.scope_hash(OWNER, "11" * 16), "11" * 16],
+    ["policy", "v1"], ["age", "confirmed"]], NOW)
+
+
+def request(target=NEW_A, consent=GRANT["id"]):
+    return signed(DELEGATE_SK, 30078, [
+        ["d", "nvoy-onboard/new-agent/add_agent"], ["p", target],
+        ["op", "add_agent"], ["consent", consent]], NOW)
+
+
+def terminal(req):
+    return signed(RUNNER_SK, 30078, [
+        ["d", f"nvoy-onboard:{req['id']}:terminal"], ["e", req["id"]]], NOW)
+
+
+delegate_list = writer_list(DELEGATE_SK, [NEW_A], d="nave-relay-writers-delegate")
+req = request()
+base = [GRANT, req]
+t("delegate cannot list a key before its live request is stored",
+  run([new(delegate_list)], conf=DELEGATED, store=store_file([GRANT]))[0]["action"], "reject")
+t("delegate list passes only with the live request and grant stored",
+  run([new(delegate_list)], conf=DELEGATED, store=store_file(base))[0]["action"], "accept")
+t("a stale terms version cannot authorize a delegate addition",
+  run([new(delegate_list)], conf={**DELEGATED, "onboardPolicy": "v2"},
+      store=store_file(base))[0]["action"], "reject")
+t("an unset terms version cannot authorize a delegate addition",
+  run([new(delegate_list)], conf={**DELEGATED, "onboardPolicy": None},
+      store=store_file(base))[0]["action"], "reject")
+t("the untrusted delegate cannot replace James's list",
+  run([new(writer_list(DELEGATE_SK, [NEW_A]))], conf=DELEGATED, store=store_file(base))[0]["action"], "reject")
+t("terminal marker closes the addition gate",
+  run([new(delegate_list)], conf=DELEGATED, store=store_file(base + [terminal(req)]))[0]["action"], "reject")
+t("a forged terminal marker has no authority",
+  run([new(delegate_list)], conf=DELEGATED, store=store_file(base + [
+      signed(STRANGER_SK, 30078, terminal(req)["tags"], NOW)]))[0]["action"], "accept")
+t("a runner event with extra terminal content does not close the request",
+  run([new(delegate_list)], conf=DELEGATED, store=store_file(base + [
+      signed(RUNNER_SK, 30078, terminal(req)["tags"], NOW, "incomplete")]))[0]["action"], "accept")
+
+stored_delegate = base + [delegate_list]
+t("stored delegate list admits the added agent after the request completes",
+  run([new(post(NEW_A))], conf=DELEGATED, store=store_file(stored_delegate + [terminal(req)]))[0]["action"], "accept")
+deny = writer_list(OWNER_SK, [NEW_A], d="nave-relay-writers-deny")
+t("James's deny overrides the stored delegate list",
+  run([new(post(NEW_A))], conf=DELEGATED, store=store_file(stored_delegate + [deny]))[0]["action"], "reject")
+t("lifting the deny restores the stored delegate writer",
+  run([new(post(NEW_A))], conf=DELEGATED,
+      store=store_file(stored_delegate + [writer_list(OWNER_SK, [], NOW + 1, d="nave-relay-writers-deny")]))[0]["action"], "accept")
+t("deny also overrides a static key",
+  run([new(post(FLEET))], conf=DELEGATED,
+      store=store_file(stored_delegate + [writer_list(OWNER_SK, [FLEET], d="nave-relay-writers-deny")]))[0]["action"], "reject")
+
+with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+    json.dump(DELEGATED, f)
+    snapshot_conf = f.name
+snapshot_store = store_file(stored_delegate + [deny])
+snapshot = subprocess.run([sys.executable, os.path.join(HERE, "write-policy.py"), "--effective-snapshot"],
+                          capture_output=True, text=True, timeout=15,
+                          env=plugin_env(snapshot_conf, snapshot_store))
+os.unlink(snapshot_conf)
+t("publisher snapshot returns the enforced set with James's deny applied",
+  snapshot.returncode == 0 and NEW_A not in json.loads(snapshot.stdout)["keys"] and
+  json.loads(snapshot.stdout)["deny_list"] == deny["id"], True)
+
+revoke = signed(OWNER_SK, 441, [["e", GRANT["id"]]], NOW + 1)
+freeze = os.path.join(tempfile.mkdtemp(), "freeze.json")
+revoked_store = store_file(stored_delegate + [revoke])
+t("the first relay-observed 441 rejects a new delegate list",
+  run([new(delegate_list)], conf=DELEGATED, store=revoked_store, freeze=freeze)[0]["action"], "reject")
+with open(freeze) as f:
+    pinned = json.load(f)
+t("the freeze pins the last stored delegate list by event ID", pinned["list_id"], delegate_list["id"])
+t("a restart preserves existing delegate writers after revocation",
+  run([new(post(NEW_A))], conf=DELEGATED, store=revoked_store, freeze=freeze)[0]["action"], "accept")
+t("a backdated replacement cannot change the pinned writer set",
+  run([new(post(NEW_B))], conf=DELEGATED,
+      store=store_file(stored_delegate + [revoke, writer_list(DELEGATE_SK, [NEW_B], NOW - 10,
+                                      d="nave-relay-writers-delegate")]), freeze=freeze)[0]["action"], "reject")
+with open(freeze, "w") as f:
+    f.write("corrupt")
+t("corrupt freeze state fails closed",
+  run([new(post(NEW_A))], conf=DELEGATED, store=revoked_store, freeze=freeze)[0]["action"], "reject")
+with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+    json.dump(DELEGATED, f)
+    snapshot_conf = f.name
+bad_snapshot = subprocess.run([sys.executable, os.path.join(HERE, "write-policy.py"), "--effective-snapshot"],
+                              capture_output=True, text=True, timeout=15,
+                              env=plugin_env(snapshot_conf, revoked_store, freeze=freeze))
+os.unlink(snapshot_conf)
+t("publisher snapshot refuses corrupt freeze state", bad_snapshot.returncode != 0, True)
 
 print(f"\n{pass_}/{n} passed")
 sys.exit(0 if pass_ == n else 1)

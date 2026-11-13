@@ -92,6 +92,45 @@ admits nobody, a stored one admits its key, and a restart keeps it.
 
 waggle's Add-an-agent page signs this list in step 3.
 
+## Onboarding delegate writer gate (pending relay signer and live rollout)
+
+The delegate may sign only its kind 30000 `d=nave-relay-writers-delegate`
+writer list and a scoped kind 30078 `add_agent` request. The relay reads James's
+stored, signed kind 440 `onboard` grant and kind 441 revocations fresh. A new
+list entry requires a live, unexpired request naming that key, carrying the
+live grant ID as `consent`, with the grant's `policy` equal to the current
+`onboardPolicy` configured in `allowlist.json`, and no runner-signed terminal marker for that
+request. A marker is kind 30078, signed by `onboardRunner`, with
+`d=nvoy-onboard:<request-id>:terminal` and `e=<request-id>`.
+
+The delegate list is durable. A kind 441 observed in the relay store pins the
+last accepted delegate list's event ID and keys in
+`relay-policy-state:/app/policy-state/delegate-freeze.json`. This volume must
+survive image rebuilds and restarts. Further delegate lists are refused even
+if backdated. James's `nave-relay-writers-deny` list takes precedence over
+static, owner, and delegate writer entries; an empty newer deny list lifts a
+deny. A failed store read or corrupt freeze file admits no writers until
+repaired. The owner writer-list and deny-list write path remains available so
+James can recover the relay.
+
+`onboardPolicy` is intentionally unset in the checked-in allowlist. The
+operator must set it to the version returned by the live hive terms API before
+delegate additions can pass. A terms change requires updating this field; the
+old grant then stops new additions, while already stored writer entries remain
+until James denies them.
+
+`python3 write-policy.py --effective-snapshot` emits sorted effective keys and
+the stored owner, delegate, deny and freeze event IDs as JSON. It exits
+nonzero if any required read or freeze check fails. This is the publisher's
+source of truth, not a signature. Once James chooses a relay signing identity
+and its reviewed provisioning path, a separate publisher will sign kind 30000
+under that identity with `d=nave-relay-writers-effective` and one `p` tag per
+key. It must publish the complete set, read back the exact event ID from the
+relay, and recheck the snapshot before claiming success. Readers must pin the
+relay public key and reject an absent, expired, or unverifiable effective list.
+No effective list is published by this plugin. The publisher and live rollout
+stay gated on the signer/custody decision and a reviewed deploy.
+
 ## Verify
 
 ```bash

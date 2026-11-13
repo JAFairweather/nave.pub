@@ -11,6 +11,7 @@ services:
       - ./strfry.conf:/etc/strfry.conf:ro
       - ./allowlist.json:/app/allowlist.json:ro
       - strfry-db:/app/strfry-db
+      - relay-policy-state:/app/policy-state
     command: ["/app/strfry", "--config=/etc/strfry.conf", "relay"]
     expose:
       - "7777"
@@ -56,6 +57,7 @@ networks:
 
 volumes:
   strfry-db:
+  relay-policy-state:
   strfry-transport-db:
   caddy-data:
   caddy-config:
