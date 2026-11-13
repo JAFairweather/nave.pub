@@ -327,14 +327,20 @@ def is_list(ev, d):
 def delegate_snapshot():
     """Read the stored grants/lists; first observed 441 pins the last delegate set."""
     grants, live, revocations = onboard_grants()
-    delegates = {only_tag(ev, "p") for ev in grants.values()}
+    # A revoked or expired grant is history, not a competing active delegate.
+    # Its first observed 441 is still handled below by the durable freeze.
+    delegates = {only_tag(ev, "p") for ev in live.values()}
     if len(delegates) > 1:
         raise ValueError("more than one onboarding delegate is configured")
     delegate = next(iter(delegates), None)
     current = stored_list(delegate, DELEGATE_D) if delegate else None
     freeze = freeze_state()
     if revocations and not freeze:
-        pin_freeze(min(ev["id"] for ev in revocations.values()), current)
+        revoked_id, first_revoke = min(
+            revocations.items(), key=lambda item: (item[1]["created_at"], item[1]["id"]))
+        revoked_delegate = only_tag(grants[revoked_id], "p")
+        last_revoked_list = stored_list(revoked_delegate, DELEGATE_D)
+        pin_freeze(first_revoke["id"], last_revoked_list)
         freeze = freeze_state()
     if freeze and freeze["list_id"] and current and current["id"] != freeze["list_id"]:
         sys.stderr.write("write-policy: stored delegate list differs from pinned 441 freeze; using pinned keys\n")
@@ -372,6 +378,18 @@ def request_authorizes(target, delegate, live_grants):
     requests = scan_events({"kinds": [30078], "authors": [delegate], "#p": [target]})
     for ev in requests:
         if not valid_delegate_request(ev, target, delegate, live_grants, now):
+            continue
+        # The delegate's own request is intent, not admission. The runner has
+        # checked templates, daily quota and giver rules before signing this
+        # separate proof. A terminal marker covers refusals too and cannot
+        # substitute for it.
+        accepted_d = f"nvoy-onboard:{ev['id']}:accepted"
+        proofs = scan_events({"kinds": [30078], "authors": [RUNNER], "#d": [accepted_d], "#e": [ev["id"]]})
+        accepted = any(p.get("kind") == 30078 and p.get("pubkey") == RUNNER and event_ok(p) and
+                       p.get("content") == "" and p.get("tags") == [["d", accepted_d], ["e", ev["id"]],
+                                                            ["p", target], ["consent", only_tag(ev, "consent")]]
+                       for p in proofs)
+        if not accepted:
             continue
         terminal_d = f"nvoy-onboard:{ev['id']}:terminal"
         markers = scan_events({"kinds": [30078], "authors": [RUNNER], "#d": [terminal_d], "#e": [ev["id"]]})

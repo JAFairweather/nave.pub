@@ -355,31 +355,62 @@ def terminal(req):
         ["d", f"nvoy-onboard:{req['id']}:terminal"], ["e", req["id"]]], NOW)
 
 
+def accepted(req):
+    return signed(RUNNER_SK, 30078, [
+        ["d", f"nvoy-onboard:{req['id']}:accepted"], ["e", req["id"]],
+        ["p", next(tag[1] for tag in req["tags"] if tag[0] == "p")],
+        ["consent", next(tag[1] for tag in req["tags"] if tag[0] == "consent")]], NOW)
+
+
 delegate_list = writer_list(DELEGATE_SK, [NEW_A], d="nave-relay-writers-delegate")
 req = request()
 base = [GRANT, req]
 t("delegate cannot list a key before its live request is stored",
   run([new(delegate_list)], conf=DELEGATED, store=store_file([GRANT]))[0]["action"], "reject")
-t("delegate list passes only with the live request and grant stored",
-  run([new(delegate_list)], conf=DELEGATED, store=store_file(base))[0]["action"], "accept")
+t("delegate-signed request alone cannot authorize a writer",
+  run([new(delegate_list)], conf=DELEGATED, store=store_file(base))[0]["action"], "reject")
+t("delegate list passes only after runner acceptance is stored",
+  run([new(delegate_list)], conf=DELEGATED, store=store_file(base + [accepted(req)]))[0]["action"], "accept")
+t("a forged runner acceptance has no authority",
+  run([new(delegate_list)], conf=DELEGATED, store=store_file(base + [
+      signed(STRANGER_SK, 30078, accepted(req)["tags"], NOW)]))[0]["action"], "reject")
+t("runner acceptance for another target cannot authorize this writer",
+  run([new(delegate_list)], conf=DELEGATED, store=store_file(base + [
+      signed(RUNNER_SK, 30078, accepted(req)["tags"][:2] + [["p", NEW_B], ["consent", GRANT["id"]]], NOW)]))[0]["action"], "reject")
+t("runner acceptance for another grant cannot authorize this writer",
+  run([new(delegate_list)], conf=DELEGATED, store=store_file(base + [
+      signed(RUNNER_SK, 30078, accepted(req)["tags"][:3] + [["consent", "aa" * 32]], NOW)]))[0]["action"], "reject")
+t("runner acceptance with extra tags is not the exact proof",
+  run([new(delegate_list)], conf=DELEGATED, store=store_file(base + [
+      signed(RUNNER_SK, 30078, accepted(req)["tags"] + [["extra", "1"]], NOW)]))[0]["action"], "reject")
+t("a terminal marker does not prove runner acceptance",
+  run([new(delegate_list)], conf=DELEGATED, store=store_file(base + [terminal(req)]))[0]["action"], "reject")
+five_targets = [f"{i:064x}" for i in range(101, 106)]
+five_requests = [request(target=target) for target in five_targets]
+t("five self-signed requests cannot bypass the runner's quota and template checks",
+  run([new(writer_list(DELEGATE_SK, five_targets, d="nave-relay-writers-delegate"))],
+      conf=DELEGATED, store=store_file([GRANT] + five_requests))[0]["action"], "reject")
+t("one accepted request cannot authorize five delegate writers",
+  run([new(writer_list(DELEGATE_SK, five_targets, d="nave-relay-writers-delegate"))],
+      conf=DELEGATED, store=store_file([GRANT] + five_requests + [accepted(five_requests[0])]))[0]["action"], "reject")
 t("a stale terms version cannot authorize a delegate addition",
   run([new(delegate_list)], conf={**DELEGATED, "onboardPolicy": "v2"},
-      store=store_file(base))[0]["action"], "reject")
+      store=store_file(base + [accepted(req)]))[0]["action"], "reject")
 t("an unset terms version cannot authorize a delegate addition",
   run([new(delegate_list)], conf={**DELEGATED, "onboardPolicy": None},
       store=store_file(base))[0]["action"], "reject")
 t("the untrusted delegate cannot replace James's list",
   run([new(writer_list(DELEGATE_SK, [NEW_A]))], conf=DELEGATED, store=store_file(base))[0]["action"], "reject")
 t("terminal marker closes the addition gate",
-  run([new(delegate_list)], conf=DELEGATED, store=store_file(base + [terminal(req)]))[0]["action"], "reject")
+  run([new(delegate_list)], conf=DELEGATED, store=store_file(base + [accepted(req), terminal(req)]))[0]["action"], "reject")
 t("a forged terminal marker has no authority",
   run([new(delegate_list)], conf=DELEGATED, store=store_file(base + [
-      signed(STRANGER_SK, 30078, terminal(req)["tags"], NOW)]))[0]["action"], "accept")
+      accepted(req), signed(STRANGER_SK, 30078, terminal(req)["tags"], NOW)]))[0]["action"], "accept")
 t("a runner event with extra terminal content does not close the request",
   run([new(delegate_list)], conf=DELEGATED, store=store_file(base + [
-      signed(RUNNER_SK, 30078, terminal(req)["tags"], NOW, "incomplete")]))[0]["action"], "accept")
+      accepted(req), signed(RUNNER_SK, 30078, terminal(req)["tags"], NOW, "incomplete")]))[0]["action"], "accept")
 
-stored_delegate = base + [delegate_list]
+stored_delegate = base + [accepted(req), delegate_list]
 t("stored delegate list admits the added agent after the request completes",
   run([new(post(NEW_A))], conf=DELEGATED, store=store_file(stored_delegate + [terminal(req)]))[0]["action"], "accept")
 deny = writer_list(OWNER_SK, [NEW_A], d="nave-relay-writers-deny")
@@ -414,6 +445,15 @@ with open(freeze) as f:
 t("the freeze pins the last stored delegate list by event ID", pinned["list_id"], delegate_list["id"])
 t("a restart preserves existing delegate writers after revocation",
   run([new(post(NEW_A))], conf=DELEGATED, store=revoked_store, freeze=freeze)[0]["action"], "accept")
+rotated_grant = signed(OWNER_SK, 440, [
+    ["p", NEW_B], ["da-cap", "onboard"],
+    ["da-scope", wp.scope_hash(OWNER, "22" * 16), "22" * 16],
+    ["policy", "v1"], ["age", "confirmed"]], NOW + 2)
+rotated_store = store_file(stored_delegate + [revoke, rotated_grant])
+t("a revoked old grant and a live replacement do not block static writers",
+  run([new(post(FLEET))], conf=DELEGATED, store=rotated_store, freeze=freeze)[0]["action"], "accept")
+t("a revoked old grant and a live replacement preserve frozen writers",
+  run([new(post(NEW_A))], conf=DELEGATED, store=rotated_store, freeze=freeze)[0]["action"], "accept")
 t("a backdated replacement cannot change the pinned writer set",
   run([new(post(NEW_B))], conf=DELEGATED,
       store=store_file(stored_delegate + [revoke, writer_list(DELEGATE_SK, [NEW_B], NOW - 10,

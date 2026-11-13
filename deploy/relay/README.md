@@ -99,9 +99,15 @@ writer list and a scoped kind 30078 `add_agent` request. The relay reads James's
 stored, signed kind 440 `onboard` grant and kind 441 revocations fresh. A new
 list entry requires a live, unexpired request naming that key, carrying the
 live grant ID as `consent`, with the grant's `policy` equal to the current
-`onboardPolicy` configured in `allowlist.json`, and no runner-signed terminal marker for that
-request. A marker is kind 30078, signed by `onboardRunner`, with
-`d=nvoy-onboard:<request-id>:terminal` and `e=<request-id>`.
+`onboardPolicy` configured in `allowlist.json`, plus a separate runner-signed
+acceptance proof stored by the relay. The proof is kind 30078, empty content,
+with exactly `d=nvoy-onboard:<request-id>:accepted`, `e=<request-id>`,
+`p=<target>`, and `consent=<grant-id>` in that order. The runner must publish it
+only after its request checks pass and read it back before proceeding; this
+runner integration is pending. A
+runner-signed terminal marker (`d=nvoy-onboard:<request-id>:terminal`,
+`e=<request-id>`) closes the window for adding the target. That marker also
+covers refusals, so it cannot serve as the acceptance proof.
 
 The delegate list is durable. A kind 441 observed in the relay store pins the
 last accepted delegate list's event ID and keys in
@@ -112,6 +118,10 @@ static, owner, and delegate writer entries; an empty newer deny list lifts a
 deny. A failed store read or corrupt freeze file admits no writers until
 repaired. The owner writer-list and deny-list write path remains available so
 James can recover the relay.
+The freeze also survives a later re-grant: it preserves existing delegate
+writers but blocks new delegate lists. Restoring additions after a revocation
+requires a separately reviewed operator reset of the persistent freeze; merely
+signing another grant does not unfreeze the list.
 
 `onboardPolicy` is intentionally unset in the checked-in allowlist. The
 operator must set it to the version returned by the live hive terms API before
