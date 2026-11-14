@@ -15,6 +15,8 @@ spec.loader.exec_module(publisher)
 NOW = 1794646000
 SK = 0x12345
 KEY = "ab" * 32
+assert publisher.KEY_PATH == Path("/etc/nave-relay/relay-signer/relay-signing-key"), \
+    "publisher key path must match herd-infra's reviewed signer provisioner"
 BASE = {
     "keys": [KEY],
     "owner_list": "11" * 32,

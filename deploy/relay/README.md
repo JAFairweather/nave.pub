@@ -145,7 +145,7 @@ remain separately review-gated.
 
 `effective-writers.py --publish` is the prepared one-shot publisher. It reads
 the enforced snapshot from the running strfry container, reads the dedicated
-relay signing key from `/etc/nave-relay/effective-writers.key` (a regular,
+relay signing key from `/etc/nave-relay/relay-signer/relay-signing-key` (a regular,
 single-link, owner-only file), and signs a kind 30000 with the sorted complete
 set, source event IDs, and a three-minute expiration. It imports the signed
 event with strfry's normal verification, checks the exact event ID in the
