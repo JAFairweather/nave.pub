@@ -141,7 +141,29 @@ key. It must publish the complete set, read back the exact event ID from the
 relay, and recheck the snapshot before claiming success. Readers must pin the
 relay public key and reject an absent, expired, or unverifiable effective list.
 No effective list is published by this plugin. The publisher and live rollout
-stay gated on the signer/custody decision and a reviewed deploy.
+remain separately review-gated.
+
+`effective-writers.py --publish` is the prepared one-shot publisher. It reads
+the enforced snapshot from the running strfry container, reads the dedicated
+relay signing key from `/etc/nave-relay/effective-writers.key` (a regular,
+single-link, owner-only file), and signs a kind 30000 with the sorted complete
+set, source event IDs, and a three-minute expiration. It imports the signed
+event with strfry's normal verification, checks the exact event ID in the
+relay store, and rechecks the source snapshot. Any failed check exits nonzero.
+The secret never enters the container or a command argument. The prepared
+`effective-writers.service` and `.timer` are prepared to run it every minute;
+after activation, a stopped publisher leaves readers with an expired list
+after at most three minutes. Readers must verify the dedicated public key,
+signature, address, and expiration before accepting a list. This signed event
+is a point-in-time report. A policy change can precede the next timer run, so
+the event alone cannot prove the relay's exact current admission set. The
+page and runner must account for that lag before claiming live enforcement.
+
+These files are source only. A reviewed operator install must provision the
+key in Dead Rabbit's relay-box custody, install and enable the timer, pin the
+public key in the page and runner, and prove both a relay-stored event and a
+cold reader readback. The key and timer must never be activated merely by a
+source merge. Offline test: `python3 effective-writers.test.py`.
 
 ## Verify
 
