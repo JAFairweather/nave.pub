@@ -152,7 +152,12 @@ event with strfry's normal verification, checks the exact event ID in the
 relay store, and rechecks the source snapshot. Any failed check exits nonzero.
 The secret never enters the container or a command argument. The prepared
 `effective-writers.service` and `.timer` are prepared to run it every minute;
-after activation, a stopped publisher leaves readers with an expired list
+the primary relay's checked-in event, tag, and WebSocket limits cover the
+largest enforced union of 3,000 writers (about 220 KB with source IDs). The
+offline publisher test checks that boundary against `strfry.conf`. Applying
+the new relay settings to a running container is an operator rollout step;
+the publisher must not be activated against the older 65,536-byte limit.
+After activation, a stopped publisher leaves readers with an expired list
 after at most three minutes. Readers must verify the dedicated public key,
 signature, address, and expiration before accepting a list. This signed event
 is a point-in-time report. A policy change can precede the next timer run, so

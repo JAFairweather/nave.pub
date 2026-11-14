@@ -4,6 +4,7 @@
 import importlib.util
 import json
 from pathlib import Path
+import re
 import tempfile
 
 HERE = Path(__file__).resolve().parent
@@ -82,6 +83,31 @@ with tempfile.TemporaryDirectory() as directory:
                             ["expiration", str(NOW + publisher.LIFETIME)],
                             ["p", KEY]])
     check("source IDs are in event content", json.loads(event["content"])["owner_list"] == "11" * 32)
+
+    # Exercise the full enforced union: allowlist, owner list, and delegate list.
+    # Read the checked-in relay settings so the test fails if either side drifts.
+    config = (HERE / "strfry.conf").read_text()
+    def limit(name):
+        matches = re.findall(rf"^\s*{name}\s*=\s*(\d+)\s*$", config, re.MULTILINE)
+        if len(matches) != 1:
+            raise AssertionError(f"expected one {name} in strfry.conf")
+        return int(matches[0])
+
+    full = {**BASE,
+            "keys": [f"{i:064x}" for i in range(publisher.policy.MAX_WRITERS * 3)],
+            "delegate_list": "22" * 32,
+            "delegate_lists": ["33" * 32, "44" * 32],
+            "deny_list": "55" * 32,
+            "freeze_revocation": "66" * 32}
+    full_event = publisher.sign_event(SK, full, NOW)
+    encoded = json.dumps(full_event, separators=(",", ":")).encode()
+    websocket = json.dumps(["EVENT", full_event], separators=(",", ":")).encode()
+    check("maximal effective set fits relay event, tag, and WebSocket limits",
+          len(encoded) <= limit("maxEventSize") and
+          len(full_event["tags"]) <= limit("maxNumTags") and
+          len(websocket) <= limit("maxWebsocketPayloadSize"))
+    check("maximal effective set stays inside scan output bound",
+          len(json.dumps(full_event).encode()) + 1 <= publisher.MAX_OUTPUT)
 
     relay = FakeRelay()
     publisher.relay_exec = relay.run
