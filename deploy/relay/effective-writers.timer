@@ -1,0 +1,11 @@
+[Unit]
+Description=Refresh Nave relay signed effective writer set
+
+[Timer]
+OnBootSec=60s
+OnUnitActiveSec=60s
+AccuracySec=1s
+Unit=effective-writers.service
+
+[Install]
+WantedBy=timers.target
