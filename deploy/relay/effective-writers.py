@@ -17,7 +17,8 @@ import sys
 import time
 
 HERE = Path(__file__).resolve().parent
-KEY_PATH = Path("/etc/nave-relay/effective-writers.key")
+# herd-infra's reviewed provision-relay-signer installs the dedicated key here.
+KEY_PATH = Path("/etc/nave-relay/relay-signer/relay-signing-key")
 EFFECTIVE_D = "nave-relay-writers-effective"
 KIND = 30000
 LIFETIME = 180  # readers must reject a missing or expired publication
