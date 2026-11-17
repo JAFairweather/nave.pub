@@ -371,3 +371,26 @@ door.nave.pub {
 		respond 404
 	}
 }
+
+# Music for two of James's friends (17 Nov 2026): the Navidrome that already runs on herd-cloud, reached over the tailnet
+# through herd-infra's bin/friendship-proxy, a docker0-only forward on this host (containers here have no tailnet route).
+# Only the Subsonic API the phone apps use (/rest/*) is passed; the web app, /auth (whose createAdmin makes an admin on an
+# empty database), /api and share pages are a plain 404, and download, share, user, playback-control, scan and upload
+# calls are refused here. Navidrome's own login is the gate: friends hold non-admin accounts. Any client-sent
+# reverse-proxy identity header is dropped, so header auth can never be spoofed through this path. Until the forward is
+# installed, /rest/* is a 502; this block is safe to deploy first.
+friendship.nave.pub {
+	@denied path_regexp denied ^/rest/(download|createShare|updateShare|deleteShare|createUser|updateUser|deleteUser|changePassword|jukeboxControl|startScan|createInternetRadioStation|updateInternetRadioStation|deleteInternetRadioStation|uploadCoverArt)(\.view)?$
+	handle @denied {
+		respond "refused" 403
+	}
+	handle /rest/* {
+		reverse_proxy host.docker.internal:4533 {
+			header_up -Remote-User
+			header_up -X-Forwarded-User
+		}
+	}
+	handle {
+		respond "not found" 404
+	}
+}
