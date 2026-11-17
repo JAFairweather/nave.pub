@@ -394,3 +394,16 @@ friendship.nave.pub {
 		respond "not found" 404
 	}
 }
+
+# --- moved from relay-box by herd-infra bin/move-relay (17 Nov 2026) ---
+relay.nave.pub {
+	reverse_proxy relay-strfry:7777
+}
+
+transport.nave.pub {
+	reverse_proxy relay-transport:7777
+}
+
+bunker.nave.pub {
+	reverse_proxy bunker46-web:8080
+}
