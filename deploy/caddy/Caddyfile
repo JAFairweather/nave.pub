@@ -390,6 +390,23 @@ friendship.nave.pub {
 			header_up -X-Forwarded-User
 		}
 	}
+	# The guest "how to connect" page: one tracked file (deploy/caddy/friendship/join.html, read via the
+	# /etc/caddy mount), served only at /join and /join/. The rewrite is fixed, so no other path can
+	# reach a file; the page has inline style/script and loads only Google Fonts.
+	@join path /join /join/
+	handle @join {
+		rewrite * /join.html
+		root * /etc/caddy/friendship
+		header {
+			Content-Type "text/html; charset=utf-8"
+			X-Robots-Tag "noindex, nofollow"
+			Cache-Control "no-cache"
+			X-Content-Type-Options "nosniff"
+			Referrer-Policy "no-referrer"
+			Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; script-src 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+		}
+		file_server
+	}
 	handle {
 		respond "not found" 404
 	}
