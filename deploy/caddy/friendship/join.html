@@ -1,0 +1,234 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow">
+<title>Friendship Music</title>
+<style>
+/* Layout: one phone-width column, a gig poster up top, three steps, then ticket stubs from the tape vault. */
+:root {
+  --bg: #eef4f0;          /* sun-washed lawn seats */
+  --paper: #ffffff;
+  --ink: #12302c;         /* deep dub teal */
+  --muted: #4b6964;
+  --accent: #d9731f;      /* mango sunset */
+  --gold: #e7b52c;
+  --leaf: #2f8a4c;
+  --line: #c9dbd3;
+  --stub: #fff7e6;
+  --display: "Bungee", "Arial Black", Impact, sans-serif;
+  --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1c1b; --paper: #142826; --ink: #e7f2ee; --muted: #9db8b1; --accent: #f08a3a; --gold: #f0c34a;
+    --leaf: #5cc07a; --line: #24413d; --stub: #1d302c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1c1b; --paper: #142826; --ink: #e7f2ee; --muted: #9db8b1; --accent: #f08a3a; --gold: #f0c34a;
+  --leaf: #5cc07a; --line: #24413d; --stub: #1d302c; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 1.0625rem/1.55 var(--body); }
+.wrap { max-width: 34rem; margin: 0 auto; padding-block: 1.25rem 3rem;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 1.75rem; }
+
+.dot { width: .6rem; height: .6rem; border-radius: 50%; background: var(--gold); flex: none;
+  animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+
+.poster { position: relative; overflow: hidden; border-radius: 1rem; padding: 1.6rem 1.25rem 1.4rem; color: #fff7e6;
+  background:
+    radial-gradient(circle at 78% 18%, #f6c445 0 2.6rem, transparent 2.7rem),
+    repeating-conic-gradient(from 0deg at 78% 18%, rgba(255,255,255,.10) 0 6deg, transparent 6deg 18deg),
+    linear-gradient(170deg, #1d5c4f 0%, #12302c 55%, #0b1f1c 100%); }
+.poster .eyebrow { font: 500 .75rem var(--mono); letter-spacing: .14em; text-transform: uppercase; opacity: .85; }
+.poster h1 { font: 400 clamp(2.1rem, 9vw, 2.9rem)/1.02 var(--display); margin: .5rem 0 .7rem; text-wrap: balance;
+  text-shadow: 3px 3px 0 #d9731f; }
+.poster p { margin: 0; max-width: 26rem; color: #e5f0ea; }
+.bill { display: flex; flex-wrap: wrap; gap: .35rem .9rem; margin-top: 1rem; font: 800 .82rem var(--body);
+  letter-spacing: .06em; text-transform: uppercase; color: #f6c445; }
+.bill span:nth-child(3n+2) { color: #fff7e6; } .bill span:nth-child(3n) { color: #8fd6a4; }
+
+h2 { font: 400 1.3rem/1.15 var(--display); margin: 0 0 .7rem; text-wrap: balance; }
+.step { display: grid; grid-template-columns: 2.4rem 1fr; gap: .9rem; align-items: start; }
+.step > * { min-width: 0; }
+.num { width: 2.4rem; height: 2.4rem; border-radius: 50%; display: grid; place-items: center; background: var(--accent);
+  color: #fff; font: 400 1.1rem var(--display); }
+.step p { margin: 0 0 .6rem; }
+.muted { color: var(--muted); font-size: .92rem; }
+a { color: var(--accent); font-weight: 600; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+.who { display: flex; gap: .5rem; flex-wrap: wrap; margin: .2rem 0 .8rem; }
+.who button { font: 600 .95rem var(--body); padding: .45rem 1rem; border-radius: 999px; border: 1.5px solid var(--line);
+  background: var(--paper); color: var(--ink); cursor: pointer; }
+.who button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.fields { background: var(--paper); border: 1px solid var(--line); border-radius: .8rem; overflow: hidden; }
+.field { display: grid; grid-template-columns: 6.2rem 1fr auto; gap: .6rem; align-items: center; padding: .7rem .8rem; }
+.field + .field { border-top: 1px solid var(--line); }
+.field > * { min-width: 0; }
+.field .k { font: 500 .72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.field .v { font: 500 .98rem var(--mono); overflow-wrap: anywhere; }
+.copy { font: 600 .85rem var(--body); padding: .5rem .8rem; border-radius: .5rem; border: none; background: var(--accent);
+  color: #fff; cursor: pointer; min-width: 4.4rem; }
+.wa { font-family: var(--body); font-style: italic; color: var(--muted); }
+
+.pl { display: inline-block; font: 600 .95rem var(--body); background: var(--stub); border: 1px solid var(--line);
+  border-radius: .4rem; padding: .1rem .5rem; }
+
+.vault-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+.stat { font: 500 .8rem var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.stubs { display: flex; flex-direction: column; gap: .75rem; }
+.stub { position: relative; display: grid; grid-template-columns: 5.6rem 1fr; background: var(--stub);
+  border: 1px solid var(--line); border-radius: .55rem; overflow: hidden; }
+.stub > * { min-width: 0; }
+.stub .date { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: .6rem .3rem;
+  border-right: 2px dashed var(--line); font: 500 .78rem/1.25 var(--mono); text-align: center; color: var(--muted);
+  font-variant-numeric: tabular-nums; }
+.stub .date b { font: 400 1.25rem/1.1 var(--display); color: var(--accent); }
+.stub .info { padding: .65rem .85rem; }
+.stub .band { font: 800 1rem/1.25 var(--body); }
+.stub .venue { font-size: .92rem; color: var(--muted); }
+.stub .why { font-size: .9rem; margin-top: .25rem; }
+
+.genres { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .75rem; }
+.genre { background: var(--paper); border: 1px solid var(--line); border-radius: .7rem; padding: .8rem .9rem; }
+.genre h3 { font: 400 1rem var(--display); margin: 0 0 .3rem; }
+.genre:nth-child(1) h3 { color: var(--accent); } .genre:nth-child(2) h3 { color: var(--leaf); } .genre:nth-child(3) h3 { color: var(--gold); }
+.genre p { margin: 0; font-size: .92rem; color: var(--muted); }
+
+footer { font-size: .88rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 1rem; }
+@media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+</head><body>
+<div class="wrap">
+
+  <header class="poster">
+    <div class="eyebrow">James's tape vault presents</div>
+    <h1>Friendship Music</h1>
+    <p>Hundreds of live shows, streaming to your iPhone: jam, reggae rock and dub, from the Fillmore East to Red Rocks.</p>
+    <div class="bill" aria-label="Some of the bands">
+      <span>Grateful Dead</span><span>Slightly Stoopid</span><span>Twiddle</span><span>Widespread Panic</span>
+      <span>Joe Russo's Almost Dead</span><span>The Hip Abduction</span><span>John Brown's Body</span><span>Mihali</span>
+      <span>Giant Panda Guerilla Dub Squad</span><span>Furthur</span><span>Groundation</span><span>Dead &amp; Company</span>
+    </div>
+  </header>
+
+  <section class="step">
+    <div class="num" aria-hidden="true">1</div>
+    <div>
+      <h2>Get Amperfy</h2>
+      <p>It's a free music player for iPhone. In the App Store, search for <b>Amperfy</b> and install it.</p>
+      <p class="muted">The project's page is at <a href="https://github.com/BLeeEZ/amperfy" target="_blank" rel="noopener">github.com/BLeeEZ/amperfy</a>.</p>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="num" aria-hidden="true">2</div>
+    <div>
+      <h2>Log in</h2>
+      <p>Open Amperfy and fill in these three fields. If it asks for a server type, pick <b>Subsonic</b>. Who are you?</p>
+      <div class="who" role="group" aria-label="Pick your name">
+        <button type="button" id="who-matt" data-user="matt" aria-pressed="true">Matt</button>
+        <button type="button" id="who-tracey" data-user="tracey" aria-pressed="false">Tracey</button>
+        <button type="button" id="who-jack" data-user="jack" aria-pressed="false">Jack</button>
+        <button type="button" id="who-robin" data-user="robin" aria-pressed="false">Robin</button>
+        <button type="button" id="who-devin" data-user="devin" aria-pressed="false">Devin</button>
+        <button type="button" id="who-becca" data-user="becca" aria-pressed="false">Becca</button>
+        <button type="button" id="who-day" data-user="day" aria-pressed="false">Day</button>
+      </div>
+      <div class="fields">
+        <div class="field"><span class="k">Server URL</span><span class="v" id="url">https://friendship.nave.pub</span>
+          <button class="copy" type="button" id="copy-url" data-copy="url">Copy</button></div>
+        <div class="field"><span class="k">Username</span><span class="v" id="user">matt</span>
+          <button class="copy" type="button" id="copy-user" data-copy="user">Copy</button></div>
+        <div class="field"><span class="k">Password</span><span class="v wa">James sends it to you on WhatsApp</span><span></span></div>
+      </div>
+      <p class="muted" id="day-note" hidden>Day, your login also opens James's whole record collection, not only the live shows.</p>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="num" aria-hidden="true">3</div>
+    <div>
+      <h2>Start with the best-sounding tapes</h2>
+      <p>In Amperfy, go to <b>Library → Playlists</b>. Look for <span class="pl">Slightly Stoopid - Best sound</span>.</p>
+      <p>Every song in it comes from the cleanest recording of the shows James has. The recordings were ranked by sound quality by signal processing algorithms. More bands will get their own <i>Best sound</i> playlist soon.</p>
+      <p class="muted">Want a whole night instead? Open <b>Albums</b>. Each show is listed as its date and venue, for example <i>1977-05-08 - Barton Hall, Cornell University</i>.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="vault-head">
+      <h2>From the vault</h2>
+      <span class="stat">670 shows · 35 bands · checked 18 Nov</span>
+    </div>
+    <div class="stubs">
+      <article class="stub"><div class="date"><b>5/8/77</b>Ithaca NY</div><div class="info">
+        <div class="band">Grateful Dead</div><div class="venue">Barton Hall, Cornell University</div>
+        <div class="why">Cornell '77. Probably the most famous tape in the world. Start with "Scarlet Begonias" into "Fire on the Mountain".</div></div></article>
+      <article class="stub"><div class="date"><b>5/8/23</b>Ithaca NY</div><div class="info">
+        <div class="band">Dead &amp; Company</div><div class="venue">Barton Hall</div>
+        <div class="why">The same room, 46 years later to the day.</div></div></article>
+      <article class="stub"><div class="date"><b>12/31/71</b>San Francisco</div><div class="info">
+        <div class="band">Grateful Dead</div><div class="venue">Winterland Arena</div>
+        <div class="why">New Year's Eve at Winterland.</div></div></article>
+      <article class="stub"><div class="date"><b>8/31/17</b>Morrison CO</div><div class="info">
+        <div class="band">Joe Russo's Almost Dead</div><div class="venue">Red Rocks</div>
+        <div class="why">The Dead songbook the way JRAD plays it, under the rocks.</div></div></article>
+      <article class="stub"><div class="date"><b>5/4/18</b>Morrison CO</div><div class="info">
+        <div class="band">Twiddle · The Hip Abduction</div><div class="venue">Red Rocks Amphitheatre</div>
+        <div class="why">One night, two bands, both in the vault.</div></div></article>
+      <article class="stub"><div class="date"><b>6/26/26</b>Morrison CO</div><div class="info">
+        <div class="band">Widespread Panic</div><div class="venue">Red Rocks Amphitheatre</div>
+        <div class="why">The first of three nights this June, all three here.</div></div></article>
+    </div>
+  </section>
+
+  <section>
+    <h2>Three rooms in the house</h2>
+    <div class="genres">
+      <div class="genre"><h3>Jam</h3><p>Grateful Dead, Twiddle, Widespread Panic, Furthur, The Dead, Dead &amp; Company, JRAD, Dark Star Orchestra, Ratdog, Phil Lesh &amp; Friends</p></div>
+      <div class="genre"><h3>Reggae rock</h3><p>Slightly Stoopid, The Hip Abduction, Roots of Creation, Tropidelic, The Green, 311, Passafire, The Movement, Pepper, The Dirty Heads</p></div>
+      <div class="genre"><h3>Dub &amp; roots</h3><p>John Brown's Body, Giant Panda Guerilla Dub Squad, Groundation, Clinton Fearon, Dub Trio, Matisyahu, Spiritual Rez</p></div>
+    </div>
+  </section>
+
+  <footer>New shows arrive every couple of hours. Stuck? Message James.</footer>
+</div>
+
+<script>
+(function () {
+  var userEl = document.getElementById('user');
+  var dayNote = document.getElementById('day-note');
+  var buttons = document.querySelectorAll('.who button');
+  function pick(name) {
+    userEl.textContent = name;
+    dayNote.hidden = name !== 'day';
+    buttons.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.user === name)); });
+    try { localStorage.setItem('friendship-user', name); } catch (e) {}
+  }
+  buttons.forEach(function (b) { b.addEventListener('click', function () { pick(b.dataset.user); }); });
+  try { var saved = localStorage.getItem('friendship-user'); if (['matt', 'tracey', 'jack', 'robin', 'devin', 'becca', 'day'].indexOf(saved) !== -1) pick(saved); } catch (e) {}
+
+  document.querySelectorAll('.copy').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var el = document.getElementById(btn.dataset.copy);
+      var text = el.textContent.trim();
+      function done(ok) { btn.textContent = ok ? 'Copied' : 'Select'; setTimeout(function () { btn.textContent = 'Copy'; }, 1600); }
+      function fallback() {
+        var r = document.createRange(); r.selectNodeContents(el);
+        var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); done(false);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { done(true); }, fallback);
+      } else { fallback(); }
+    });
+  });
+})();
+</script>
+</body></html>
