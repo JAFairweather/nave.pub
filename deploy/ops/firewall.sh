@@ -7,7 +7,9 @@
 #     our OWN nftables table `nave_fw` with an input drop-policy that allows lo,
 #     established, ICMP, the Docker bridge subnet (so containers can still reach
 #     the host, e.g. host.docker.internal), and inbound 22/80/443 — everything
-#     else host-bound is dropped. We manage ONLY our table (idempotent
+#     else host-bound is dropped, except the media ports (Navidrome 4533,
+#     Audiobookshelf 13378), which are accepted on tailscale0 only: the phones
+#     and the R1 reach them over the tailnet, never from the internet. We manage ONLY our table (idempotent
 #     delete+recreate) and NEVER `flush ruleset`, so Docker's own nftables rules
 #     are untouched (that's the mistake firewalld made).
 #
@@ -50,11 +52,12 @@ table inet nave_fw {
     ip saddr 172.16.0.0/12 accept          # Docker bridge subnets: container -> host (host.docker.internal, etc.)
     meta l4proto { icmp, ipv6-icmp } accept
     tcp dport { 22, 80, 443 } accept
+    iifname "tailscale0" tcp dport { 4533, 13378 } accept   # Navidrome, Audiobookshelf: tailnet only (herd-infra services/navidrome, audiobookshelf)
   }
 }
 NFT
 if "$NFT" -f /etc/nftables.d/nave-fw.nft; then
-  echo "  loaded: allow lo/established/docker-subnet/icmp + tcp 22,80,443; drop other host-bound"
+  echo "  loaded: allow lo/established/docker-subnet/icmp + tcp 22,80,443 + tailnet-only 4533,13378; drop other host-bound"
 else
   echo "  !! nft load FAILED — leaving firewall unset (no change)"; exit 1
 fi
