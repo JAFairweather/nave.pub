@@ -20,7 +20,8 @@ ok "input policy is drop" 'grep -q "type filter hook input priority 0; policy dr
 ok "the internet still gets 22, 80 and 443 only" '[ "$(grep -cE "^ *tcp dport" <<<"$nft")" = 1 ] && grep -qE "^ *tcp dport \{ 22, 80, 443 \} accept" <<<"$nft"'
 ok "media ports accepted on tailscale0" 'grep -qE "^ *iifname \"tailscale0\" tcp dport \{ 3689, 4533, 8420, 13378 \} accept" <<<"$nft"'
 ok "media ports appear on that one line only" '[ "$(wc -l <<<"$media")" = 1 ] && grep -q "iifname \"tailscale0\"" <<<"$media"'
-ok "no other iifname rule" '[ "$(grep -c iifname <<<"$nft")" = 1 ]'
+ok "mosh UDP range accepted on tailscale0 only" 'grep -qE "^ *iifname \"tailscale0\" udp dport 60000-61000 accept" <<<"$nft"'
+ok "no other iifname rule" '[ "$(grep -c iifname <<<"$nft")" = 2 ]'
 ok "the success message names the media ports" 'grep -q "tailnet-only 3689,4533,8420,13378" "$here/firewall.sh"'
 
 # nft's own parser, when this host lets an unprivileged user make a network namespace (CI runners do; skip otherwise).

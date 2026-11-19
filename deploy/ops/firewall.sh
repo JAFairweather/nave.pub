@@ -53,11 +53,12 @@ table inet nave_fw {
     meta l4proto { icmp, ipv6-icmp } accept
     tcp dport { 22, 80, 443 } accept
     iifname "tailscale0" tcp dport { 3689, 4533, 8420, 13378 } accept   # OwnTone, Navidrome, R1 Manager, Audiobookshelf: tailnet only (herd-infra services/)
+    iifname "tailscale0" udp dport 60000-61000 accept   # mosh (Moshi app sessions): tailnet only
   }
 }
 NFT
 if "$NFT" -f /etc/nftables.d/nave-fw.nft; then
-  echo "  loaded: allow lo/established/docker-subnet/icmp + tcp 22,80,443 + tailnet-only 3689,4533,8420,13378; drop other host-bound"
+  echo "  loaded: allow lo/established/docker-subnet/icmp + tcp 22,80,443 + tailnet-only 3689,4533,8420,13378 + mosh udp 60000-61000; drop other host-bound"
 else
   echo "  !! nft load FAILED — leaving firewall unset (no change)"; exit 1
 fi
