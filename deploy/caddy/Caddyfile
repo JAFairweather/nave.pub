@@ -21,6 +21,13 @@ nave.pub {
 	@nip05 path /.well-known/nostr.json
 	header @nip05 Access-Control-Allow-Origin "*"
 	header @nip05 Content-Type "application/json"
+	# /asada/esterones: a sample-data design mockup for the ASADA Esterones water board (source: the
+	# asada-tech repo, branch esterones-mockup, esterones/index.html, copied here unchanged). Not for
+	# search engines: the page carries its own robots meta, and this says the same to crawlers that read
+	# only headers. Nothing on the hub links to it; keep it that way. file_server itself redirects
+	# /asada/esterones to /asada/esterones/. bin/esterones.test.sh checks the page and these two lines.
+	@esterones path /asada/esterones /asada/esterones/*
+	header @esterones X-Robots-Tag "noindex, nofollow"
 	file_server
 }
 
