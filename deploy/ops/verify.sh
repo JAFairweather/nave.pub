@@ -68,14 +68,16 @@ esac
 # Every relay in LUKE_RELAYS must answer from THIS box. The brain, luke and nvoy-mcp all read that list,
 # and a relay that accepts no connection is not skipped: the brain dies in its first relay read with
 # "WebSocket was closed before the connection was established" (every run from 18 Nov 2026, when nos.lol
-# stopped answering this box's address), and the grant sweep slows until luke's webhook retries run out.
-# Any HTTP answer counts; only no connection at all fails. The list is not a secret.
+# stopped answering this box's address). Any HTTP answer counts; only no connection at all fails, and
+# only after a second try, so one blip at a public relay does not turn a deploy red. The list is not a
+# secret. (The webhook failures of the same weeks were a separate fault: luke gave up before the broker's
+# grant sweep ended, with or without nos.lol in the list.)
 echo "-- relays reachable from this box --"
 relays=$(grep -h '^LUKE_RELAYS=' "$D/nave-consumer.env" 2>/dev/null | head -1 | cut -d= -f2- | tr ',' ' ')
 [ -n "$relays" ] || warn "no LUKE_RELAYS in nave-consumer.env"
 for r in $relays; do
   h=${r#*://}; h=${h%%/*}
-  if curl -s -o /dev/null --max-time 8 "https://$h/"; then pass "$h answers"
+  if curl -s -o /dev/null --max-time 8 "https://$h/" || { sleep 3; curl -s -o /dev/null --max-time 8 "https://$h/"; }; then pass "$h answers"
   else fail "$h does not answer from this box: take it out of LUKE_RELAYS (secrets/nave.enc.env)"; fi
 done
 
