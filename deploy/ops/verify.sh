@@ -9,7 +9,7 @@
 #   • brain dry-run clean          • missing import / broker path / JSON parse
 #
 # Exit 0 = all critical checks pass; exit 1 = at least one failed (deploy goes
-# red). Set VERIFY_BRAIN=0 to skip the (Anthropic-calling) brain dry-run.
+# red). Set VERIFY_BRAIN=0 to skip the (model-calling) brain dry-run.
 set -u
 FAIL=0
 pass() { echo "  ✓ $*"; }
