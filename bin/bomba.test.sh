@@ -5,13 +5,13 @@
 #   bin/bomba.test.sh --live     # also the served page at https://nave.pub/bomba/
 #
 # The page is one HTML file (inline CSS and JS) copied unchanged from the asada-tech repo, branch
-# add-bomba-page, commit 845db8a, bomba/index.html. It is not edited here: a change is made there and
+# add-bomba-page, commit 5321a50, bomba/index.html. It is not edited here: a change is made there and
 # copied again, and the hash below moves with it. The root file_server serves it; there is no route for it
 # in the Caddyfile.
 set -u
 cd "$(dirname "$0")/.."
 page=bomba/index.html
-sum=337083300c427f63910336bd148291cf541994fe377fc0a56a515d08295c4208
+sum=6de3ed14b302310a99d53316bdc3bc101f915a78bd0524f06d2174decaa87b9f
 fail=0
 ok()  { printf '  ok   %s\n' "$1"; }
 bad() { printf '  FAIL %s\n' "$1"; fail=1; }
