@@ -4,6 +4,12 @@
 
 {
 	email {$ACME_EMAIL}
+	# No access lines on stderr. The one `log` in this file (the /bomba visit log, in the nave.pub
+	# block) switches access logging on for the server, and without this exclude every request whose
+	# Host matches no site here would be written to the container log, headers included.
+	log default {
+		exclude http.log.access
+	}
 }
 
 # The hub — the ecosystem front door. The nave.pub repo, synced by sites.sh
@@ -28,7 +34,44 @@ nave.pub {
 	# /asada/esterones to /asada/esterones/. bin/esterones.test.sh checks the page and these two lines.
 	@esterones path /asada/esterones /asada/esterones/*
 	header @esterones X-Robots-Tag "noindex, nofollow"
+	# /bomba visit log: who opens the water-system page (asked for by the owner, 27 Nov 2026). One line per
+	# request to /bomba and nothing else on the hub: log_skip drops every other path, so no other
+	# route is logged. A line keeps the time, the visitor's address, the path with any query string,
+	# the status, and the browser and referring page (ua, referer); every other request header, the
+	# TLS detail and the response headers are deleted. The file is in the caddy_data volume, so it
+	# survives deploys and restarts. It rolls every day at 00:00 UTC and at 5 MiB, and each roll
+	# deletes the rolled files older than 90 days, so a line lives about 91 days; at most 100 rolled
+	# files are kept. The daily timer starts with the first request to /bomba after Caddy starts and
+	# from then on needs no visitor. After a restart with no visit at all, nothing rolls or is deleted
+	# until the next visit (bin/bomba.test.sh --live, run after a deploy, is such a visit).
+	# The http://nave.pub block below is part of this: without it the redirect from plain HTTP would
+	# log every path. Read the log with deploy/ops/bomba-visits.sh. bin/bomba.test.sh checks these lines.
+	@bomba path /bomba /bomba/*
+	@notbomba not path /bomba /bomba/*
+	log_skip @notbomba
+	log_append @bomba ua {header.User-Agent}
+	log_append @bomba referer {header.Referer}
+	log {
+		output file /data/visits/bomba.log {
+			roll_size 5MiB
+			roll_at 00:00
+			roll_keep 100
+			roll_keep_for 2160h
+		}
+		format filter {
+			request>headers delete
+			request>tls delete
+			resp_headers delete
+		}
+	}
 	file_server
+}
+
+# Plain HTTP for the apex, written out. Caddy's automatic HTTP-to-HTTPS redirect would take a copy of
+# the nave.pub block's `log` without its log_skip, and so write every plain-HTTP request to the hub,
+# whatever the path, into the /bomba visit log. This block does the same redirect and logs nothing.
+http://nave.pub {
+	redir https://nave.pub{uri} 308
 }
 
 # www just points at the apex. Its own block, so if its cert ever stalls
