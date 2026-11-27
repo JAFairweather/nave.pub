@@ -58,8 +58,9 @@ echo "server: $caddy"
 has "$caddy" '@esterones path /asada/esterones /asada/esterones/*' 'matcher covers /asada/esterones and below'
 has "$caddy" 'header @esterones X-Robots-Tag "noindex, nofollow"' 'X-Robots-Tag header is set'
 
+# The visit log names the path in two files (its script and its test); no page in the repo links to it.
 echo "hub: nothing links to the mockup"
-if grep -rIl --exclude-dir=.git --exclude-dir=asada --exclude=esterones.test.sh --exclude=Caddyfile -e 'asada/esterones' . | grep -q .; then
+if grep -rIl --exclude-dir=.git --exclude-dir=asada --exclude=esterones.test.sh --exclude=Caddyfile --exclude=page-visits.sh --exclude=pagestats.test.sh -e 'asada/esterones' . | grep -q .; then
 	bad 'no other file in the hub names asada/esterones'
 else
 	ok 'no other file in the hub names asada/esterones'

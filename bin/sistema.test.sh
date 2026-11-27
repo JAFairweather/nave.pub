@@ -27,8 +27,9 @@ if grep -qF 'Las casas A a G son ejemplos, no casas reales.' "$page" && grep -qF
 # The only request to another site is the Google Fonts stylesheet.
 out=$(grep -oE '(src|href|action)="(https?:)?//[^"]*"|url\((https?:)?//[^)]*\)|@import[^;]*|fetch\(|XMLHttpRequest|sendBeacon|WebSocket' "$page" | grep -vE '^href="https://fonts\.googleapis\.com/css2\?' || true)
 if [ -z "$out" ]; then ok 'no outside request but Google Fonts'; else bad "no outside request but Google Fonts (found: $out)"; fi
-# Served by the root file_server alone: no route, header or log names it.
-if grep -v '^[[:space:]]*#' deploy/caddy/Caddyfile | grep -q 'sistema'; then bad 'no Caddyfile line names /sistema'; else ok 'no Caddyfile line names /sistema'; fi
+# Served by the root file_server alone: no route or header names it.
+# The visit log's two matcher lines name it (bin/pagestats.test.sh checks those); nothing else may.
+if grep -v '^[[:space:]]*#' deploy/caddy/Caddyfile | grep -vE '^[[:space:]]*@(pages|notpages) (not )?path ' | grep -q 'sistema'; then bad 'no Caddyfile route names /sistema'; else ok 'no Caddyfile route names /sistema'; fi
 
 if [ "${1:-}" = --live ]; then
 	url=https://nave.pub/sistema
