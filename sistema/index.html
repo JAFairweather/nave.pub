@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Esterones Water Pressure</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday: a town explainer, plain words, one picture
+   IDEA a cut-away of the hill, the tank and the houses, with the tank's water level drawn across the town
+   PICTURE the pressure line over five example houses; it tilts at busy hours; air pocket at the high point
+   COLOUR cobalt title strip, white ground, water blue, problem red, earth gradient
+   TYPE Space Grotesk 600 + Inter
+   LAYOUT title, buttons, the picture full width, explanation, then a small table; same order on a phone */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0a0d18);--ink:light-dark(#101418,#eef0f6);--mut:light-dark(#5b6170,#9aa1b2);--line:light-dark(#d9deea,#262c40);--zone:light-dark(#eef2ff,#141a30);--warnk:light-dark(#c62818,#ff8a80);--strip:#1240e0;--water:light-dark(#257de0,#338ced);--wlt:light-dark(#a9cff5,#1f4a7a);--pump:light-dark(#f47230,#e76624);--mot:light-dark(#8a8f99,#5b6170);--sky:light-dark(#f4f8ff,#0d1222);--soil1:light-dark(#cfe3b8,#22331a);--soil2:light-dark(#c9b28f,#2a2219);--conc:light-dark(#e9e6df,#3a3f4d);--roof:light-dark(#b5533a,#c96a4f);--empty:light-dark(#f3efe6,#1a1d27);--panel:light-dark(#f7f8fc,#11162a)}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:"Space Grotesk",Inter,sans-serif;letter-spacing:-.02em;font-weight:600}
+h1{font-size:clamp(26px,4vw,42px);line-height:1.05;margin:0 0 10px;text-wrap:balance}
+h2{font-size:clamp(22px,2.6vw,30px);line-height:1.1;margin:0 0 10px;text-wrap:balance}
+h3{font-size:17px;margin:0 0 4px}
+p{margin:0 0 10px;max-width:68ch}
+.band{padding-block:clamp(20px,3.5vw,44px);padding-inline:max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+.strip{background:var(--strip);color:#fff}
+.strip p{color:#dfe6ff;font-size:17px;margin:0}
+.top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.lang{display:flex;gap:4px}
+.lang button{min-width:52px;border:1px solid #ffffff80;background:transparent;color:#fff}
+.lang button[aria-pressed=true]{background:#fff;color:var(--strip)}
+button{font:600 15px Inter,sans-serif;min-height:44px;padding:0 14px;border-radius:8px;cursor:pointer}
+.modes{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.modes button{border:1px solid var(--line);background:var(--bg);color:var(--ink);text-align:left}
+.modes button[aria-pressed=true]{background:var(--strip);border-color:var(--strip);color:#fff}
+button:focus-visible{outline:3px solid var(--pump);outline-offset:2px}
+#fig{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--sky)}
+#fig svg{display:block;width:100%}
+svg text{font:13px Inter,sans-serif;fill:var(--ink);paint-order:stroke;stroke:var(--halo,var(--sky));stroke-width:4px;stroke-linejoin:round}
+svg .m{fill:var(--mut)}svg .w{fill:var(--warnk);font-weight:600}svg .b{font-weight:600}svg .bl{fill:var(--water);font-weight:600}
+#stat{font-weight:600;min-height:1.6em;margin:10px 0 0}
+.exp{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:24px;margin-top:18px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+.card p{margin:0;font-size:15px}
+.alt{background:var(--zone)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;max-width:720px;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-size:14px;font-weight:600}
+td.z{color:var(--warnk);font-weight:600}
+.note{font-size:13px;color:var(--mut)}
+@media(max-width:760px){.exp{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){table{font-size:13px}th,td{padding:6px 4px}th{font-size:13px}}
+</style>
+</head>
+<body>
+<header class="strip band">
+ <div class="wrap top">
+  <div>
+   <h1 data-t="h1"></h1>
+   <p data-t="sub"></p>
+  </div>
+  <div class="lang" role="group" aria-label="Idioma"><button id="en" aria-pressed="false">EN</button><button id="es" aria-pressed="true">ES</button></div>
+ </div>
+</header>
+
+<section class="band">
+ <div class="wrap">
+  <div class="modes" id="modes" role="group"></div>
+  <div id="fig"><svg id="s" role="img"><g id="st"></g><g id="dy"></g></svg></div>
+  <p id="stat"></p>
+  <div class="exp">
+   <div><h2 id="mt"></h2><p id="mw"></p></div>
+   <div class="card"><h3 data-t="tiph"></h3><p id="mc"></p></div>
+  </div>
+  <p class="note" style="margin-top:14px" data-t="nts"></p>
+ </div>
+</section>
+
+<section class="band alt">
+ <div class="wrap">
+  <h2 data-t="th"></h2>
+  <p data-t="ts"></p>
+  <div class="scroll"><table id="tb"></table></div>
+ </div>
+</section>
+
+<script>
+{
+const T={
+en:{h1:"Why water pressure is different from house to house",sub:"Water runs from the tank to the houses by gravity, along three main lines. The pressure at each house depends on how far below the tank it sits and how far the water has to travel. Air in the pipes can stop the water completely.",tiph:"Good to know",nts:"Drawing not to scale. Houses A to G are examples, not real houses. Heights, distances and pressures are illustrations until the real ones are measured.",th:"The example houses",ts:"Pressure in psi. Every 10 m below the tank gives about 14 psi. Distance only costs pressure when water is moving.",
+ cols:["House","Below tank","Distance","Quiet","Busy"],none:"none",
+ br:["Barco Quebrado","Town → Alto de Esterones","Buena Vista beach road"],
+ lab:{tank:"Tank",well:"Well and pump",lvl:"Water level in the tank",busy:"Pressure line at busy hours",air:"Trapped air",valve:"Air valve",psi:" psi",tee:"to Buena Vista",from:"from the town line"},
+ modes:[
+ {b:"Quiet hours",t:"Pressure comes from height",w:"From the tank, water runs down by its own weight. The lower a house sits below the water level in the tank, the more pressure it has. Barco Quebrado and Buena Vista run along low, flat land, so they have strong pressure. Alto de Esterones sits almost as high as the tank, so it has the least.",c:"The blue dashed line is the water level in the tank. The gap between that line and each house is its pressure.",s:()=>"Few taps open. Pressure depends only on height."},
+ {b:"Busy hours",t:"Distance takes pressure away when many people use water",w:"When water moves fast it rubs against the pipe and loses pressure. The farther it travels, the more it loses, so the pressure line tilts down. The town line is long and also carries the water for Buena Vista. By the time the water has to climb to Alto de Esterones, at the end of that line, there may be none left. The low areas lose pressure too, but they have plenty to spare.",c:"Low pressure only at busy hours points to friction: a pipe that is too small for the demand, or a leak that keeps water moving all day.",s:()=>"Many taps open. The pressure line tilts down with distance."},
+ {b:"Tank runs empty",t:"When the tank runs empty, air gets into the pipes",w:"With no water in the tank, the pipes drain toward the lowest houses. Alto de Esterones loses its water first. The low, flat areas keep a trickle the longest. Air takes the place of the water in the high parts of the pipes.",c:"Keeping the tank from running empty is the best protection. This is one reason a reliable pump matters to every house.",s:p=>p==0?"The tank is emptying.":p==1?"The pipes drain. The highest houses lose water first.":"Only the low parts of the pipes still hold water."},
+ {b:"Tank refills, air is trapped",t:"The tank has water again, but Alto de Esterones still has none",w:"When the tank refills, water comes back first to the low areas. It pushes the air ahead of it, up the line. The air collects at the top, in Alto de Esterones, and stays there like a cork. The water behind it has little pressure left at that height, so it cannot push the air out.",c:"This is why water can take hours to come back to the highest houses after the tank is full again.",s:p=>p==0?"The pump refills the tank and water moves back into the pipes.":"Air is trapped at the top of the town line. House E has no water, even with a full tank."},
+ {b:"Clearing the air",t:"Let the air out at the highest point",w:"Opening a tap at the highest house in Alto de Esterones, or an air valve at the top of that line, lets the air escape. The tap spits and coughs for a while. Then the water arrives.",c:"An automatic air release valve at each high point of a main line does this by itself, every time.",s:p=>p==0?"The air escapes at the top of the line.":"Water is back at every house."}]},
+es:{h1:"Por qué la presión del agua cambia de una casa a otra",sub:"El agua baja del tanque a las casas por gravedad, por tres líneas principales. La presión en cada casa depende de qué tan abajo del tanque está y de qué tan lejos tiene que viajar el agua. El aire en la tubería puede detener el agua por completo.",tiph:"Bueno saber",nts:"Dibujo sin escala. Las casas A a G son ejemplos, no casas reales. Las alturas, distancias y presiones son ilustraciones hasta que se midan las reales.",th:"Las casas de ejemplo",ts:"Presión en psi. Cada 10 m por debajo del tanque dan unos 14 psi. La distancia solo quita presión cuando el agua se está moviendo.",
+ cols:["Casa","Bajo tanque","Distancia","Tranquilo","Pico"],none:"nada",
+ br:["Barco Quebrado","Pueblo → Alto de Esterones","Calle a playa Buena Vista"],
+ lab:{tank:"Tanque",well:"Pozo y bomba",lvl:"Nivel del agua en el tanque",busy:"Línea de presión en horas pico",air:"Aire atrapado",valve:"Válvula de aire",psi:" psi",tee:"a Buena Vista",from:"viene de la línea del pueblo"},
+ modes:[
+ {b:"Horas tranquilas",t:"La presión viene de la altura",w:"Del tanque, el agua baja por su propio peso. Entre más abajo esté una casa del nivel del agua en el tanque, más presión tiene. Barco Quebrado y Buena Vista van por terreno bajo y plano, así que tienen buena presión. Alto de Esterones está casi a la altura del tanque, así que tiene la menor.",c:"La línea azul punteada es el nivel del agua en el tanque. El espacio entre esa línea y cada casa es su presión.",s:()=>"Pocas llaves abiertas. La presión depende solo de la altura."},
+ {b:"Horas pico",t:"La distancia quita presión cuando mucha gente usa agua",w:"Cuando el agua se mueve rápido, roza con la tubería y pierde presión. Entre más lejos viaja, más pierde, y por eso la línea de presión se inclina hacia abajo. La línea del pueblo es larga y además lleva el agua de Buena Vista. Cuando el agua tiene que subir a Alto de Esterones, al final de esa línea, puede que ya no quede nada. Las zonas bajas también pierden presión, pero les sobra.",c:"Poca presión solo en horas pico apunta a fricción: una tubería muy pequeña para el consumo, o una fuga que mantiene el agua moviéndose todo el día.",s:()=>"Muchas llaves abiertas. La línea de presión baja con la distancia."},
+ {b:"El tanque se vacía",t:"Cuando el tanque se vacía, entra aire a la tubería",w:"Sin agua en el tanque, la tubería se vacía hacia las casas más bajas. Alto de Esterones se queda sin agua primero. Las zonas bajas y planas son las que más duran con un chorrito. El aire ocupa el lugar del agua en las partes altas de la tubería.",c:"Evitar que el tanque se vacíe es la mejor protección. Por eso una bomba confiable le importa a todas las casas.",s:p=>p==0?"El tanque se está vaciando.":p==1?"La tubería se vacía. Las casas más altas se quedan sin agua primero.":"Solo las partes bajas de la tubería tienen agua."},
+ {b:"El tanque se llena, queda aire",t:"El tanque ya tiene agua, pero Alto de Esterones sigue sin agua",w:"Cuando el tanque se vuelve a llenar, el agua vuelve primero a las zonas bajas. Empuja el aire por delante, línea arriba. El aire se junta en la parte más alta, en Alto de Esterones, y se queda ahí como un tapón. Al agua que viene detrás le queda poca presión a esa altura, así que no logra sacar el aire.",c:"Por eso el agua puede durar horas en volver a las casas más altas después de que el tanque ya está lleno.",s:p=>p==0?"La bomba llena el tanque y el agua vuelve a entrar a la tubería.":"Hay aire atrapado al final de la línea del pueblo. La casa E no tiene agua, aunque el tanque esté lleno."},
+ {b:"Sacar el aire",t:"Sacar el aire por el punto más alto",w:"Abrir una llave en la casa más alta de Alto de Esterones, o una válvula de aire al final de esa línea, deja salir el aire. La llave escupe y tose un rato. Después llega el agua.",c:"Una válvula de aire automática en cada punto alto de una línea principal hace esto sola, todas las veces.",s:p=>p==0?"El aire sale por la parte más alta de la línea.":"El agua volvió a todas las casas."}]}
+};
+const $=id=>document.getElementById(id);
+let L=location.hash==='#en'?'en':'es',M=0,t0=performance.now(),G=null,kc=0;
+const rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const s=$('s');
+const BR=[
+ {key:[[0,0],[110,1],[200,64],[262,64],[420,18],[1000,14]],ds:3.2,k:0.008,tank:true,well:true,hs:[{n:'A',x:500},{n:'B',x:930}]},
+ {key:[[0,34],[200,64],[262,64],[400,10],[720,10],[900,60],[1000,61]],ds:4,k:0.006,tank:true,hs:[{n:'C',x:560},{n:'D',x:830},{n:'E',x:960}]},
+ {key:[[0,10],[258,10],[1000,6]],ds:2.5,k:0.008,hs:[{n:'F',x:520},{n:'G',x:930}]}];
+const X0=258,FULL=70,EMPTY=64.6,LOW=20,P0=880,TEE=480,SH=230;
+const elev=(b,x)=>{const K=b.key;for(let i=1;i<K.length;i++)if(x<=K[i][0]){const[a,ea]=K[i-1],[c,ec]=K[i],u=(1-Math.cos(Math.PI*(x-a)/(c-a)))/2;return ea+(ec-ea)*u;}return K[K.length-1][1];};
+BR.forEach(b=>b.hs.forEach(h=>h.e=Math.round(elev(b,h.x))));
+const dist=(b,x)=>(x-X0)*b.ds;
+const lossTee=()=>BR[1].k*dist(BR[1],TEE);
+const headAt=(bi,x,TL,kf)=>TL-kf*((bi==2?lossTee():0)+BR[bi].k*dist(BR[bi],x));
+const psi=m=>Math.round(m*1.422);
+const ease=u=>u<0?0:u>1?1:u*u*(3-2*u);
+
+function build(){
+ const W=s.clientWidth||900,nw=W<560,H=Math.round(nw?W*1.6:W*0.69),sx=W/1000,sy=H/(SH*3),lab=T[L].lab;
+ s.setAttribute('viewBox',`0 0 ${W} ${H}`);s.style.height=H+'px';
+ const X=v=>v*sx,f=v=>v.toFixed(1),ye=(i,e)=>(i*SH+205-e*2.13)*sy;
+ const pw=Math.max(3.5,6*sx);
+ let o=`<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--soil1)"/><stop offset="1" stop-color="var(--soil2)"/></linearGradient></defs>`;
+ BR.forEach((b,i)=>{
+  const bot=(i+1)*SH*sy;
+  let g=`M0,${f(ye(i,elev(b,0)))}`;for(let x=0;x<=1000;x+=5)g+=` L${f(X(x))},${f(ye(i,elev(b,x)))}`;g+=` V${f(bot)} H0 Z`;
+  o+=`<path d="${g}" fill="url(#g)"/>`;if(i)o+=`<line x1="0" x2="${W}" y1="${f(i*SH*sy)}" y2="${f(i*SH*sy)}" stroke="var(--line)" stroke-width="2"/>`;
+  o+=`<text class="b" x="10" y="${f(i*SH*sy+22)}" style="font-size:15px">${T[L].br[i]}</text>`;
+  if(b.well){o+=`<rect x="${f(X(48))}" y="${f(ye(i,0.5))}" width="${f(24*sx)}" height="${f(bot-ye(i,0.5))}" fill="var(--wlt)" stroke="var(--mut)" stroke-width="1.5"/><rect x="${f(X(53))}" y="${f(bot-16*sy)}" width="${f(14*sx)}" height="${f(14*sy)}" rx="2" fill="var(--pump)"/>`;
+   let rp=`M${f(X(60))},${f(bot-16*sy)} V${f(ye(i,1)-4)}`;for(let x=64;x<=205;x+=4)rp+=` L${f(X(x))},${f(ye(i,elev(b,x))+4*sy)}`;rp+=` V${f(ye(i,73))} H${f(X(214))} V${f(ye(i,71))}`;
+   o+=`<path d="${rp}" fill="none" stroke="var(--water)" stroke-width="${f(pw*0.8)}" stroke-linejoin="round" opacity=".55"/><path id="rf" d="${rp}" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="5 10" opacity=".9"/>`;
+   if(!nw)o+=`<g style="--halo:var(--soil2)"><text class="m" x="${f(X(80))}" y="${f(bot-8)}">${lab.well}</text></g>`;}
+  if(b.tank){o+=`<rect x="${f(X(205))}" y="${f(ye(i,71.5))}" width="${f(53*sx)}" height="${f(ye(i,64)-ye(i,71.5))}" fill="var(--sky)" stroke="var(--ink)" stroke-width="2"/>`;if(!nw)o+=`<text class="b" x="${f(X(231))}" y="${f(ye(i,71.5)-9)}" text-anchor="middle">${lab.tank}</text>`;}
+  else{o+=`<circle cx="${f(X(X0))}" cy="${f(ye(i,elev(b,X0)-1.2))}" r="${f(pw)}" fill="var(--water)" stroke="var(--ink)"/>`;if(!nw)o+=`<text class="m" x="${f(X(X0)-12)}" y="${f(ye(i,elev(b,X0))-10)}" text-anchor="end">${lab.from}</text>`;}
+  for(const h of b.hs){const hx=X(h.x),gy=ye(i,elev(b,h.x)),bw=Math.max(14,22*sx),bh=Math.max(10,15*sy);
+   o+=`<rect x="${f(hx-bw/2)}" y="${f(gy-bh)}" width="${f(bw)}" height="${f(bh)}" fill="var(--conc)" stroke="var(--ink)"/><path d="M${f(hx-bw/2-3)},${f(gy-bh)} L${f(hx)},${f(gy-bh-bw*0.45)} L${f(hx+bw/2+3)},${f(gy-bh)} Z" fill="var(--roof)" stroke="var(--ink)"/>`;
+   o+=`<g style="--halo:var(--soil2)"><text class="b" x="${f(hx)}" y="${f(gy+17)}" text-anchor="middle">${h.n}</text></g>`;
+   Object.assign(h,{px:hx,gy,top:gy-bh-bw*0.45,bw,bh});}
+  b.pts=[];for(let x=X0;x<=1000;x+=6){const e=elev(b,x)-1.2;b.pts.push({x,e,px:X(x),py:ye(i,e)});}
+ });
+ const tb=BR[1],ty=ye(1,elev(tb,TEE)-1.2);
+ o+=`<circle cx="${f(X(TEE))}" cy="${f(ty)}" r="${f(pw)}" fill="var(--water)" stroke="var(--ink)"/>`;
+ if(!nw)o+=`<g style="--halo:var(--soil2)"><text class="m" x="${f(X(TEE))}" y="${f(ty+20)}" text-anchor="middle">↓ ${lab.tee}</text></g>`;
+ $('st').innerHTML=o;
+ G={W,H,sx,sy,X,ye,f,pw,nw,lab};
+ frame((performance.now()-t0)/1000);
+}
+const runs=(pts,ok,f)=>{let d='',pen=false;for(const p of pts){if(ok(p)){d+=(pen?' L':' M')+f(p.px)+','+f(p.py);pen=true;}else pen=false;}return d;};
+function frame(t){
+ const g=G;if(!g)return;const{f,ye,X,pw,lab}=g;
+ kc+=((M==1?1:0)-kc)*(rm?1:0.06);
+ let TL=FULL,ph=0,pump=true,flow=true,c=0,Ld=FULL,u4=0;
+ if(M==2){c=t%15;pump=false;TL=FULL-(FULL-EMPTY)*ease(c/4);Ld=c<4?TL:EMPTY-(EMPTY-LOW)*ease((c-4)/6);ph=c<4?0:c<10?1:2;flow=c<4;}
+ if(M==3){c=t%14;TL=EMPTY+(FULL-EMPTY)*ease(c/3);ph=c<7?0:1;flow=c<8;}
+ if(M==4){c=t%13;u4=ease(c/5);ph=c<5?0:1;}
+ let o='';
+ BR.forEach((b,i)=>{
+  let has=()=>true,hw=h=>Math.max(0,headAt(i,h.x,TL,kc)-h.e),pocket=null;
+  if(M==2){has=p=>c<4||p.e<Ld;hw=h=>c<4?TL-h.e:Math.max(0,Ld-h.e);}
+  if(M==3){const xf=i==0?X0+742*ease((c-1)/6):i==1?X0+(P0-X0)*ease((c-1)/6):X0+742*ease((c-3)/5);
+   has=p=>p.x<xf||p.e<LOW;hw=h=>h.x<xf?Math.max(0,TL-h.e):Math.max(0,LOW-h.e);if(i==1&&c>=7)pocket=[P0,1000];}
+  if(M==4&&i==1){const a=P0+120*u4;has=p=>p.x<a;hw=h=>h.x<a?Math.max(0,TL-h.e):0;if(c<5)pocket=[a,1000];}
+  if(b.tank){const tw=ye(i,TL),tbm=ye(i,64)-1;o+=`<rect x="${f(X(205)+1)}" y="${f(tw)}" width="${f(53*g.sx-2)}" height="${f(Math.max(0,tbm-tw))}" fill="var(--wlt)"/>`;}
+  const all=runs(b.pts,()=>true,f),wd=runs(b.pts,has,f);
+  o+=`<path d="${all}" fill="none" stroke="var(--mot)" stroke-width="${f(pw+2.5)}" stroke-linejoin="round" opacity=".5"/><path d="${all}" fill="none" stroke="var(--empty)" stroke-width="${f(pw)}" stroke-linejoin="round"/>`;
+  if(wd)o+=`<path d="${wd}" fill="none" stroke="var(--water)" stroke-width="${f(pw)}" stroke-linejoin="round"/>`;
+  if(wd&&flow&&!rm)o+=`<path d="${wd}" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="5 10" stroke-dashoffset="${f(-t*(M==1?70:26))}" opacity=".9"/>`;
+  if(pocket){const pd=runs(b.pts,p=>p.x>=pocket[0]&&p.x<=pocket[1],f);if(pd)o+=`<path d="${pd}" fill="none" stroke="var(--warnk)" stroke-width="${f(pw+4)}" stroke-linecap="round"/><path d="${pd}" fill="none" stroke="var(--empty)" stroke-width="${f(pw)}" stroke-linecap="round"/>`;
+   o+=`<g style="--halo:var(--soil1)"><text class="w" x="${f(X(940))}" y="${f(ye(i,61)+38)}" text-anchor="middle">${lab.air}</text></g>`;}
+  if(M==4&&i==1){const vx=X(990),vy=ye(i,elev(b,990));o+=`<line x1="${f(vx)}" x2="${f(vx)}" y1="${f(vy+4)}" y2="${f(vy-12)}" stroke="var(--ink)" stroke-width="3"/><rect x="${f(vx-5)}" y="${f(vy-17)}" width="10" height="6" fill="var(--pump)" stroke="var(--ink)"/>`;
+   if(c<5&&!rm)for(let n=0;n<4;n++){const k=(t*0.9+n/4)%1;o+=`<circle cx="${f(vx+Math.sin((t+n)*5)*4)}" cy="${f(vy-20-k*30)}" r="${f(2+k*2.5)}" fill="none" stroke="var(--ink)" stroke-width="1.2" opacity="${f(1-k)}"/>`;}
+   if(!g.nw)o+=`<g style="--halo:var(--soil1)"><text class="m" x="${f(X(940))}" y="${f(ye(i,61)+38)}" text-anchor="middle">${c<5?'':lab.valve}</text></g>`;}
+  if(M<2){const y0=ye(i,headAt(i,X0,TL,kc)),y1=ye(i,headAt(i,1000,TL,kc)),yt=ye(i,TL);
+   if(kc>0.03)o+=`<line x1="${f(X(X0))}" y1="${f(yt)}" x2="${f(g.W)}" y2="${f(yt)}" stroke="var(--mut)" stroke-width="1" stroke-dasharray="2 5"/>`;
+   o+=`<line x1="${f(X(X0))}" y1="${f(y0)}" x2="${f(g.W)}" y2="${f(y1)}" stroke="var(--water)" stroke-width="2" stroke-dasharray="7 5"/>`;
+   if(i==0)o+=`<text class="bl" x="${f(g.W-8)}" y="${f(yt-8)}" text-anchor="end">${kc>0.5?lab.busy:lab.lvl}</text>`;}
+  for(const h of b.hs){const m=hw(h),p=psi(m),wet=m>0.3,bar=M<2&&wet;
+   if(bar)o+=`<line x1="${f(h.px)}" x2="${f(h.px)}" y1="${f(h.top-2)}" y2="${f(ye(i,headAt(i,h.x,TL,kc)))}" stroke="var(--water)" stroke-width="1.5"/>`;
+   const yh=ye(i,headAt(i,h.x,TL,kc)),ly=bar?(h.top-yh<34?yh-7:Math.max(yh+18,h.top-30)):h.top-8,rt=h.x>900;
+   o+=`<text class="${wet?'b':'w'}" x="${f(h.px+(bar?(rt?-6:6):0))}" y="${f(ly)}" text-anchor="${bar?(rt?'end':'start'):'middle'}">${p}${g.nw?'':lab.psi}</text>`;
+   if(wet){const ln=Math.min(h.bh-2,2+Math.sqrt(m)*1.4*g.sy);o+=`<line x1="${f(h.px+h.bw/2+4)}" x2="${f(h.px+h.bw/2+4)}" y1="${f(h.gy-h.bh+2)}" y2="${f(h.gy-h.bh+2+ln)}" stroke="var(--water)" stroke-width="${f(1.5+Math.min(2.5,m/18))}" stroke-linecap="round"/>`;}}
+ });
+ $('dy').innerHTML=o;
+ const rf=$('rf');if(rf){rf.style.display=pump&&!rm?'':'none';rf.setAttribute('stroke-dashoffset',f(-t*30));}
+ $('stat').textContent=T[L].modes[M].s(ph);
+}
+function loop(){frame((performance.now()-t0)/1000);requestAnimationFrame(loop);}
+function text(){
+ const d=T[L];document.documentElement.lang=L;
+ document.querySelectorAll('[data-t]').forEach(e=>e.textContent=d[e.dataset.t]);
+ $('en').setAttribute('aria-pressed',L=='en');$('es').setAttribute('aria-pressed',L=='es');
+ const mb=$('modes');mb.textContent='';d.modes.forEach((m,i)=>{const b=document.createElement('button');b.textContent=m.b;b.setAttribute('aria-pressed',i==M);b.addEventListener('click',()=>{M=i;t0=performance.now();text();});mb.appendChild(b);});
+ $('mt').textContent=d.modes[M].t;$('mw').textContent=d.modes[M].w;$('mc').textContent=d.modes[M].c;
+ const tb=$('tb');tb.textContent='';const hr=tb.insertRow();d.cols.forEach(c=>{const th=document.createElement('th');th.textContent=c;hr.appendChild(th);});
+ BR.forEach((b,i)=>{const r=tb.insertRow(),c=r.insertCell();c.colSpan=5;c.textContent=d.br[i];c.style.fontWeight='600';c.style.textAlign='left';
+  for(const h of b.hs){const r=tb.insertRow(),q=psi(FULL-h.e),bz=psi(Math.max(0,headAt(i,h.x,FULL,1)-h.e)),dm=Math.round((dist(b,h.x)+(i==2?dist(BR[1],TEE):0))/50)*50;
+   [h.n,(FULL-h.e)+' m',dm.toLocaleString(L=='es'?'es-CR':'en-US')+' m',q+' psi',bz>0?bz+' psi':d.none].forEach((v,n)=>{const c=r.insertCell();c.textContent=v;if(n==4&&bz<=0)c.className='z';});}});
+ build();
+}
+const setL=l=>{L=l;try{location.hash=l;}catch(e){}text();};
+$('en').addEventListener('click',()=>setL('en'));$('es').addEventListener('click',()=>setL('es'));
+addEventListener('hashchange',()=>{const l=location.hash==='#en'?'en':'es';if(l!=L){L=l;text();}});
+let lastW=0;const ro=new ResizeObserver(()=>{const w=s.clientWidth;if(w!=lastW){lastW=w;build();}});
+text();ro.observe(s);
+if(!rm)loop();else{t0=performance.now()-11000;frame(11);}
+}
+</script>
+</body>
+</html>
