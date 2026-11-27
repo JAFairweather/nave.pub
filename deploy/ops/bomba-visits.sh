@@ -6,10 +6,12 @@
 #   OURS="addr addr" deploy/ops/bomba-visits.sh   # more of our own addresses to leave out
 #
 # The log is written by the `log` lines in the nave.pub block of deploy/caddy/Caddyfile: one JSON
-# line per request to /bomba, kept 90 days. A "view" is a GET of the page itself that was served
-# (200) or was already in the visitor's cache (304); the redirect from /bomba to /bomba/ is not
-# counted twice. Requests from the box itself, from private addresses and from the addresses in
-# OURS are our own checks and are listed apart, as are link previews and crawlers (by user agent).
+# line per request to /bomba, kept about 90 days. A "view" is a GET of the page itself that was
+# served (200) or was already in the visitor's cache (304); the redirect from /bomba to /bomba/ is
+# not counted twice. Link previews, crawlers and scripts (by user agent, curl included) are listed
+# apart from people. Requests from private addresses and from the addresses in OURS (give the box's
+# and our other servers' public addresses) are our own checks. A shared link's preview is fetched
+# by the sender's phone or the chat service, so it is not a reader.
 # Prints counts first, then one line per visitor address. Read-only.
 set -u
 dir=/var/lib/docker/volumes/deploy_caddy_data/_data/visits
