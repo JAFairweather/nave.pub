@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Esterones Water System</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday: a town explainer, plain words, one picture
+   IDEA a cut-away drawing of the well, the line and the tank, like a poster in the ASADA office
+   PICTURE the cross-section, animated to show each possible problem where it happens
+   COLOUR cobalt title strip, white ground, water blue, pump orange, problem red
+   TYPE Space Grotesk 600 + Inter
+   LAYOUT title, problem buttons, the picture full width, explanation under it; same order on a phone */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0a0d18);--ink:light-dark(#101418,#eef0f6);--mut:light-dark(#5b6170,#9aa1b2);--line:light-dark(#d9deea,#262c40);--zone:light-dark(#eef2ff,#141a30);--warn:light-dark(#fde7e7,#3a1518);--warnk:light-dark(#c62818,#ff8a80);--strip:#1240e0;--water:light-dark(#257de0,#338ced);--wlt:light-dark(#a9cff5,#1f4a7a);--pump:light-dark(#f47230,#e76624);--mot:light-dark(#8a8f99,#5b6170);--sky:light-dark(#f4f8ff,#0d1222);--soil1:light-dark(#cfe3b8,#22331a);--soil2:light-dark(#c9b28f,#2a2219);--conc:light-dark(#e3e1dc,#2b2f3a);--panel:light-dark(#f7f8fc,#11162a)}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:"Space Grotesk",Inter,sans-serif;letter-spacing:-.02em;font-weight:600}
+h1{font-size:clamp(26px,4vw,42px);line-height:1.05;margin:0 0 10px;text-wrap:balance}
+h2{font-size:clamp(22px,2.6vw,30px);line-height:1.1;margin:0 0 10px;text-wrap:balance}
+h3{font-size:17px;margin:0 0 4px}
+p{margin:0 0 10px;max-width:68ch}
+.band{padding-block:clamp(20px,3.5vw,44px);padding-inline:max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+.strip{background:var(--strip);color:#fff}
+.strip p{color:#dfe6ff;font-size:17px;margin:0}
+.top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.lang{display:flex;gap:4px}
+.lang button{min-width:52px;border:1px solid #ffffff80;background:transparent;color:#fff}
+.lang button[aria-pressed=true]{background:#fff;color:var(--strip)}
+button{font:600 15px Inter,sans-serif;min-height:44px;padding:0 14px;border-radius:8px;cursor:pointer}
+.modes{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.modes button{border:1px solid var(--line);background:var(--bg);color:var(--ink);text-align:left}
+.modes button[aria-pressed=true]{background:var(--strip);border-color:var(--strip);color:#fff}
+button:focus-visible{outline:3px solid var(--pump);outline-offset:2px}
+#fig{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--sky)}
+#fig svg{display:block;width:100%}
+svg text{font:13px Inter,sans-serif;fill:var(--ink);paint-order:stroke;stroke:var(--halo,var(--bg));stroke-width:4px;stroke-linejoin:round}
+svg .m{fill:var(--mut)}svg .w{fill:var(--warnk);font-weight:600}svg .b{font-weight:600}
+#stat{font-weight:600;min-height:1.6em;margin:10px 0 0}
+.exp{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:24px;margin-top:18px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+.card p{margin:0;font-size:15px}
+.alt{background:var(--zone)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(13em,1fr));gap:10px 24px;margin:12px 0 0;padding:0;list-style:none}
+.facts li{border-top:1px solid var(--line);padding-top:8px;font-size:15px}
+.facts b{display:block;font:600 20px "Space Grotesk",sans-serif;white-space:nowrap}
+.note{font-size:13px;color:var(--mut)}
+@media(max-width:760px){.exp{grid-template-columns:minmax(0,1fr)}}
+</style>
+</head>
+<body>
+<header class="strip band">
+ <div class="wrap top">
+  <div>
+   <h1 data-t="h1">Our water system, and what could be wearing out the pumps</h1>
+   <p data-t="sub">A pump like ours should last years. Ours have lasted about 3.5 months. Here are five possible causes. None is confirmed yet, and each one has a simple check.</p>
+  </div>
+  <div class="lang" role="group" aria-label="Language"><button id="en" aria-pressed="true">EN</button><button id="es" aria-pressed="false">ES</button></div>
+ </div>
+</header>
+
+<section class="band">
+ <div class="wrap">
+  <div class="modes" id="modes" role="group" aria-label="Possible causes"></div>
+  <div id="fig"><svg id="s" role="img" aria-label="Cross-section of the well, the line and the tank"></svg></div>
+  <p id="stat"></p>
+  <div class="exp">
+   <div><h2 id="mt"></h2><p id="mw"></p></div>
+   <div class="card"><h3 data-t="chk">How to check</h3><p id="mc"></p></div>
+  </div>
+  <p class="note" style="margin-top:14px" data-t="nts">Drawing not to scale.</p>
+ </div>
+</section>
+
+<section class="band alt">
+ <div class="wrap">
+  <h2 data-t="fh">What we have heard so far</h2>
+  <p data-t="fs">These numbers come from conversations, not from measurements. Please correct any that are wrong.</p>
+  <ul class="facts" id="facts"></ul>
+ </div>
+</section>
+
+<script>
+{
+const T={
+en:{h1:"Our water system, and what could be wearing out the pumps",sub:"A pump like ours should last years. Ours have lasted about 3.5 months. Here are five possible causes. None is confirmed yet, and each one has a simple check.",chk:"How to check",nts:"Drawing not to scale.",fh:"What we have heard so far",fs:"These numbers come from conversations, not from measurements. Please correct any that are wrong.",
+ facts:[["≈100,000 L","Tank size"],["≈70 m","Tank above the well"],["3\", ≈1 km","Line from well to tank"],["≈2 m down","Water level in the well"],["≈27 m down","Depth of the pump"],["Pearl 35G50, 5 HP","Pump in the well now"],["≈8–9 hours","Time to fill the tank (not timed)"],["≈3.5 months","Life of recent pumps"]],
+ lab:{tank:"Concrete tank",town:"To the town",line:"3\" line, ≈1 km, buried",h:"≈70 m",wl:"Water level",cv:"Check valve",pe:"Pump",mo:"Motor",pw:"Power and panel",g120:"This pump was built for ≈120 m",g120s:"Built for ≈120 m",leak:"Leak",fl:"Float switch"},
+ modes:[
+ {b:"How it works",t:"How the system works",w:"The pump sits deep in the well. It pushes water up the 3\" line, about 1 km, to the concrete tank on the hill. From the tank the water runs down to the town by gravity.",c:"Nothing to check here. This is the system working as it should.",s:()=>"Pump on. Water climbs to the tank."},
+ {b:"1. Pump too strong for our hill",t:"The pump was built for a taller hill",w:"The 35G50 was built to lift water about 120 m. Our system needs about 70–80 m. With less to push against, the pump moves more water than it was designed for. It vibrates and the motor works harder. It is like driving a truck in first gear on a flat road.",c:"Confirm the real height from the well to the tank. Then close the tank outlet, run the pump for one hour, and measure how much the water level rises. That gives the real flow.",s:()=>"The pump is pushing more water than it was designed for."},
+ {b:"2. Line empties when pump stops",t:"The line empties when the pump stops",w:"If the check valve at the well does not seal, the water in the line runs back down. The line holds about 4,800 L. At every start the pump has to refill it. That takes about 30 minutes, with almost nothing to push against. This is the hardest condition for the pump.",c:"Stop the pump and watch a pressure gauge at the wellhead for 30 minutes. If the pressure falls, the line is emptying.",s:p=>p==0?"Pump off. Water runs back down the line.":p==1?"Pump on. Refilling about 4,800 L, the hardest work for the pump.":"Line full. Back to normal."},
+ {b:"3. Leak in the line",t:"A leak in the line to the tank",w:"The line is buried along the road, so a leak may not show on the surface. Water is lost before it reaches the tank, so the tank fills slowly. A leak can also let the line empty when the pump stops.",c:"Compare the water leaving the well with the water arriving at the tank. The pressure test at the wellhead also shows it.",s:()=>"Water is lost before it reaches the tank."},
+ {b:"4. Too many starts",t:"The pump starts too many times a day",w:"Every start heats the motor. If the pump goes on and off many times a day, the motor never cools down. A motor this size should start no more than about 100 times a day, and fewer is better.",c:"Count the starts in one normal day. Check how the float switch in the tank is set: it should let the level drop well down before the pump starts again.",s:(p,n)=>`Starts so far: ${n}. The motor gets hotter with each one.`},
+ {b:"5. Hot motor or bad power",t:"The motor runs hot, or the electricity is unstable",w:"Low or unstable voltage makes the motor draw more current and heat up. Without a protection panel, nothing stops it in time. Sand or scale on the motor makes it worse.",c:"Measure the voltage and the amps at the panel while the pump runs. Check that there is a protection relay for low voltage and overload.",s:p=>p?"Voltage drops. The motor draws more current and heats up.":"Voltage normal."}]},
+es:{h1:"Nuestro sistema de agua, y qué puede estar dañando las bombas",sub:"Una bomba como la nuestra debería durar años. Las nuestras han durado como 3 meses y medio. Aquí hay cinco causas posibles. Ninguna está confirmada todavía, y cada una tiene una forma sencilla de revisarla.",chk:"Cómo revisarlo",nts:"Dibujo sin escala.",fh:"Lo que hemos escuchado hasta ahora",fs:"Estos números vienen de conversaciones, no de mediciones. Por favor corrijan los que estén mal.",
+ facts:[["≈100.000 L","Tamaño del tanque"],["≈70 m","Altura del tanque sobre el pozo"],["3\", ≈1 km","Tubería del pozo al tanque"],["≈2 m","Nivel del agua en el pozo"],["≈27 m","Profundidad de la bomba"],["Pearl 35G50, 5 HP","Bomba instalada ahora"],["≈8–9 horas","Tiempo para llenar el tanque (sin reloj)"],["≈3,5 meses","Duración de las últimas bombas"]],
+ lab:{tank:"Tanque de concreto",town:"Al pueblo",line:"Tubería de 3\", ≈1 km, enterrada",h:"≈70 m",wl:"Nivel del agua",cv:"Válvula check",pe:"Bomba",mo:"Motor",pw:"Electricidad y panel",g120:"Esta bomba se hizo para ≈120 m",g120s:"Hecha para ≈120 m",leak:"Fuga",fl:"Flotador"},
+ modes:[
+ {b:"Cómo funciona",t:"Cómo funciona el sistema",w:"La bomba está en el fondo del pozo. Empuja el agua por la tubería de 3 pulgadas, como 1 km, hasta el tanque de concreto en el cerro. Del tanque el agua baja al pueblo por gravedad.",c:"Aquí no hay nada que revisar. Así debe trabajar el sistema.",s:()=>"Bomba encendida. El agua sube al tanque."},
+ {b:"1. Bomba muy fuerte para el cerro",t:"La bomba se hizo para un cerro más alto",w:"La 35G50 se hizo para subir agua unos 120 m. Nuestro sistema necesita unos 70–80 m. Con menos resistencia, la bomba mueve más agua de la que debe. Vibra y el motor trabaja más. Es como manejar un camión en primera en una calle plana.",c:"Confirmar la altura real del pozo al tanque. Después cerrar la salida del tanque, trabajar la bomba una hora y medir cuánto sube el nivel. Eso da el caudal real.",s:()=>"La bomba está empujando más agua de la que debe."},
+ {b:"2. La tubería se vacía",t:"La tubería se vacía cuando la bomba se apaga",w:"Si la válvula check del pozo no sella, el agua de la tubería se devuelve. La tubería guarda unos 4.800 litros. En cada arranque la bomba tiene que volver a llenarla. Eso dura como 30 minutos, casi sin resistencia. Es la condición más dura para la bomba.",c:"Apagar la bomba y ver un manómetro en la boca del pozo por 30 minutos. Si la presión baja, la tubería se está vaciando.",s:p=>p==0?"Bomba apagada. El agua se devuelve por la tubería.":p==1?"Bomba encendida. Llenando unos 4.800 litros, el trabajo más duro para la bomba.":"Tubería llena. Vuelve a lo normal."},
+ {b:"3. Fuga en la tubería",t:"Una fuga en la tubería al tanque",w:"La tubería está enterrada a la orilla de la calle, así que una fuga puede no verse. El agua se pierde antes de llegar al tanque, y el tanque se llena despacio. Una fuga también puede vaciar la tubería cuando la bomba se apaga.",c:"Comparar el agua que sale del pozo con la que llega al tanque. La prueba de presión en el pozo también lo muestra.",s:()=>"El agua se pierde antes de llegar al tanque."},
+ {b:"4. Demasiados arranques",t:"La bomba arranca demasiadas veces al día",w:"Cada arranque calienta el motor. Si la bomba prende y apaga muchas veces al día, el motor nunca se enfría. Un motor de este tamaño no debería arrancar más de unas 100 veces al día, y entre menos, mejor.",c:"Contar los arranques en un día normal. Revisar cómo está ajustado el flotador del tanque: debe dejar bajar bastante el nivel antes de volver a prender la bomba.",s:(p,n)=>`Arranques hasta ahora: ${n}. El motor se calienta más con cada uno.`},
+ {b:"5. Motor caliente o mala corriente",t:"El motor se calienta, o la electricidad no es estable",w:"El voltaje bajo o inestable hace que el motor jale más corriente y se caliente. Sin un panel de protección, nada lo apaga a tiempo. La arena o el sarro en el motor lo empeoran.",c:"Medir el voltaje y los amperios en el panel con la bomba trabajando. Revisar que haya un relé de protección por bajo voltaje y sobrecarga.",s:p=>p?"Baja el voltaje. El motor jala más corriente y se calienta.":"Voltaje normal."}]}
+};
+const $=id=>document.getElementById(id);
+let L=location.hash==='#es'?'es':'en',M=0,t0=performance.now(),raf=null,geo=null;
+const rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const s=$('s');
+
+function build(){
+ const W=s.clientWidth||900,nw=W<560,H=Math.round(nw?W*0.95:W*0.56),sx=W/900,sy=H/520,lab=T[L].lab;
+ s.setAttribute('viewBox',`0 0 ${W} ${H}`);s.style.height=H+'px';
+ const X=v=>(v*sx).toFixed(1),Y=v=>(v*sy).toFixed(1),P=(x,y)=>`${X(x)},${Y(y)}`;
+ const pipe=`M${P(155,450)} V${Y(368)} H${X(230)} C${P(330,368)} ${P(410,338)} ${P(490,292)} S${P(630,190)} ${P(700,172)} V${Y(132)} H${X(745)} V${Y(146)}`;
+ const pw=Math.max(5,9*sx);
+ let o=`<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--soil1)"/><stop offset="1" stop-color="var(--soil2)"/></linearGradient></defs>`;
+ o+=`<path d="M0,${Y(380)} H${X(250)} C${P(340,380)} ${P(420,345)} ${P(500,300)} S${P(640,200)} ${P(720,190)} H${W} V${H} H0 Z" fill="url(#g)"/>`;
+ // power
+ o+=`<line x1="${X(50)}" y1="${Y(380)}" x2="${X(50)}" y2="${Y(270)}" stroke="var(--mut)" stroke-width="3"/><line x1="${X(36)}" y1="${Y(280)}" x2="${X(64)}" y2="${Y(280)}" stroke="var(--mut)" stroke-width="3"/>`;
+ o+=`<path id="wire" d="M${P(50,280)} Q${P(80,330)} ${P(100,338)} M${P(100,366)} L${P(140,378)} V${Y(488)}" fill="none" stroke="var(--ink)" stroke-width="1.5"/>`;
+ o+=`<rect x="${X(88)}" y="${Y(338)}" width="${24*sx}" height="${28*sy}" rx="2" fill="var(--conc)" stroke="var(--ink)"/>`;
+ o+=`<text id="volt" class="b" x="${X(100)}" y="${Y(328)}" text-anchor="middle"></text>`;
+ if(!nw)o+=`<text class="m" x="${X(12)}" y="${Y(258)}">${lab.pw}</text>`;
+ // well
+ o+=`<rect x="${X(130)}" y="${Y(380)}" width="${50*sx}" height="${140*sy}" fill="var(--sky)" stroke="var(--mut)" stroke-width="2"/>`;
+ o+=`<rect x="${X(131)}" y="${Y(394)}" width="${48*sx}" height="${126*sy}" fill="var(--wlt)"/>`;
+ o+=`<line x1="${X(131)}" x2="${X(179)}" y1="${Y(394)}" y2="${Y(394)}" stroke="var(--water)" stroke-width="2"/>`;
+ // pipe
+ o+=`<path d="${pipe}" fill="none" stroke="var(--conc)" stroke-width="${pw+4}" stroke-linejoin="round"/><path d="${pipe}" fill="none" stroke="var(--sky)" stroke-width="${pw}" stroke-linejoin="round"/>`;
+ o+=`<path id="wf" d="${pipe}" fill="none" stroke="var(--water)" stroke-width="${pw}" stroke-linejoin="round" pathLength="1" stroke-dasharray="1 1"/>`;
+ o+=`<path id="fl" d="${pipe}" fill="none" stroke="#fff" stroke-width="${Math.max(1.5,2.2*sx)}" stroke-dasharray="6 12" opacity=".9"/>`;
+ // pump + motor
+ o+=`<g id="pg"><rect x="${X(142)}" y="${Y(450)}" width="${26*sx}" height="${26*sy}" rx="3" fill="var(--pump)"/><rect id="mo" x="${X(143)}" y="${Y(476)}" width="${24*sx}" height="${36*sy}" rx="3" fill="var(--mot)"/></g>`;
+ o+=`<path id="cv" d="M${P(147,446)} L${P(155,434)} L${P(163,446)} Z" fill="var(--ink)"/>`;
+ o+=`<g style="--halo:var(--soil2)"><text x="${X(192)}" y="${Y(400)}" class="m">${lab.wl}</text><text id="cvt" x="${X(192)}" y="${Y(445)}">${lab.cv}</text><text x="${X(192)}" y="${Y(470)}" class="b">${lab.pe}</text><text x="${X(192)}" y="${Y(500)}">${lab.mo}</text>`;
+ if(!nw)o+=`<text x="${X(400)}" y="${Y(420)}" class="m">${lab.line}</text>`;
+ o+=`</g>`;
+ // tank
+ o+=`<rect x="${X(720)}" y="${Y(140)}" width="${140*sx}" height="${50*sy}" fill="var(--sky)" stroke="var(--ink)" stroke-width="2"/><rect id="tw" x="${(720*sx+1).toFixed(1)}" width="${140*sx-2}" fill="var(--wlt)"/>`;
+ o+=`<circle id="flt" r="${Math.max(3,5*sx)}" cx="${X(835)}" fill="var(--pump)" stroke="var(--ink)" style="display:none"/>`;
+ o+=`<path d="M${P(860,184)} H${W}" stroke="var(--water)" stroke-width="${pw*0.8}"/>`;
+ o+=`<g style="--halo:var(--soil1)"><text class="b" x="${nw?W-6:X(790)}" y="${+Y(190)+18}" text-anchor="${nw?'end':'middle'}">${lab.tank}</text></g>`;
+ if(!nw)o+=`<g style="--halo:var(--soil1)"><text class="m" x="${W-8}" y="${+Y(190)+42}" text-anchor="end">${lab.town} →</text></g>`;
+ // height
+ o+=`<g id="dim"><line x1="${X(300)}" x2="${X(720)}" y1="${Y(146)}" y2="${Y(146)}" stroke="var(--mut)" stroke-dasharray="3 4"/><line x1="${X(300)}" x2="${X(300)}" y1="${Y(150)}" y2="${Y(370)}" stroke="var(--ink)" stroke-width="1.5"/><path d="M${X(300)-5},${Y(154)} L${X(300)},${Y(146)} L${+X(300)+5},${Y(154)} Z M${X(300)-5},${Y(366)} L${X(300)},${Y(374)} L${+X(300)+5},${Y(366)} Z" fill="var(--ink)"/><text class="b" x="${+X(300)+10}" y="${Y(255)}">${lab.h}</text></g>`;
+ // ghost 120 m
+ o+=`<g id="gh" style="display:none"><rect x="${X(720)}" y="${Y(18)}" width="${140*sx}" height="${50*sy}" fill="none" stroke="var(--warnk)" stroke-width="2" stroke-dasharray="6 5"/><line x1="${X(350)}" x2="${X(720)}" y1="${Y(22)}" y2="${Y(22)}" stroke="var(--warnk)" stroke-dasharray="3 4"/><line x1="${X(350)}" x2="${X(350)}" y1="${Y(26)}" y2="${Y(352)}" stroke="var(--warnk)" stroke-width="1.5" stroke-dasharray="6 5"/><text class="w" x="${+X(350)+10}" y="${Y(60)}">${nw?lab.g120s:lab.g120}</text></g>`;
+ o+=`<g id="lk" style="display:none"></g>`;
+ if(!rm)o+=``;
+ s.innerHTML=o;
+ const fl=$('fl'),len=fl.getTotalLength(),lp=fl.getPointAtLength(len*0.55);
+ geo={sx,sy,len,lp,Y:v=>v*sy,lab};
+ $('lk').innerHTML=`<ellipse cx="${lp.x}" cy="${lp.y+14*sy}" rx="${26*sx}" ry="${12*sy}" fill="var(--water)" opacity=".35"/><circle cx="${lp.x}" cy="${lp.y}" r="${Math.max(8,12*sx)}" fill="none" stroke="var(--warnk)" stroke-width="2.5"/><circle id="d1" r="3" fill="var(--water)" cx="${lp.x}"/><circle id="d2" r="3" fill="var(--water)" cx="${lp.x-5}"/><circle id="d3" r="3" fill="var(--water)" cx="${lp.x+5}"/><text class="w" x="${lp.x-16}" y="${lp.y-16}" text-anchor="end">${lab.leak}</text>`;
+ frame((performance.now()-t0)/1000);
+}
+const show=(id,v)=>$(id).style.display=v?'':'none';
+function frame(t){
+ if(!geo)return;const g=geo;let fill=1,on=true,speed=1,shake=0,hot=0,lvl=0.3+0.5*((t/14)%1),ph=0,n=0;
+ if(M==1){speed=2.2;shake=1;hot=60;}
+ if(M==2){const c=t%11;if(c<3){ph=0;on=false;fill=1-0.85*(c/3);}else if(c<9){ph=1;fill=0.15+0.85*((c-3)/6);shake=1;hot=70;speed=2.2;}else ph=2;lvl=0.45;}
+ if(M==3){lvl=0.3+0.5*((t/40)%1);}
+ if(M==4){const c=t%2.4;on=c<1.2;n=Math.floor(t/2.4)+1;hot=Math.min(95,n*8);lvl=0.8+(on?0.04*(c/1.2):0.04*(1-(c-1.2)/1.2));}
+ if(M==5){ph=(t%4)>2?1:0;hot=ph?90:40;}
+ $('wf').setAttribute('stroke-dasharray',`${fill} 1`);
+ const fl=$('fl');fl.style.display=on&&fill>=1?'':'none';fl.setAttribute('stroke-dashoffset',(-t*speed*36).toFixed(1));
+ $('pg').setAttribute('transform',shake&&!rm?`translate(${(Math.sin(t*46)*1.6).toFixed(2)},0)`:'');
+ $('mo').setAttribute('fill',hot?`color-mix(in srgb, var(--warnk) ${hot}%, var(--mot))`:'var(--mot)');
+ const top=g.Y(188)-lvl*44*g.sy;$('tw').setAttribute('y',top.toFixed(1));$('tw').setAttribute('height',(g.Y(189)-top).toFixed(1));
+ show('gh',M==1);show('lk',M==3);show('flt',M==4);$('flt').setAttribute('cy',top.toFixed(1));
+ $('cv').setAttribute('fill',M==2?'var(--warnk)':'var(--ink)');$('cvt').setAttribute('class',M==2?'w':'');
+ if(M==3)['d1','d2','d3'].forEach((id,i)=>{const k=((t*1.1+i/3)%1);$(id).setAttribute('cy',(g.lp.y+4+k*26*g.sy).toFixed(1));$(id).setAttribute('opacity',(1-k).toFixed(2));});
+ $('volt').textContent=M==5?(ph?'195 V':'230 V'):'';$('volt').setAttribute('class',M==5&&ph?'w':'b');
+ $('wire').setAttribute('stroke',M==5&&ph?'var(--warnk)':'var(--ink)');
+ $('stat').textContent=T[L].modes[M].s(ph,n);
+}
+function loop(){frame((performance.now()-t0)/1000);raf=requestAnimationFrame(loop);}
+function text(){
+ const d=T[L];document.documentElement.lang=L;
+ document.querySelectorAll('[data-t]').forEach(e=>e.textContent=d[e.dataset.t]);
+ $('en').setAttribute('aria-pressed',L=='en');$('es').setAttribute('aria-pressed',L=='es');
+ const mb=$('modes');mb.textContent='';d.modes.forEach((m,i)=>{const b=document.createElement('button');b.textContent=m.b;b.setAttribute('aria-pressed',i==M);b.addEventListener('click',()=>{M=i;t0=performance.now();text();});mb.appendChild(b);});
+ $('mt').textContent=d.modes[M].t;$('mw').textContent=d.modes[M].w;$('mc').textContent=d.modes[M].c;
+ const f=$('facts');f.textContent='';d.facts.forEach(([v,l])=>{const li=document.createElement('li'),b=document.createElement('b');b.textContent=v;li.appendChild(b);li.appendChild(document.createTextNode(l));f.appendChild(li);});
+ build();
+}
+const setL=l=>{L=l;try{location.hash=l=='es'?'es':'en';}catch(e){}text();};
+$('en').addEventListener('click',()=>setL('en'));$('es').addEventListener('click',()=>setL('es'));
+addEventListener('hashchange',()=>{const l=location.hash==='#es'?'es':'en';if(l!=L){L=l;text();}});
+let lastW=0;const ro=new ResizeObserver(()=>{const w=s.clientWidth;if(w!=lastW){lastW=w;build();}});
+text();ro.observe(s);
+if(!rm)loop();else{t0=performance.now()-4000;frame(4);}
+}
+</script>
+</body>
+</html>
