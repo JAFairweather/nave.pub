@@ -25,10 +25,11 @@ if [ $# -gt 0 ]; then files=("$@"); else files=("$dir"/*.log*); fi
 [ ${#files[@]} -gt 0 ] || [ -n "$html" ] || { echo "no visit log yet at $dir (it starts at the first request to a logged page)"; exit 0; }
 OURS="${OURS:-}" HTML_OUT="$html" exec python3 - ${files[@]+"${files[@]}"} <<'PY'
 import sys, os, json, gzip, re, ipaddress, datetime, collections, html
-# The logged pages: address prefix, name on the stats page. Keep in step with @pages in the Caddyfile.
-PAGES = [('/bomba/', 'Bomba: the water system and the pumps'),
-         ('/sistema/', 'Sistema: water pressure by house'),
-         ('/asada/esterones/', 'ASADA Esterones mockup')]
+# The logged pages: address prefix, name on the stats page, short name for its table.
+# Keep in step with @pages in the Caddyfile.
+PAGES = [('/bomba/', 'Bomba: the water system and the pumps', 'Bomba'),
+         ('/sistema/', 'Sistema: water pressure by house', 'Sistema'),
+         ('/asada/esterones/', 'ASADA Esterones mockup', 'Mockup')]
 # Link previews and crawlers name themselves; an in-app browser (Facebook, Instagram, X) is a person.
 BOT = re.compile(r'bot|crawl|spider|preview|facebookexternalhit|^whatsapp/|curl|wget|python|go-http|okhttp|java/|'
                  r'headless|scan|monitor|feed|fetch|axios|node-|libwww|visit-log-check|^$', re.I)
@@ -57,7 +58,7 @@ def kind(ip, ua):
     return 'robot' if BOT.search(ua) else 'person'
 def page_of(uri):
     p = uri.split('?')[0]
-    for base, _ in PAGES:
+    for base, _, _ in PAGES:
         if p.startswith(base) and (p.endswith('/') or p.endswith('.html')): return base
     return None
 UTC = datetime.timezone.utc
@@ -69,7 +70,7 @@ if not out:
     def day(ts): return datetime.datetime.fromtimestamp(ts, UTC).strftime('%Y-%m-%d')
     print(f'requests logged: {len(rows)}   page views: {len(views)}' + (f'   unreadable lines or files: {bad}' if bad else ''))
     if rows: print(f'log covers: {when(min(x[0] for x in rows))} to {when(max(x[0] for x in rows))}')
-    for base, name in PAGES:
+    for base, name, _ in PAGES:
         pv = [x for x in views if x[7] == base]
         print(f'\n{base}  ({name})')
         by = collections.defaultdict(list)
@@ -100,7 +101,7 @@ e = html.escape
 ndays = 14
 dlist = [today - datetime.timedelta(days=i) for i in range(ndays)]
 cards, cols = [], []
-for base, name in PAGES:
+for base, name, _ in PAGES:
     pv = [x for x in views if x[7] == base]
     ppl = [x for x in pv if x[8] == 'person']
     rob = [x for x in pv if x[8] == 'robot']
@@ -113,7 +114,7 @@ for base, name in PAGES:
     cards.append(f'''<section class="card">
  <h2><a href="{e(base)}">nave.pub{e(base)}</a></h2>
  <p class="name">{e(name)}</p>
- <p class="big"><b>{len(ppl)}</b> <span>{'view' if len(ppl) == 1 else 'views'} by people</span></p>
+ <p class="big"><b>{len(ppl)}</b> <span>{'view' if len(ppl) == 1 else 'views'} by people so far</span></p>
  <dl>
   <div><dt>Today</dt><dd>{n_today}</dd></div>
   <div><dt>Last 7 days</dt><dd>{n_7}</dd></div>
@@ -122,7 +123,7 @@ for base, name in PAGES:
  </dl>
  <p class="last">Last visit by a person: {tm(last) if last else 'none yet'}</p>
 </section>''')
-head = ''.join(f'<th>{e(base.strip("/").split("/")[-1])}</th>' for base, _ in PAGES)
+head = ''.join(f'<th>{e(short)}</th>' for _, _, short in PAGES)
 body = ''.join(f'<tr><td>{d.strftime("%a %-d %b")}</td>' + ''.join(f'<td class="{"z" if not c[d] else ""}">{c[d]}</td>' for c in cols) + '</tr>' for d in dlist)
 first = min((x[0] for x in rows), default=None)
 doc = f'''<!DOCTYPE html>
@@ -149,7 +150,7 @@ dl div{{border-top:1px solid var(--line);padding-top:.4rem}}
 dt{{color:var(--mut);font-size:.82rem}}dd{{margin:0;font-size:1.2rem;font-weight:600;font-variant-numeric:tabular-nums}}
 .scroll{{overflow-x:auto}}
 table{{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}}
-th,td{{padding:.4rem .5rem;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}}
+th,td{{padding:.4rem .35rem;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}}
 th:first-child,td:first-child{{text-align:left}}
 th{{font-size:.85rem;color:var(--mut);font-weight:600}}
 td.z{{color:var(--mut)}}

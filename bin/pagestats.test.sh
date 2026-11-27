@@ -20,7 +20,7 @@ list='/bomba /bomba/* /sistema /sistema/* /asada/esterones /asada/esterones/*'
 echo "Caddyfile: $cf"
 chk 'the log takes the three pages and skips every other path' 'has "@pages path $list" && has "@notpages not path $list" && has "log_skip @notpages"'
 chk 'the log is in the caddy data volume, rolls daily and keeps rolled files 90 days' 'has "output file /data/visits/pages.log" && has "roll_at 00:00" && has "roll_keep 100" && has "roll_keep_for 2160h"'
-chk 'the log drops request headers, query strings, TLS detail and response headers' 'has "request>headers delete" && has "request>tls delete" && has "resp_headers delete" && has "request>uri regexp \"\\?.*\" \"\""'
+chk 'the log drops request headers, query strings, TLS detail and response headers' 'has "request>headers delete" && has "request>tls delete" && has "resp_headers delete" && has "request>uri regexp \"\\?.*\" \"\"" && has "referer regexp \"\\?.*\" \"\""'
 chk 'no other site block logs visits' '[ "$(grep -cE "^[[:space:]]*log( [a-z0-9_]+)? \{" "$cf")" = 2 ] && has "log {" && [ "$(grep -cE "^[[:space:]]*log_skip " "$cf")" = 1 ]'
 # Two lines outside the block that the log needs: without the first, plain-HTTP requests to every path
 # on the hub are logged; without the second, requests to unknown hosts go to the container log.
@@ -65,7 +65,7 @@ out=$t/vol/pagestats/index.html
 chk 'the job writes the page, readable by the web server' '[ -s "$out" ] && [ "$(stat -c %a "$out")" = 644 ] && [ ! -e "$out.tmp" ]'
 card() { awk -v h="nave.pub$1<" 'index($0,h){p=1} p{print} p&&/<\/section>/{exit}' "$out" | tr -d '\n'; }
 chk 'page: /bomba has 4 views by people, 3 today, 3 in 7 days, 3 visitors, 1 preview' 'card /bomba/ | grep -q "<b>4</b>.*Today</dt><dd>3</dd>.*Last 7 days</dt><dd>3</dd>.*Visitors</dt><dd>3</dd>.*robots</dt><dd>1</dd>"'
-chk 'page: /sistema has 1 view, none today' 'card /sistema/ | grep -q "<b>1</b> <span>view by people.*Today</dt><dd>0</dd>.*Last 7 days</dt><dd>1</dd>"'
+chk 'page: /sistema has 1 view, none today' 'card /sistema/ | grep -q "<b>1</b> <span>view by people so far.*Today</dt><dd>0</dd>.*Last 7 days</dt><dd>1</dd>"'
 chk 'page: the mockup counts its admin page and not its stylesheet' 'card /asada/esterones/ | grep -q "<b>1</b>"'
 chk 'page: no address, browser or referring page is in it' '! grep -qE "8\.8\.8\.8|1\.1\.1\.1|9\.9\.9\.9|8\.8\.4\.4|208\.67|10\.0\.0\.5|iPhone|WhatsApp/|referring\.example" "$out"'
 chk 'page: asks search engines to stay away, and loads nothing from another site' 'grep -q "<meta name=\"robots\" content=\"noindex, nofollow\">" "$out" && ! grep -qE "(src|href)=\"(https?:)?//" "$out"'
@@ -73,7 +73,7 @@ chk 'job: deletes log files last written over 91 days ago, keeps the rest' '[ ! 
 touch -d '100 days ago' "$t/vol/visits/pages.log"; PAGESTATS_VOL="$t/vol" bash deploy/ops/pagestats-cron.sh run
 chk 'job: never deletes the live log' '[ -s "$t/vol/visits/pages.log" ]'
 rm -rf "$t/vol/visits" "$t/vol/pagestats"; PAGESTATS_VOL="$t/vol" bash deploy/ops/pagestats-cron.sh run
-chk 'job: with no log yet, writes a page of zeros' 'grep -q "<b>0</b> <span>views by people" "$t/vol/pagestats/index.html"'
+chk 'job: with no log yet, writes a page of zeros' 'grep -q "<b>0</b> <span>views by people so far" "$t/vol/pagestats/index.html"'
 
 if [ "${1:-}" = --live ]; then
 	url=https://nave.pub/pagestats
