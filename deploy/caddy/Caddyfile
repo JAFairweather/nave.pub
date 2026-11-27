@@ -70,13 +70,16 @@ nave.pub {
 
 	# /pagestats: visit counts for those pages, one small HTML file that deploy/ops/pagestats-cron.sh
 	# rewrites every 5 minutes into the caddy_data volume. Counts only, no addresses; kept out of
-	# search engines; not itself logged. Until the job has run once, this answers 404.
+	# search engines; not itself logged. Until the job has run once, this answers 404. The job's
+	# half-written file has a dot name, which is hidden.
 	redir /pagestats /pagestats/ 308
 	handle_path /pagestats/* {
 		root * /data/pagestats
 		header X-Robots-Tag "noindex, nofollow"
 		header Cache-Control "no-store"
-		file_server
+		file_server {
+			hide .*
+		}
 	}
 	file_server
 }

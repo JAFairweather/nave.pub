@@ -48,13 +48,14 @@ for f in sys.argv[1:]:
                     bad += 1
     except (OSError, EOFError):
         bad += 1      # a file rolled away or half-written while we read: skip it
+rows = list(dict.fromkeys(rows))   # a rolled file read both plain and compressed, mid-roll, counts once
 def kind(ip, ua):
     try:
         a = ipaddress.ip_address(ip)
         if a.is_private or a.is_loopback or a.is_link_local: return 'ours'
     except ValueError:
         pass
-    if ip in ours: return 'ours'
+    if ip in ours or 'visit-log-check' in ua: return 'ours'      # bin/pagestats.test.sh --live sends that name
     return 'robot' if BOT.search(ua) else 'person'
 def page_of(uri):
     p = uri.split('?')[0]
@@ -174,8 +175,9 @@ for (const t of document.querySelectorAll('time')) {{ const d = new Date(t.dateT
 </body>
 </html>
 '''
-tmp = out + '.tmp'
-with open(tmp, 'w', encoding='utf-8') as h: h.write(doc)
+import tempfile
+fd, tmp = tempfile.mkstemp(dir=os.path.dirname(os.path.abspath(out)), prefix='.index.', suffix='.tmp')   # own name: two runs at once cannot share it
+with os.fdopen(fd, 'w', encoding='utf-8') as h: h.write(doc)
 os.chmod(tmp, 0o644)
 os.replace(tmp, out)
 PY
