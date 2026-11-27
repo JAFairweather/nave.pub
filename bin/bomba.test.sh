@@ -5,13 +5,13 @@
 #   bin/bomba.test.sh --live     # also the served page at https://nave.pub/bomba/
 #
 # The page is one HTML file (inline CSS and JS) copied unchanged from the asada-tech repo, branch
-# add-bomba-page, commit 42e70dc, bomba/index.html. It is not edited here: a change is made there and
+# add-bomba-page, commit 845db8a, bomba/index.html. It is not edited here: a change is made there and
 # copied again, and the hash below moves with it. The root file_server serves it; there is no route for it
 # in the Caddyfile.
 set -u
 cd "$(dirname "$0")/.."
 page=bomba/index.html
-sum=e057b6ed4ac7ecfb465395f2cdab9b62f210fbe560386abf9ae4f2e4cba88fe5
+sum=337083300c427f63910336bd148291cf541994fe377fc0a56a515d08295c4208
 fail=0
 ok()  { printf '  ok   %s\n' "$1"; }
 bad() { printf '  FAIL %s\n' "$1"; fail=1; }
@@ -19,8 +19,10 @@ bad() { printf '  FAIL %s\n' "$1"; fail=1; }
 echo "page: $page"
 [ -f "$page" ] || { bad "$page exists"; exit 1; }
 if [ "$(sha256sum < "$page" | cut -d' ' -f1)" = "$sum" ]; then ok 'unchanged from the source commit'; else bad 'unchanged from the source commit'; fi
-if grep -qF '<h1 data-t="h1">Our water system, and what could be wearing out the pumps</h1>' "$page"; then ok 'heading is the English title'; else bad 'heading is the English title'; fi
-if grep -qF 'h1:"Nuestro sistema de agua, y qué puede estar dañando las bombas"' "$page"; then ok 'Spanish heading is in the page'; else bad 'Spanish heading is in the page'; fi
+# Spanish is the default: it is the text in the HTML, and the script picks English only for #en.
+if grep -qF '<h1 data-t="h1">Nuestro sistema de agua, y qué puede estar dañando las bombas</h1>' "$page"; then ok 'heading in the HTML is Spanish'; else bad 'heading in the HTML is Spanish'; fi
+if grep -qF "let L=location.hash==='#en'?'en':'es'" "$page"; then ok 'opens in Spanish unless the address ends in #en'; else bad 'opens in Spanish unless the address ends in #en'; fi
+if grep -qF 'en:{h1:"Our water system, and what could be wearing out the pumps"' "$page"; then ok 'English heading is in the page'; else bad 'English heading is in the page'; fi
 # The only request to another site is the Google Fonts stylesheet.
 out=$(grep -oE '(src|href|action)="(https?:)?//[^"]*"|url\((https?:)?//[^)]*\)|@import[^;]*|fetch\(|XMLHttpRequest|sendBeacon|WebSocket' "$page" | grep -vE '^href="https://fonts\.googleapis\.com/css2\?' || true)
 if [ -z "$out" ]; then ok 'no outside request but Google Fonts'; else bad "no outside request but Google Fonts (found: $out)"; fi
