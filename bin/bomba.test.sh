@@ -32,14 +32,14 @@ cf=deploy/caddy/Caddyfile
 hub=$(awk '/^nave\.pub \{/{p=1} p{print} p&&/^\}/{exit}' "$cf")
 has() { printf '%s\n' "$hub" | grep -qF -- "$1"; }
 if has '@notbomba not path /bomba /bomba/*' && has 'log_skip @notbomba'; then ok 'visit log skips every path but /bomba'; else bad 'visit log skips every path but /bomba'; fi
-if has 'output file /data/visits/bomba.log' && has 'roll_interval 720h' && has 'roll_keep_for 1440h'; then ok 'visit log is in the caddy data volume, rolls every 30 days and keeps rolled files 60 days'; else bad 'visit log is in the caddy data volume, rolls every 30 days and keeps rolled files 60 days'; fi
+if has 'output file /data/visits/bomba.log' && has 'roll_at 00:00' && has 'roll_keep 100' && has 'roll_keep_for 2160h'; then ok 'visit log is in the caddy data volume, rolls daily and keeps rolled files 90 days'; else bad 'visit log is in the caddy data volume, rolls daily and keeps rolled files 90 days'; fi
 if has 'request>headers delete' && has 'request>tls delete' && has 'resp_headers delete'; then ok 'visit log drops request headers, TLS detail and response headers'; else bad 'visit log drops request headers, TLS detail and response headers'; fi
 if [ "$(grep -cE '^[[:space:]]*log( [a-z0-9_]+)? \{' "$cf")" = 2 ] && has 'log {' && [ "$(grep -cE '^[[:space:]]*log_skip ' "$cf")" = 1 ]; then ok 'no other site block logs visits'; else bad 'no other site block logs visits'; fi
 
 # Two lines outside the block that the log needs: without the first, plain-HTTP requests to every path
 # on the hub are logged; without the second, requests to unknown hosts go to the container log.
 if [ "$(awk '/^http:\/\/nave\.pub \{/{p=1;next} p&&/^\}/{exit} p' "$cf" | tr -d '\t')" = 'redir https://nave.pub{uri} 308' ]; then ok 'plain HTTP to the hub redirects from its own block, which has no log'; else bad 'plain HTTP to the hub redirects from its own block, which has no log'; fi
-if awk '/^\{/{p=1} p{print} p&&/^\}/{exit}' "$cf" | tr -d '\t' | grep -A1 -x 'log default {' | grep -qx 'exclude http.log.access'; then ok 'no access lines go to the container log'; else bad 'no access lines go to the container log'; fi
+if awk '/^\{/{p=1} p{print} p&&/^\}/{exit}' "$cf" | tr -d '\t' | sed -n '/^log default {$/,/^}$/p' | grep -qx 'exclude http.log.access'; then ok 'no access lines go to the container log'; else bad 'no access lines go to the container log'; fi
 
 if [ "${1:-}" = --live ]; then
 	url=https://nave.pub/bomba
