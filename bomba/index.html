@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -55,10 +55,10 @@ svg .m{fill:var(--mut)}svg .w{fill:var(--warnk);font-weight:600}svg .b{font-weig
 <header class="strip band">
  <div class="wrap top">
   <div>
-   <h1 data-t="h1">Our water system, and what could be wearing out the pumps</h1>
-   <p data-t="sub">A pump like ours should last years. Ours have lasted about 3.5 months. Here are five possible causes. None is confirmed yet, and each one has a simple check.</p>
+   <h1 data-t="h1">Nuestro sistema de agua, y qué puede estar dañando las bombas</h1>
+   <p data-t="sub">Una bomba como la nuestra debería durar años. Las nuestras han durado como 3 meses y medio. Aquí hay cinco causas posibles. Ninguna está confirmada todavía, y cada una tiene una forma sencilla de revisarla.</p>
   </div>
-  <div class="lang" role="group" aria-label="Language"><button id="en" aria-pressed="true">EN</button><button id="es" aria-pressed="false">ES</button></div>
+  <div class="lang" role="group" aria-label="Idioma"><button id="en" aria-pressed="false">EN</button><button id="es" aria-pressed="true">ES</button></div>
  </div>
 </header>
 
@@ -69,16 +69,16 @@ svg .m{fill:var(--mut)}svg .w{fill:var(--warnk);font-weight:600}svg .b{font-weig
   <p id="stat"></p>
   <div class="exp">
    <div><h2 id="mt"></h2><p id="mw"></p></div>
-   <div class="card"><h3 data-t="chk">How to check</h3><p id="mc"></p></div>
+   <div class="card"><h3 data-t="chk">Cómo revisarlo</h3><p id="mc"></p></div>
   </div>
-  <p class="note" style="margin-top:14px" data-t="nts">Drawing not to scale.</p>
+  <p class="note" style="margin-top:14px" data-t="nts">Dibujo sin escala.</p>
  </div>
 </section>
 
 <section class="band alt">
  <div class="wrap">
-  <h2 data-t="fh">What we have heard so far</h2>
-  <p data-t="fs">These numbers come from conversations, not from measurements. Please correct any that are wrong.</p>
+  <h2 data-t="fh">Lo que hemos escuchado hasta ahora</h2>
+  <p data-t="fs">Estos números vienen de conversaciones, no de mediciones. Por favor corrijan los que estén mal.</p>
   <ul class="facts" id="facts"></ul>
  </div>
 </section>
@@ -108,7 +108,7 @@ es:{h1:"Nuestro sistema de agua, y qué puede estar dañando las bombas",sub:"Un
  {b:"5. Motor caliente o mala corriente",t:"El motor se calienta, o la electricidad no es estable",w:"El voltaje bajo o inestable hace que el motor jale más corriente y se caliente. Sin un panel de protección, nada lo apaga a tiempo. La arena o el sarro en el motor lo empeoran.",c:"Medir el voltaje y los amperios en el panel con la bomba trabajando. Revisar que haya un relé de protección por bajo voltaje y sobrecarga.",s:p=>p?"Baja el voltaje. El motor jala más corriente y se calienta.":"Voltaje normal."}]}
 };
 const $=id=>document.getElementById(id);
-let L=location.hash==='#es'?'es':'en',M=0,t0=performance.now(),raf=null,geo=null;
+let L=location.hash==='#en'?'en':'es',M=0,t0=performance.now(),raf=null,geo=null;
 const rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const s=$('s');
 
@@ -190,7 +190,7 @@ function text(){
 }
 const setL=l=>{L=l;try{location.hash=l=='es'?'es':'en';}catch(e){}text();};
 $('en').addEventListener('click',()=>setL('en'));$('es').addEventListener('click',()=>setL('es'));
-addEventListener('hashchange',()=>{const l=location.hash==='#es'?'es':'en';if(l!=L){L=l;text();}});
+addEventListener('hashchange',()=>{const l=location.hash==='#en'?'en':'es';if(l!=L){L=l;text();}});
 let lastW=0;const ro=new ResizeObserver(()=>{const w=s.clientWidth;if(w!=lastW){lastW=w;build();}});
 text();ro.observe(s);
 if(!rm)loop();else{t0=performance.now()-4000;frame(4);}
