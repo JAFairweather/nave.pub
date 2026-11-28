@@ -34,7 +34,7 @@ nave.pub {
 	# /asada/esterones to /asada/esterones/. bin/esterones.test.sh checks the page and these two lines.
 	@esterones path /asada/esterones /asada/esterones/*
 	header @esterones X-Robots-Tag "noindex, nofollow"
-	# Page visit log: who opens the three pages named in @pages (asked for by the owner, 27 Nov 2026).
+	# Page visit log: who opens the pages named in @pages (asked for by the owner, 27 Nov 2026).
 	# One line per request to those pages and nothing else on the hub: log_skip drops every other
 	# path. A line keeps the time, the visitor's address, the path without its query string, the
 	# status, and the browser and referring page (ua, referer; the referring page also without its
@@ -47,8 +47,8 @@ nave.pub {
 	# The http://nave.pub block below is part of this: without it the redirect from plain HTTP would
 	# log every path. Read the log with deploy/ops/page-visits.sh, which keeps the same list of
 	# pages. bin/pagestats.test.sh checks these lines.
-	@pages path /bomba /bomba/* /sistema /sistema/* /asada/esterones /asada/esterones/*
-	@notpages not path /bomba /bomba/* /sistema /sistema/* /asada/esterones /asada/esterones/*
+	@pages path /bomba /bomba/* /sistema /sistema/* /asada/esterones /asada/esterones/* /nuestra-agua /nuestra-agua/*
+	@notpages not path /bomba /bomba/* /sistema /sistema/* /asada/esterones /asada/esterones/* /nuestra-agua /nuestra-agua/*
 	log_skip @notpages
 	log_append @pages ua {header.User-Agent}
 	log_append @pages referer {header.Referer}

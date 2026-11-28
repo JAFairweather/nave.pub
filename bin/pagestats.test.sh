@@ -4,7 +4,7 @@
 #   bin/pagestats.test.sh            # the Caddyfile and the scripts in this checkout
 #   bin/pagestats.test.sh --live     # also https://nave.pub/pagestats/, and on the box the log and the job
 #
-# Three pages are logged (/bomba, /sistema, /asada/esterones) and nothing else on the hub. The log
+# Four pages are logged (/bomba, /sistema, /asada/esterones, /nuestra-agua) and nothing else on the hub. The log
 # holds visitor addresses, so it stays on the box; /pagestats is public and shows counts only.
 set -u
 cd "$(dirname "$0")/.."
@@ -16,9 +16,9 @@ chk() { if eval "$2"; then ok "$1"; else bad "$1"; fi; }
 cf=deploy/caddy/Caddyfile
 hub=$(awk '/^nave\.pub \{/{p=1} p{print} p&&/^\}/{exit}' "$cf")
 has() { printf '%s\n' "$hub" | grep -qF -- "$1"; }
-list='/bomba /bomba/* /sistema /sistema/* /asada/esterones /asada/esterones/*'
+list='/bomba /bomba/* /sistema /sistema/* /asada/esterones /asada/esterones/* /nuestra-agua /nuestra-agua/*'
 echo "Caddyfile: $cf"
-chk 'the log takes the three pages and skips every other path' 'has "@pages path $list" && has "@notpages not path $list" && has "log_skip @notpages"'
+chk 'the log takes the four pages and skips every other path' 'has "@pages path $list" && has "@notpages not path $list" && has "log_skip @notpages"'
 chk 'the log is in the caddy data volume, rolls daily and keeps rolled files 90 days' 'has "output file /data/visits/pages.log" && has "roll_at 00:00" && has "roll_keep 100" && has "roll_keep_for 2160h"'
 chk 'the log drops request headers, query strings, TLS detail and response headers' 'has "request>headers delete" && has "request>tls delete" && has "resp_headers delete" && has "request>uri regexp \"\\?.*\" \"\"" && has "referer regexp \"\\?.*\" \"\""'
 chk 'no other site block logs visits' '[ "$(grep -cE "^[[:space:]]*log( [a-z0-9_]+)? \{" "$cf")" = 2 ] && has "log {" && [ "$(grep -cE "^[[:space:]]*log_skip " "$cf")" = 1 ]'
@@ -33,7 +33,7 @@ chk '/pagestats lists no directory and hides dot files' '! printf "%s\n" "$ps" |
 chk '/pagestats is not itself logged' '! printf "%s\n" "$hub" | grep -E "^[[:space:]]*@pages path " | grep -q pagestats'
 # The script that reads the log knows the same pages.
 want=$(printf '%s\n' $list | grep -v '\*$' | sed 's#$#/#' | sort | tr '\n' ' ')
-got=$(sed -n "/^PAGES = \[/,/\]\$/p" deploy/ops/page-visits.sh | grep -oE "\('/[a-z/]+/'" | tr -d "('" | sort | tr '\n' ' ')
+got=$(sed -n "/^PAGES = \[/,/\]\$/p" deploy/ops/page-visits.sh | grep -oE "\('/[a-z/-]+/'" | tr -d "('" | sort | tr '\n' ' ')
 chk "page-visits.sh lists the same pages ($got)" '[ -n "$got" ] && [ "$got" = "$want" ]'
 
 echo "scripts: sample log"
@@ -116,7 +116,7 @@ if [ "${1:-}" = --live ]; then
 	code=$(curl -s -m 20 -o "$t/body" -D "$t/head" -w '%{http_code}' "$url/")
 	chk "/pagestats/ answers 200 (got $code)" '[ "$code" = 200 ]'
 	chk 'it is HTML, marked noindex and not cached' 'grep -qiE "^content-type: *text/html" "$t/head" && grep -qiE "^x-robots-tag: *noindex" "$t/head" && grep -qiE "^cache-control: *no-store" "$t/head"'
-	chk 'it lists the three pages' 'grep -q "nave.pub/bomba/<" "$t/body" && grep -q "nave.pub/sistema/<" "$t/body" && grep -q "nave.pub/asada/esterones/<" "$t/body"'
+	chk 'it lists the four pages' 'grep -q "nave.pub/bomba/<" "$t/body" && grep -q "nave.pub/sistema/<" "$t/body" && grep -q "nave.pub/asada/esterones/<" "$t/body" && grep -q "nave.pub/nuestra-agua/<" "$t/body"'
 	redir=$(curl -s -m 20 -o /dev/null -w '%{http_code} %{redirect_url}' "$url")
 	chk "/pagestats redirects to the slash form ($redir)" '[ "$redir" = "308 $url/" ]'
 	chk 'nothing else in the volume is served' '[ "$(curl -s -m 20 -o /dev/null -w "%{http_code}" "$url/../caddy/")" != 200 ] && [ "$(curl -s -m 20 -o /dev/null -w "%{http_code}" --path-as-is "$url/../visits/pages.log")" != 200 ]'
@@ -126,10 +126,10 @@ if [ "${1:-}" = --live ]; then
 	vlog=$vol/visits/pages.log
 	if [ "$(id -u)" = 0 ] && [ -d /var/lib/docker/volumes ]; then
 		mark="visit-log-check-$$-$RANDOM"
-		for p in /bomba/ /sistema/ /asada/esterones/ / /pagestats/; do curl -s -m 20 -o /dev/null -A "$mark" "https://nave.pub$p?probe=1"; done
+		for p in /bomba/ /sistema/ /asada/esterones/ /nuestra-agua/ / /pagestats/; do curl -s -m 20 -o /dev/null -A "$mark" "https://nave.pub$p?probe=1"; done
 		sleep 1
 		got=$(grep -F "$mark" "$vlog" 2>/dev/null | grep -oE '"uri":"[^"]*"' | sort | tr '\n' ' ')
-		chk "visit log has the three page requests, without query strings, and no other ($got)" '[ "$got" = "\"uri\":\"/asada/esterones/\" \"uri\":\"/bomba/\" \"uri\":\"/sistema/\" " ]'
+		chk "visit log has the four page requests, without query strings, and no other ($got)" '[ "$got" = "\"uri\":\"/asada/esterones/\" \"uri\":\"/bomba/\" \"uri\":\"/nuestra-agua/\" \"uri\":\"/sistema/\" " ]'
 		chk 'the job is in root'"'"'s crontab' 'crontab -l 2>/dev/null | grep -qF "pagestats-cron.sh run"'
 		chk 'the page was written in the last 10 minutes' '[ -n "$(find "$vol/pagestats/index.html" -mmin -10 2>/dev/null)" ]'
 	else

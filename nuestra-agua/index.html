@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nuestra agua de Esterones</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday: a picture story for neighbours, read on a phone, few words, big letters
+   IDEA a health-post wall poster told in six pictures: the drum on a stand, the tank on the hill, the pump, the tank emptying
+   PICTURE one moving drawing per step; the water itself is the thing that moves
+   COLOUR water blue leads, Guanacaste green hills and earth support, sun yellow marks the step number
+   TYPE Atkinson Hyperlegible 700 + 400, large
+   LAYOUT one column, phone first: step title, drawing, two or three short sentences, a listen button */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0b1420);--ink:light-dark(#14202b,#eef3f8);--mut:light-dark(#4d5b68,#a9b6c2);--line:light-dark(#d5dfe8,#24384c);--blue:#0b57b8;--water:light-dark(#1f7ae0,#3d94f5);--wlt:light-dark(#9fd0ff,#1d5aa0);--sky:light-dark(#dff1ff,#10233d);--h1:light-dark(#8fce78,#2f5f2c);--h2:light-dark(#c7a57a,#4a3a26);--tank:light-dark(#f4f1ea,#39424f);--air:light-dark(#fffaf0,#1a202b);--pump:light-dark(#f47230,#ef7a3c);--roof:light-dark(#b5533a,#c96a4f);--warn:light-dark(#d1281a,#ff8a7d);--sun:#ffc93c;--ok:light-dark(#2f9e4f,#58c878);--card:light-dark(#f3f8fd,#111f30)}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:19px/1.5 "Atkinson Hyperlegible",system-ui,sans-serif;overflow-x:clip}
+header{background:var(--blue);color:#fff;padding:22px max(5vw,16px) 26px}
+.in{max-width:560px;margin:0 auto}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+h1{font-size:clamp(32px,9vw,44px);line-height:1.05;margin:0 0 8px;letter-spacing:-.01em}
+header p{margin:0;font-size:20px;color:#e3eeff}
+.lang{display:flex;gap:4px;flex:none}
+button{font:700 17px "Atkinson Hyperlegible",sans-serif;min-height:48px;padding:0 16px;border-radius:10px;cursor:pointer}
+.lang button{border:1px solid #ffffff90;background:transparent;color:#fff;min-width:52px}
+.lang button[aria-pressed=true]{background:#fff;color:var(--blue)}
+button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+section{padding:28px max(5vw,16px) 8px}
+h2{font-size:clamp(24px,6.6vw,30px);line-height:1.12;margin:0 0 12px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center;text-wrap:balance}
+h2 i{font-style:normal;width:44px;height:44px;border-radius:50%;background:var(--sun);color:#14202b;display:grid;place-items:center;font-size:24px}
+.pic{border-radius:16px;overflow:hidden;background:var(--sky);border:1px solid var(--line)}
+.pic svg{display:block;width:100%;height:auto}
+svg text{font:700 14px "Atkinson Hyperlegible",sans-serif;fill:var(--ink);paint-order:stroke;stroke:var(--halo,var(--sky));stroke-width:4px;stroke-linejoin:round}
+svg .w{fill:var(--warn)}svg .bl{fill:var(--water)}svg .big{font-size:26px}svg .cap{font-size:15px}
+.say p{margin:12px 0 0;max-width:34em}
+.say p b{white-space:nowrap}
+.listen{margin-top:14px;display:inline-flex;align-items:center;gap:10px;border:2px solid var(--water);background:transparent;color:var(--ink)}
+.listen svg{width:24px;height:24px;flex:none}
+.listen[aria-pressed=true]{background:var(--water);color:#fff}
+.do{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:10px}
+.do li{display:grid;grid-template-columns:52px minmax(0,1fr);gap:14px;align-items:center;background:var(--card);border-radius:14px;padding:12px 14px}
+.do svg{width:52px;height:52px}
+h3{font-size:22px;margin:22px 0 0}
+footer{padding:24px max(5vw,16px) 40px;color:var(--mut);font-size:15px}
+</style>
+</head>
+<body>
+<header><div class="in">
+ <div class="top"><h1 data-t="h1"></h1><div class="lang" role="group" aria-label="Idioma"><button id="es" aria-pressed="true">ES</button><button id="en" aria-pressed="false">EN</button></div></div>
+ <p data-t="sub"></p>
+</div></header>
+<main id="main"></main>
+<footer><div class="in" data-t="foot"></div></footer>
+
+<script>
+{
+const T={
+es:{h1:"Nuestra agua de Esterones",sub:"Cómo llega el agua a su casa, y por qué hay que cuidar el tanque.",listen:"Escuchar",stop:"Parar",foot:"Los números son aproximados. Dibujos sin escala.",doh:"Lo que podemos hacer",
+ voice:"es",
+ s:[
+ {t:"El agua siempre baja",p:["El agua corre sola hacia abajo, por su peso.","Piense en un estañón en alto con una manguera. Entre más alto está el estañón, más fuerte sale el agua."]},
+ {t:"Nuestro tanque es el estañón del pueblo",p:["El tanque está arriba, en el cerro. De ahí el agua baja sola a todas las casas, sin motor.","Las casas de abajo, como en el pueblo, Barco Quebrado y Buena Vista, reciben el agua con más fuerza.","Las casas altas, como en Alto de Esterones, la reciben con menos fuerza."]},
+ {t:"La bomba sube el agua al tanque",p:["El agua está abajo, en el pozo. La bomba la empuja cuesta arriba, por unos 500 metros de tubería, hasta el tanque.","La bomba es el único motor de todo el sistema. Si la bomba se para, al tanque no le entra agua."]},
+ {t:"La bomba llena despacio",p:["La bomba sube unos <b>10.000 litros</b> por hora. Son como 50 estañones. No puede subir más.","Llenar el tanque vacío tarda unas <b>10 horas</b>.","Es como la batería del celular: se carga despacio y se gasta rápido. En la mañana y en la tarde gastamos más agua de la que entra, y el tanque baja. En la noche se recupera."]},
+ {t:"Si el tanque se vacía",p:["Las casas altas se quedan sin agua primero. Después, todas.","La tubería se llena de aire. Cuando el agua vuelve, el aire se queda atrapado en las partes altas, como un tapón.","El tubo tose y escupe, y el agua puede tardar horas en llegar."]},
+ {t:"Por qué a veces se cierra el agua",p:["Cuando gastamos más agua de la que la bomba sube, el tanque baja y baja.","Con el tanque bajo, el agua llega sin fuerza. Las casas altas se quedan sin agua.","Por eso a veces la ASADA cierra la salida del tanque por unas horas. Así toda el agua que sube la bomba se queda en el tanque, y el tanque se llena más rápido.","Unas horas sin agua evitan que el tanque se vacíe y que entre aire a la tubería. Cuando se abre de nuevo, hay agua con fuerza para todos."]},
+ {t:"Por eso hay que cuidar el nivel del tanque",p:["El tanque es la reserva de agua de todo el pueblo. Una sola bomba lo llena.","Si la bomba se para con el tanque bajo, nos quedamos sin agua muy pronto. Con el tanque lleno, el agua alcanza para más tiempo."]}],
+ act:["Gastar menos agua en la mañana y en la tarde.","Arreglar los tubos que gotean y las fugas.","No regar ni lavar carros cuando el tanque está bajo.","Avisar a la ASADA si ve una fuga."],
+ l:{low:"Estañón bajo: sale poquita",high:"Estañón alto: sale con fuerza",tank:"Tanque",town:"El pueblo",alto:"Alto de Esterones",much:"Mucha fuerza",little:"Poca fuerza",lvl:"Nivel del tanque",well:"Pozo",pump:"Bomba",pipe:"500 m de tubería",up:"Sube 70 m",inn:"Entra",rate:"10.000 L",per:"por hora",out:"Sale",ph:["Noche","Mañana","Mediodía","Tarde"],c5:["El tanque se vacía","Las casas altas pierden el agua primero","El agua vuelve...","...pero el aire estorba","Hasta que sale el aire"],air:"Aire",c6:["Gastamos más de lo que entra","La ASADA cierra la salida","Cerrado: el tanque se llena","Se abre: agua con fuerza para todos"],ok:"Bien",care:"Cuidado",bad:"Peligro",one:"1 bomba"}},
+en:{h1:"Our Esterones water",sub:"How water gets to your house, and why we must look after the tank.",listen:"Listen",stop:"Stop",foot:"The numbers are approximate. Drawings not to scale.",doh:"What we can do",
+ voice:"en",
+ s:[
+ {t:"Water always runs downhill",p:["Water runs down on its own, by its weight.","Think of a drum up on a stand with a hose. The higher the drum, the stronger the water comes out."]},
+ {t:"Our tank is the town's drum",p:["The tank sits up on the hill. From there the water runs down to every house by itself, with no motor.","Low houses, as in the town, Barco Quebrado and Buena Vista, get strong water.","High houses, as in Alto de Esterones, get weaker water."]},
+ {t:"The pump lifts the water to the tank",p:["The water is down in the well. The pump pushes it uphill, through about 500 meters of pipe, to the tank.","The pump is the only motor in the whole system. If the pump stops, no water goes into the tank."]},
+ {t:"The pump fills slowly",p:["The pump lifts about <b>10,000 liters</b> an hour. That is about 50 drums. It cannot lift more.","Filling the empty tank takes about <b>10 hours</b>.","It is like a phone battery: it charges slowly and drains fast. In the morning and the evening we use more water than comes in, and the tank goes down. At night it recovers."]},
+ {t:"If the tank runs empty",p:["The high houses lose water first. Then everyone.","The pipes fill with air. When the water comes back, the air stays trapped in the high parts, like a cork.","The tap coughs and spits, and the water can take hours to arrive."]},
+ {t:"Why the water is sometimes shut off",p:["When we use more water than the pump lifts, the tank goes down and down.","With the tank low, the water arrives weak. The high houses get none.","So sometimes the ASADA closes the tank outlet for a few hours. Then all the water the pump lifts stays in the tank, and the tank fills faster.","A few hours without water keep the tank from running empty and keep air out of the pipes. When it opens again, there is strong water for everyone."]},
+ {t:"That is why we must look after the tank level",p:["The tank is the water reserve for the whole town. One pump fills it.","If the pump stops with the tank low, we run out of water very soon. With the tank full, the water lasts longer."]}],
+ act:["Use less water in the morning and the evening.","Fix dripping taps and leaks.","No watering or car washing when the tank is low.","Tell the ASADA if you see a leak."],
+ l:{low:"Low drum: weak flow",high:"High drum: strong flow",tank:"Tank",town:"The town",alto:"Alto de Esterones",much:"Strong",little:"Weak",lvl:"Tank level",well:"Well",pump:"Pump",pipe:"500 m of pipe",up:"70 m climb",inn:"In",rate:"10,000 L",per:"an hour",out:"Out",ph:["Night","Morning","Midday","Evening"],c5:["The tank runs empty","The high houses lose water first","The water comes back...","...but the air is in the way","Until the air gets out"],air:"Air",c6:["We use more than comes in","The ASADA closes the outlet","Closed: the tank fills up","Open again: strong water for all"],ok:"Good",care:"Careful",bad:"Danger",one:"1 pump"}}
+};
+let L=location.hash==='#en'?'en':'es';
+const rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const ease=u=>u<0?0:u>1?1:u*u*(3-2*u);
+const cosI=(K,x)=>{for(let i=1;i<K.length;i++)if(x<=K[i][0]){const[a,ya]=K[i-1],[b,yb]=K[i],u=(1-Math.cos(Math.PI*(x-a)/(b-a)))/2;return ya+(yb-ya)*u;}return K[K.length-1][1];};
+const hillD=(K,H)=>{let d=`M0,${cosI(K,0).toFixed(1)}`;for(let x=4;x<=360;x+=4)d+=` L${x},${cosI(K,x).toFixed(1)}`;return d+` V${H} H0 Z`;};
+const DEF=`<defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--h1)"/><stop offset="1" stop-color="var(--h2)"/></linearGradient></defs>`;
+const house=(x,y)=>`<rect x="${x-13}" y="${y-18}" width="26" height="18" fill="var(--tank)" stroke="var(--ink)" stroke-width="1.5"/><path d="M${x-17},${y-18} L${x},${y-31} L${x+17},${y-18} Z" fill="var(--roof)" stroke="var(--ink)" stroke-width="1.5"/>`;
+const KA=[[0,100],[36,82],[92,82],[200,236],[318,116],[360,112]];
+const PA=[];for(let x=88;x<=340;x+=4)PA.push([x,cosI(KA,x)+7]);
+const runD=ok=>{let d='',pen=false;for(const p of PA){if(ok(p)){d+=(pen?' L':' M')+p[0]+','+p[1].toFixed(1);pen=true;}else pen=false;}return d;};
+const K3=[[0,236],[70,236],[250,84],[360,84]];
+let P3='M40,250 V230';for(let x=44;x<=262;x+=4)P3+=` L${x},${(cosI(K3,x)+6).toFixed(1)}`;P3+=' V36 H276 V46';
+
+const SC=[
+// 1 drum on a stand
+{svg:l=>`<svg viewBox="0 0 360 280">${DEF}<rect y="250" width="360" height="30" fill="url(#hg)"/><text id="a1" class="cap" x="180" y="26" text-anchor="middle"></text>
+ <line id="a2" x1="72" x2="72" y1="250" stroke="var(--ink)" stroke-width="4"/><line id="a3" x1="108" x2="108" y1="250" stroke="var(--ink)" stroke-width="4"/>
+ <path id="a4" fill="none" stroke="var(--water)" stroke-width="5" stroke-linejoin="round"/>
+ <g id="a5"><rect x="62" y="-6" width="56" height="6" fill="var(--ink)"/><rect x="68" y="-62" width="44" height="56" rx="6" fill="var(--water)" stroke="var(--ink)" stroke-width="2"/><rect x="68" y="-62" width="44" height="14" rx="6" fill="var(--wlt)" stroke="var(--ink)" stroke-width="2"/><line x1="68" x2="112" y1="-34" y2="-34" stroke="var(--ink)" stroke-width="1.5" opacity=".5"/></g>
+ <rect x="216" y="208" width="10" height="42" fill="var(--mot,#888)" stroke="var(--ink)" stroke-width="1.5"/><path id="a6" fill="none" stroke="var(--water)" stroke-linecap="round"/><ellipse id="a7" cy="251" ry="4" fill="var(--water)" opacity=".6"/></svg>`,
+ upd(r,t,l){const c=t%9,h=c<3?40:c<4.5?40+110*ease((c-3)/1.5):c<7.5?150:150-110*ease((c-7.5)/1.5),py=250-h;
+  r.a5.setAttribute('transform',`translate(0,${py})`);r.a2.setAttribute('y2',py);r.a3.setAttribute('y2',py);
+  r.a4.setAttribute('d',`M112,${py-10} H132 V243 H221 V214`);
+  const Ln=14+0.62*h;r.a6.setAttribute('d',`M226,214 Q${226+Ln*0.65},210 ${226+Ln},250`);r.a6.setAttribute('stroke-width',(2.5+h/36).toFixed(1));
+  r.a6.setAttribute('stroke-dasharray','9 3');r.a6.setAttribute('stroke-dashoffset',(-t*60).toFixed(0));
+  r.a7.setAttribute('cx',226+Ln);r.a7.setAttribute('rx',6+h/14);r.a1.textContent=h<95?l.low:l.high;}},
+// 2 the tank is the town's drum
+{svg:l=>`<svg viewBox="0 0 360 280">${DEF}<path d="${hillD(KA,280)}" fill="url(#hg)"/>
+ <line x1="88" x2="360" y1="52" y2="52" stroke="var(--water)" stroke-width="2" stroke-dasharray="7 5"/><text class="bl" x="354" y="44" text-anchor="end">${l.lvl}</text>
+ <rect x="42" y="44" width="46" height="38" fill="var(--wlt)" stroke="var(--ink)" stroke-width="2"/><text x="65" y="36" text-anchor="middle">${l.tank}</text>
+ <path d="${runD(()=>true)}" fill="none" stroke="var(--water)" stroke-width="6" stroke-linejoin="round"/><path id="b1" d="${runD(()=>true)}" fill="none" stroke="#fff" stroke-width="1.8" stroke-dasharray="5 10"/>
+ ${house(200,236)}${house(322,116)}
+ <path id="b2" d="M214,224 Q240,214 252,238" fill="none" stroke="var(--water)" stroke-width="6" stroke-linecap="round" stroke-dasharray="9 3"/>
+ <path id="b3" d="M336,106 Q342,104 344,114" fill="none" stroke="var(--water)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="5 4"/>
+ <text x="200" y="184" text-anchor="middle">${l.much}</text><text x="300" y="118" text-anchor="end">${l.little}</text>
+ <g style="--halo:var(--h2)"><text x="200" y="264" text-anchor="middle">${l.town}</text></g><text x="300" y="100" text-anchor="end">${l.alto}</text></svg>`,
+ upd(r,t){const o=(-t*30).toFixed(0);r.b1.setAttribute('stroke-dashoffset',o);r.b2.setAttribute('stroke-dashoffset',(-t*70).toFixed(0));r.b3.setAttribute('stroke-dashoffset',(-t*20).toFixed(0));}},
+// 3 the pump lifts the water
+{svg:l=>`<svg viewBox="0 0 360 280">${DEF}<path d="${hillD(K3,280)}" fill="url(#hg)"/>
+ <rect x="27" y="236" width="26" height="44" fill="var(--wlt)" stroke="var(--ink)" stroke-width="1.5"/><rect x="32" y="250" width="16" height="24" rx="3" fill="var(--pump)" stroke="var(--ink)" stroke-width="1.5"/>
+ <path id="c1" d="${P3}" fill="none" stroke="var(--water)" stroke-width="6" stroke-linejoin="round"/><path id="c2" d="${P3}" fill="none" stroke="#fff" stroke-width="1.8" stroke-dasharray="5 10"/>
+ <rect x="262" y="44" width="58" height="40" fill="var(--sky)" stroke="var(--ink)" stroke-width="2"/><rect id="c3" x="263" width="56" fill="var(--wlt)"/>
+ <circle id="c4" r="8" fill="var(--water)" stroke="#fff" stroke-width="2.5"/><circle id="c5" r="8" fill="var(--water)" stroke="#fff" stroke-width="2.5"/>
+ <text x="291" y="34" text-anchor="middle">${l.tank}</text><text x="40" y="226" text-anchor="middle">${l.well}</text>
+ <g style="--halo:var(--h2)"><text x="60" y="268">${l.pump}</text><text x="214" y="196" text-anchor="middle" transform="rotate(-40 214 196)">${l.pipe}</text></g>
+ <line x1="14" x2="262" y1="62" y2="62" stroke="var(--mut)" stroke-dasharray="3 5"/><line x1="14" x2="14" y1="70" y2="228" stroke="var(--ink)" stroke-width="2"/><path d="M8,72 L14,62 L20,72 Z M8,226 L14,236 L20,226 Z" fill="var(--ink)"/><text x="24" y="150">${l.up}</text></svg>`,
+ upd(r,t){const len=r.c1.getTotalLength();[r.c4,r.c5].forEach((e,i)=>{const p=r.c1.getPointAtLength(len*((t/5+i/2)%1));e.setAttribute('cx',p.x);e.setAttribute('cy',p.y);});
+  r.c2.setAttribute('stroke-dashoffset',(-t*40).toFixed(0));const lv=0.15+0.8*((t%14)/14),y=83-lv*37;r.c3.setAttribute('y',y);r.c3.setAttribute('height',83-y);}},
+// 4 the pump fills slowly
+{svg:l=>`<svg viewBox="0 0 360 280"><rect id="d0" width="360" height="280" fill="#0a1830" opacity="0"/><rect y="252" width="360" height="28" fill="var(--h2)"/>
+ <circle id="d1" r="15"/><text id="d2" class="cap" x="180" y="30" text-anchor="middle"></text>
+ <rect x="110" y="70" width="140" height="150" fill="var(--air)" stroke="var(--ink)" stroke-width="2.5"/><rect id="d3" x="111.5" width="137" fill="var(--wlt)"/>
+ <rect x="14" y="80" width="98" height="9" fill="var(--water)" stroke="var(--ink)" stroke-width="1.2"/><line id="d4" x1="118" x2="118" y1="89" stroke="var(--water)" stroke-width="3.5" stroke-dasharray="8 3"/>
+ <text x="14" y="52">${l.inn}</text><text x="14" y="70" class="bl">${l.rate}</text><text x="14" y="108">${l.per}</text>
+ <rect x="248" y="208" width="40" height="10" fill="var(--water)" stroke="var(--ink)" stroke-width="1.2"/><line id="d5" x1="292" x2="292" y1="213" y2="252" stroke="var(--water)" stroke-dasharray="8 3" stroke-linecap="round"/><text x="304" y="240">${l.out}</text>
+ <text id="d6" class="big" x="180" y="154" text-anchor="middle" style="--halo:transparent"></text>
+ <rect x="296" y="94" width="18" height="6" rx="2" fill="var(--ink)"/><rect x="284" y="100" width="42" height="84" rx="7" fill="var(--air)" stroke="var(--ink)" stroke-width="2.5"/><rect id="d7" x="289" width="32" rx="3"/></svg>`,
+ upd(r,t,l){const hr=(t%20)/20*24,KF=[[0,55],[5,90],[9,55],[16,62],[20,30],[24,55]];let lv=55,sl=0;for(let i=1;i<KF.length;i++)if(hr<=KF[i][0]){const[a,la]=KF[i-1],[b,lb]=KF[i];lv=la+(lb-la)*(hr-a)/(b-a);sl=(lb-la)/(b-a);break;}
+  const y=219-lv/100*147.5;r.d3.setAttribute('y',y);r.d3.setAttribute('height',219-y);r.d4.setAttribute('y2',y);r.d4.setAttribute('stroke-dashoffset',(-t*50).toFixed(0));
+  const out=Math.max(0.3,1-sl/7);r.d5.setAttribute('stroke-width',(1.5+out*4.2).toFixed(1));r.d5.setAttribute('stroke-dashoffset',(-t*60).toFixed(0));
+  r.d6.textContent=Math.round(lv)+'%';const col=lv>60?'var(--ok)':lv>40?'var(--sun)':'var(--warn)',bh=lv/100*74;r.d7.setAttribute('y',179-bh);r.d7.setAttribute('height',bh);r.d7.setAttribute('fill',col);
+  const day=hr>=5.5&&hr<18.5,u=day?(hr-5.5)/13:((hr+5.5)%24)/11;r.d1.setAttribute('cx',40+280*u);r.d1.setAttribute('cy',44-26*Math.sin(Math.PI*u)+14);r.d1.setAttribute('fill',day?'var(--sun)':'light-dark(#8fa3c0,#e8eef7)');
+  r.d0.setAttribute('opacity',day?0:0.1);r.d2.textContent=l.ph[hr<5||hr>=20?0:hr<9?1:hr<16?2:3];}},
+// 5 if the tank runs empty
+{svg:l=>`<svg viewBox="0 0 360 280">${DEF}<path d="${hillD(KA,280)}" fill="url(#hg)"/><text id="e0" class="cap" x="184" y="24" text-anchor="middle"></text>
+ <rect x="42" y="44" width="46" height="38" fill="var(--air)" stroke="var(--ink)" stroke-width="2"/><rect id="e1" x="43.2" width="43.6" fill="var(--wlt)"/>
+ <path d="${runD(()=>true)}" fill="none" stroke="var(--ink)" stroke-width="9" stroke-linejoin="round" opacity=".35"/><path d="${runD(()=>true)}" fill="none" stroke="var(--air)" stroke-width="6" stroke-linejoin="round"/>
+ <path id="e5" fill="none" stroke="var(--warn)" stroke-width="12" stroke-linecap="round"/><path id="e6" fill="none" stroke="var(--air)" stroke-width="6" stroke-linecap="round"/>
+ <path id="e2" fill="none" stroke="var(--water)" stroke-width="6" stroke-linejoin="round"/>
+ ${house(200,236)}${house(322,116)}
+ <path id="e3" d="M214,224 Q240,214 252,238" fill="none" stroke="var(--water)" stroke-width="6" stroke-linecap="round" stroke-dasharray="9 3"/>
+ <path id="e4" d="M336,106 Q342,104 344,114" fill="none" stroke="var(--water)" stroke-width="2.5" stroke-linecap="round"/>
+ <path id="e7" d="M214,214 l14,14 m0,-14 l-14,14" stroke="var(--warn)" stroke-width="4" stroke-linecap="round"/><path id="e8" d="M336,98 l12,12 m0,-12 l-12,12" stroke="var(--warn)" stroke-width="4" stroke-linecap="round"/>
+ <text id="e9" class="w" x="262" y="150" text-anchor="end">${l.air}</text>
+ <g style="--halo:var(--h2)"><text x="200" y="264" text-anchor="middle">${l.town}</text></g><text x="300" y="74" text-anchor="end">${l.alto}</text></svg>`,
+ upd(r,t,l){const c=t%19;let ty=50,has=()=>true,lo=true,hi=true,pk=null,ph=0,spit=false;
+  if(c<4){ty=50+31*ease(c/4);}
+  else if(c<8){ph=1;ty=81;const yL=82+152*ease((c-4)/4);has=p=>p[1]>yL;hi=c<4.6;lo=c<7;}
+  else if(c<12){ph=2;ty=81-31*ease((c-8)/2);const xf=88+174*ease((c-9)/3);has=p=>p[0]<xf||p[1]>234;hi=false;lo=xf>204;}
+  else if(c<16.5){ph=3;has=p=>p[0]<262;hi=false;pk=[262,340];spit=true;}
+  else{ph=4;const a=262+78*ease((c-16.5)/2);has=p=>p[0]<a;hi=a>325;pk=a<338?[a,340]:null;}
+  r.e1.setAttribute('y',ty);r.e1.setAttribute('height',Math.max(0,81.5-ty));r.e2.setAttribute('d',runD(has));
+  const pd=pk?runD(p=>p[0]>=pk[0]&&p[0]<=pk[1]):'';r.e5.setAttribute('d',pd);r.e6.setAttribute('d',pd);r.e9.style.display=pk?'':'none';
+  r.e3.style.display=lo?'':'none';r.e3.setAttribute('stroke-dashoffset',(-t*70).toFixed(0));r.e7.style.display=lo?'none':'';
+  const sp=spit&&Math.floor(t*5)%3==0;r.e4.style.display=hi||sp?'':'none';r.e8.style.display=hi?'none':'';
+  r.e0.textContent=l.c5[ph];}},
+// 6 why the outlet is sometimes closed
+{svg:l=>`<svg viewBox="0 0 360 280">${DEF}<path d="${hillD(KA,280)}" fill="url(#hg)"/><text id="g0" class="cap" x="196" y="18" text-anchor="middle"></text>
+ <path d="M6,40 H40 V46" fill="none" stroke="var(--water)" stroke-width="4"/><line id="g9" x1="40" x2="40" y1="46" stroke="var(--water)" stroke-width="3" stroke-dasharray="6 3"/>
+ <rect x="30" y="30" width="58" height="52" fill="var(--air)" stroke="var(--ink)" stroke-width="2"/><rect id="g1" x="31.2" width="55.6" fill="var(--wlt)"/><text id="g2" x="59" y="62" text-anchor="middle" style="--halo:transparent"></text>
+ <path d="${runD(()=>true)}" fill="none" stroke="var(--water)" stroke-width="6" stroke-linejoin="round"/><path id="g3" d="${runD(()=>true)}" fill="none" stroke="#fff" stroke-width="1.8" stroke-dasharray="5 10"/>
+ <circle id="g4" cx="104" cy="92" r="11" stroke="var(--ink)" stroke-width="2"/><line id="g5" x1="104" y1="92" x2="104" y2="92" stroke="var(--ink)" stroke-width="5" stroke-linecap="round"/>
+ ${house(200,236)}${house(322,116)}
+ <path id="g6" d="M214,224 Q240,214 252,238" fill="none" stroke="var(--water)" stroke-linecap="round" stroke-dasharray="9 3"/>
+ <path id="g7" d="M336,106 Q342,104 344,114" fill="none" stroke="var(--water)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="5 4"/>
+ <path id="g8" d="M214,214 l14,14 m0,-14 l-14,14" stroke="var(--warn)" stroke-width="4" stroke-linecap="round"/><path id="ga" d="M336,98 l12,12 m0,-12 l-12,12" stroke="var(--warn)" stroke-width="4" stroke-linecap="round"/>
+ <g style="--halo:var(--h2)"><text x="200" y="264" text-anchor="middle">${l.town}</text></g><text x="300" y="74" text-anchor="end">${l.alto}</text></svg>`,
+ upd(r,t,l){const c=t%17;let lv,open=1,ph=0,lo=1,hi=1;
+  if(c<5){lv=95-75*ease(c/5);lo=1-0.6*ease(c/5);hi=c<2.4?1:0;}
+  else if(c<6){ph=1;lv=20;open=1-ease(c-5);lo=0.4*open;hi=0;}
+  else if(c<10.5){ph=2;lv=20+75*ease((c-6)/4.5);open=0;lo=0;hi=0;}
+  else if(c<11.5){ph=3;lv=95;open=ease(c-10.5);lo=open;hi=open>0.6?1:0;}
+  else{ph=3;lv=95;}
+  const y=81-lv/100*50;r.g1.setAttribute('y',y);r.g1.setAttribute('height',81-y);r.g2.textContent=Math.round(lv)+'%';r.g9.setAttribute('y2',y);r.g9.setAttribute('stroke-dashoffset',(-t*40).toFixed(0));
+  const a=(1-open)*Math.PI/2+0.96,dx=Math.cos(a)*15,dy=Math.sin(a)*15;r.g5.setAttribute('x1',104-dx);r.g5.setAttribute('y1',92-dy);r.g5.setAttribute('x2',104+dx);r.g5.setAttribute('y2',92+dy);
+  r.g4.setAttribute('fill',open>0.5?'var(--ok)':'var(--warn)');
+  r.g3.style.display=open>0.1?'':'none';r.g3.setAttribute('stroke-dashoffset',(-t*30).toFixed(0));
+  r.g6.style.display=lo>0.05?'':'none';r.g6.setAttribute('stroke-width',(1.5+lo*4.5).toFixed(1));r.g6.setAttribute('stroke-dashoffset',(-t*70).toFixed(0));r.g8.style.display=lo>0.05?'none':'';
+  r.g7.style.display=hi?'':'none';r.g7.setAttribute('stroke-dashoffset',(-t*20).toFixed(0));r.ga.style.display=hi?'none':'';
+  r.g0.textContent=l.c6[ph];}},
+// 7 why the level matters
+{svg:l=>`<svg viewBox="0 0 360 250"><rect y="222" width="360" height="28" fill="var(--h2)"/>
+ <rect x="120" y="36" width="130" height="186" fill="var(--air)" stroke="var(--ink)" stroke-width="2.5"/><rect id="f1" x="121.5" width="127" fill="var(--wlt)"/>
+ <rect x="104" y="36" width="10" height="93" fill="var(--ok)"/><rect x="104" y="129" width="10" height="46.5" fill="var(--sun)"/><rect x="104" y="175.5" width="10" height="46.5" fill="var(--warn)"/>
+ <text x="262" y="88">${l.ok}</text><text x="262" y="158">${l.care}</text><text x="262" y="204" class="w">${l.bad}</text>
+ <text id="f2" class="big" x="185" y="120" text-anchor="middle" style="--halo:transparent"></text>
+ <rect x="30" y="150" width="34" height="50" rx="6" fill="var(--pump)" stroke="var(--ink)" stroke-width="2"/><rect x="40" y="200" width="14" height="22" fill="var(--ink)" opacity=".5"/>
+ <text x="8" y="240" style="--halo:var(--h2)">${l.one}</text></svg>`,
+ upd(r,t){const lv=62+26*Math.sin(t*0.45),y=221-lv/100*184;r.f1.setAttribute('y',y);r.f1.setAttribute('height',221-y);r.f2.textContent=Math.round(lv)+'%';}}
+];
+const ICON=[
+ `<svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="20" fill="none" stroke="var(--water)" stroke-width="4"/><path d="M26 13v13l9 6" fill="none" stroke="var(--ink)" stroke-width="4" stroke-linecap="round"/></svg>`,
+ `<svg viewBox="0 0 52 52"><path d="M8 18h22v8h8v10" fill="none" stroke="var(--ink)" stroke-width="5" stroke-linejoin="round"/><path d="M38 40c-3 4-4 6 0 8c4-2 3-4 0-8z" fill="var(--water)"/><path d="M14 10v16" stroke="var(--ink)" stroke-width="5" stroke-linecap="round"/></svg>`,
+ `<svg viewBox="0 0 52 52"><path d="M10 34c8-14 14 4 22-8" fill="none" stroke="var(--water)" stroke-width="5" stroke-linecap="round"/><circle cx="26" cy="26" r="21" fill="none" stroke="var(--warn)" stroke-width="4"/><path d="M11 41L41 11" stroke="var(--warn)" stroke-width="4"/></svg>`,
+ `<svg viewBox="0 0 52 52"><rect x="15" y="5" width="22" height="42" rx="5" fill="none" stroke="var(--ink)" stroke-width="4"/><path d="M26 16c-5 7-6 10-6 13a6 6 0 0012 0c0-3-1-6-6-13z" fill="var(--water)"/></svg>`];
+const SPK=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+const canSpeak=(()=>{try{return 'speechSynthesis' in window&&'SpeechSynthesisUtterance' in window;}catch(e){return false;}})();
+let refs=[],speaking=null;
+function quiet(){try{speechSynthesis.cancel();}catch(e){}if(speaking){speaking.setAttribute('aria-pressed','false');speaking.lastChild.textContent=T[L].listen;speaking=null;}}
+function render(){
+ const d=T[L];document.documentElement.lang=L;document.title=d.h1;quiet();
+ document.querySelectorAll('[data-t]').forEach(e=>e.textContent=d[e.dataset.t]);
+ document.getElementById('es').setAttribute('aria-pressed',L=='es');document.getElementById('en').setAttribute('aria-pressed',L=='en');
+ const main=document.getElementById('main');main.textContent='';refs=[];
+ SC.forEach((sc,i)=>{const s=d.s[i],sec=document.createElement('section');
+  sec.innerHTML=`<div class="in"><h2><i>${i+1}</i><span></span></h2><div class="pic">${sc.svg(d.l)}</div><div class="say">${s.p.map(x=>`<p>${x}</p>`).join('')}</div></div>`;
+  sec.querySelector('h2 span').textContent=s.t;const inn=sec.firstChild;
+  if(i==SC.length-1){const h=document.createElement('h3');h.textContent=d.doh;inn.appendChild(h);const ul=document.createElement('ul');ul.className='do';d.act.forEach((a,n)=>{const li=document.createElement('li');li.innerHTML=ICON[n]+'<span></span>';li.lastChild.textContent=a;ul.appendChild(li);});inn.appendChild(ul);}
+  if(canSpeak){const b=document.createElement('button');b.className='listen';b.setAttribute('aria-pressed','false');b.innerHTML=SPK+'<span></span>';b.lastChild.textContent=d.listen;
+   b.addEventListener('click',()=>{const was=speaking===b;quiet();if(was)return;try{const u=new SpeechSynthesisUtterance(s.t+'. '+sec.querySelector('.say').textContent+(i==SC.length-1?' '+d.doh+'. '+d.act.join(' '):''));u.lang=d.voice=='es'?'es-MX':'en-US';u.rate=0.9;u.onend=()=>{if(speaking===b)quiet();};speechSynthesis.speak(u);speaking=b;b.setAttribute('aria-pressed','true');b.lastChild.textContent=d.stop;}catch(e){}});
+   inn.appendChild(b);}
+  main.appendChild(sec);const r={on:true,sec};sec.querySelectorAll('svg [id]').forEach(e=>r[e.id]=e);refs.push(r);});
+ watch();frame();
+}
+let io=null;function watch(){if(io)io.disconnect();if(!('IntersectionObserver' in window))return;io=new IntersectionObserver(es=>es.forEach(e=>{const r=refs.find(x=>x.sec===e.target);if(r)r.on=e.isIntersecting;}),{rootMargin:'120px'});refs.forEach(r=>io.observe(r.sec));}
+const t0=performance.now();
+function frame(){const t=rm?[3.5,1,2,6,13,8,2]:null,now=(performance.now()-t0)/1000;refs.forEach((r,i)=>{if(r.on||rm)SC[i].upd(r,rm?t[i]:now,T[L].l);});}
+function loop(){frame();requestAnimationFrame(loop);}
+const setL=l=>{L=l;try{location.hash=l;}catch(e){}render();};
+document.getElementById('es').addEventListener('click',()=>setL('es'));document.getElementById('en').addEventListener('click',()=>setL('en'));
+addEventListener('hashchange',()=>{const l=location.hash==='#en'?'en':'es';if(l!=L){L=l;render();}});
+render();if(!rm)loop();
+}
+</script>
+</body>
+</html>
