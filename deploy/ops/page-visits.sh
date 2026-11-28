@@ -29,7 +29,8 @@ import sys, os, json, gzip, re, ipaddress, datetime, collections, html
 # Keep in step with @pages in the Caddyfile.
 PAGES = [('/bomba/', 'Bomba: the water system and the pumps', 'Bomba'),
          ('/sistema/', 'Sistema: water pressure by house', 'Sistema'),
-         ('/asada/esterones/', 'ASADA Esterones mockup', 'Mockup')]
+         ('/asada/esterones/', 'ASADA Esterones mockup', 'Mockup'),
+         ('/nuestra-agua/', 'Nuestra agua: how the water gets to the house', 'Agua')]
 # Link previews and crawlers name themselves; an in-app browser (Facebook, Instagram, X) is a person.
 BOT = re.compile(r'bot|crawl|spider|preview|facebookexternalhit|^whatsapp/|curl|wget|python|go-http|okhttp|java/|'
                  r'headless|scan|monitor|feed|fetch|axios|node-|libwww|visit-log-check|^$', re.I)
@@ -125,7 +126,7 @@ for base, name, _ in PAGES:
  <p class="last">Last visit by a person: {tm(last) if last else 'none yet'}</p>
 </section>''')
 head = ''.join(f'<th>{e(short)}</th>' for _, _, short in PAGES)
-body = ''.join(f'<tr><td>{d.strftime("%a %-d %b")}</td>' + ''.join(f'<td class="{"z" if not c[d] else ""}">{c[d]}</td>' for c in cols) + '</tr>' for d in dlist)
+body = ''.join(f'<tr><td>{d.strftime("%-d %b")}</td>' + ''.join(f'<td class="{"z" if not c[d] else ""}">{c[d]}</td>' for c in cols) + '</tr>' for d in dlist)
 first = min((x[0] for x in rows), default=None)
 doc = f'''<!DOCTYPE html>
 <html lang="en">
@@ -150,7 +151,7 @@ dl{{display:grid;grid-template-columns:repeat(auto-fit,minmax(7.5rem,1fr));gap:.
 dl div{{border-top:1px solid var(--line);padding-top:.4rem}}
 dt{{color:var(--mut);font-size:.82rem}}dd{{margin:0;font-size:1.2rem;font-weight:600;font-variant-numeric:tabular-nums}}
 .scroll{{overflow-x:auto}}
-table{{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}}
+table{{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.94rem}}
 th,td{{padding:.4rem .35rem;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}}
 th:first-child,td:first-child{{text-align:left}}
 th{{font-size:.85rem;color:var(--mut);font-weight:600}}
